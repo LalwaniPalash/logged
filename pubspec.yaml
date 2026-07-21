@@ -1,0 +1,41 @@
+name: logged
+description: A private, local-first personal workout tracker.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  collection: ^1.19.1
+  cupertino_icons: ^1.0.8
+  drift: ^2.31.0
+  drift_flutter: ^0.3.0
+  file_picker: ^10.3.8
+  fl_chart: ^1.2.0
+  flutter_riverpod: ^3.1.0
+  intl: ^0.20.2
+  # Local fork of 2.1.0. Keeps the iOS gesture fix and Android solid-color
+  # material override needed by the muscle sculpture.
+  interactive_3d:
+    path: third_party/interactive_3d
+  path_provider: ^2.1.5
+  share_plus: ^12.0.1
+  phosphor_flutter: ^2.1.0
+  url_launcher: ^6.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.10.4
+  drift_dev: ^2.31.0
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/exercise_library.json
+    - assets/models/muscular.glb
+    - assets/models/ATTRIBUTION.md

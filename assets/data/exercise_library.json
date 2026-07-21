@@ -1,0 +1,3009 @@
+[
+  {
+    "name": "Barbell Bench Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Dumbbell Bench Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Incline Barbell Bench Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Incline Dumbbell Bench Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Decline Bench Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Chest Fly",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Cable Chest Fly",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Machine Chest Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Pec Deck",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Push-Up",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Weighted Push-Up",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Pullover",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Crossover",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Cable Crossover - Low Pulley",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "upper_chest",
+      "front_delts"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Cable Crossover - Mid Pulley",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Cable Crossover - High Pulley",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Smith Machine Bench Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Landmine Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "upper_chest",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Floor Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Svend Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Squeeze Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Arm Cable Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Barbell Bent-Over Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Single-Arm Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Lat Pulldown",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Wide-Grip Lat Pulldown",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Neutral-Grip Lat Pulldown",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Machine Seated Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Cable Seated Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "T-Bar Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Chest-Supported Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Deadlift",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "spinal_erectors",
+      "glute_max",
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Rack Pull",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "spinal_erectors",
+      "glute_max",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "lats",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Straight-Arm Pulldown",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_traps",
+      "triceps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Shrug",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "neck"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Shrug",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "neck"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Face Pull",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "rear_delts",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rotator_cuff",
+      "upper_traps",
+      "biceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Pec Deck",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "rear_delts",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rotator_cuff",
+      "upper_traps",
+      "biceps"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Assisted Pull-Up",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Inverted Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Meadows Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Good Morning",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "hamstrings",
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Overhead Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Dumbbell Shoulder Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Arnold Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Lateral Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Cable Lateral Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Machine Lateral Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Dumbbell Front Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_chest"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Front Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_chest"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Dumbbell Rear Delt Fly",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "rear_delts"
+    ],
+    "secondaryMuscles": [
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Cable Rear Delt Fly",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "rear_delts"
+    ],
+    "secondaryMuscles": [
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Machine Shoulder Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Barbell Upright Row",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Upright Row",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Landmine Shoulder Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Plate Front Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_chest"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cuban Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "rotator_cuff",
+      "rear_delts"
+    ],
+    "secondaryMuscles": [
+      "side_delts",
+      "mid_lower_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Y Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "mid_lower_traps"
+    ],
+    "secondaryMuscles": [
+      "side_delts",
+      "rear_delts",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Scaption Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts",
+      "rotator_cuff"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Arm Cable Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Handstand Push-Up",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Back Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "spinal_erectors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Front Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "adductors",
+      "abs",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Goblet Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Leg Press",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Hack Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Leg Extension",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Dumbbell Bulgarian Split Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Walking Lunge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Lunge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Step-Up",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Romanian Deadlift",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Romanian Deadlift",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Seated Leg Curl",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Lying Leg Curl",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Nordic Hamstring Curl",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Hip Thrust",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Glute Bridge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Glute Kickback",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Hip Abduction",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Hip Adduction",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Barbell Bicep Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Bicep Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Hammer Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "brachialis",
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Cable Bicep Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Machine Preacher Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "EZ-Bar Preacher Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Concentration Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "secondaryMuscles": [
+      "biceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Incline Dumbbell Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Spider Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Tricep Pushdown",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Overhead Cable Tricep Extension",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Dumbbell Tricep Extension",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Tricep Kickback",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Close-Grip Bench Press",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Machine Tricep Dip",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "front_delts"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Skull Crusher",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Rope Hammer Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "brachialis",
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Wrist Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Wrist Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Plank",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "glute_max",
+      "spinal_erectors",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Side Plank",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "glute_med_min",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hollow Body Hold",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors"
+    ],
+    "secondaryMuscles": [
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dead Bug",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bird Dog",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs",
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "glute_max",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Mountain Climber",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "hip_flexors",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "serratus_anterior",
+      "quads"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hanging Knee Raise",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "hip_flexors",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hanging Leg Raise",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "hip_flexors",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bicycle Crunch",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Russian Twist",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "V-Up",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Sit-Up",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Crunch",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Crunch",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Ab Wheel Rollout",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "lats",
+      "obliques",
+      "front_delts",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Pallof Press",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Wood Chop",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "lats",
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Superman Hold",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Back Extension",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "spinal_erectors",
+      "glute_max",
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Toes-to-Bar",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Clean",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "front_delts",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Clean and Jerk",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "upper_traps",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Barbell Snatch",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "upper_traps",
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "triceps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Swing",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "abs",
+      "forearms",
+      "lats"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Farmer Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "forearms",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "obliques",
+      "spinal_erectors",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Trap Bar Deadlift",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "upper_traps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Sled Push",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "front_delts",
+      "triceps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Sled Pull",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "calves",
+      "forearms",
+      "lats"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Battle Rope Slam",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "lats",
+      "front_delts",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "forearms",
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Burpee",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "mid_lower_chest",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "calves",
+      "front_delts",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bear Crawl",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "obliques",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Thruster",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "upper_chest",
+      "abs",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Clean",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "front_delts",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Clean",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "front_delts",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Turkish Get-Up",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts",
+      "abs",
+      "obliques",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "quads",
+      "hamstrings",
+      "glute_med_min",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Sandbag Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "upper_traps",
+      "forearms",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "spinal_erectors",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Box Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Medicine Ball Slam",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "lats",
+      "abs",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "glute_max",
+      "hamstrings"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Renegade Row",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "lats",
+      "abs",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "rear_delts",
+      "triceps",
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jump Squat",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Treadmill Run",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "hamstrings",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors",
+      "tibialis_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Treadmill Walk",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "tibialis_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Incline Treadmill Walk",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "tibialis_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Outdoor Run",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "hamstrings",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors",
+      "tibialis_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Stationary Bike",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves",
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Spin Bike",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves",
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Rowing Erg",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "lats",
+      "mid_lower_traps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Stair Climber",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Elliptical",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jump Rope",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "tibialis_anterior",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Assault Bike",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "calves",
+      "lats",
+      "triceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Swimming",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "lats",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "rear_delts",
+      "abs",
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hiking",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "tibialis_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Ski Erg",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "lats",
+      "triceps",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "upper_chest",
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Arc Trainer",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jogging",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "hamstrings",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors",
+      "tibialis_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Sprint Intervals",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "hamstrings",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors",
+      "tibialis_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Rucking",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves",
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "tibialis_anterior",
+      "abs",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cycling",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves",
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Shadow Boxing",
+    "category": "cardio",
+    "muscleGroup": "cardio",
+    "primaryMuscles": [
+      "front_delts",
+      "triceps",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "calves",
+      "mid_lower_chest"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hip Flexor Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "hip_flexors"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hamstring Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Couch Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "hip_flexors",
+      "quads"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Pigeon Pose",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "glute_max",
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Thoracic Rotation",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "obliques",
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "rhomboids"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Shoulder Dislocates",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "rotator_cuff",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_chest",
+      "lats"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cat-Cow",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "spinal_erectors",
+      "abs"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Child’s Pose",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "lats",
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Standing Calf Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "90/90 Hip Switch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "glute_med_min",
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "World’s Greatest Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "hip_flexors",
+      "hamstrings",
+      "adductors",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Figure Four Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "glute_max",
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Quad Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Butterfly Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Frog Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cobra Pose",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Downward Dog",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "hamstrings",
+      "calves",
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Thread the Needle",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "rear_delts",
+      "rhomboids",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Doorway Chest Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "mid_lower_chest",
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Lat Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Wrist Flexor Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Wrist Extensor Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Neck Rotation",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "neck"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Ankle Dorsiflexion Drill",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "secondaryMuscles": [
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Deep Squat Hold",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "adductors",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "abs",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jefferson Curl",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "hamstrings",
+      "spinal_erectors"
+    ],
+    "secondaryMuscles": [
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hip Airplane",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Banded Shoulder Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "rotator_cuff",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_chest",
+      "lats"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Piriformis Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "glute_med_min",
+      "glute_max"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Adductor Rockback",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cossack Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "quads"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kneeling Lat Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Wall Angel",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "mid_lower_traps",
+      "rotator_cuff"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "rhomboids"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Scapular Push-Up",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "front_delts",
+      "triceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Neck Side Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "neck"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Toe Touch Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "IT Band Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Sphinx Pose",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Open Book Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "obliques",
+      "spinal_erectors",
+      "rear_delts"
+    ],
+    "secondaryMuscles": [
+      "rhomboids"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Pelvic Tilt",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "abs",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Face Pull",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "rear_delts",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rotator_cuff",
+      "upper_traps",
+      "biceps"
+    ],
+    "defaultUnit": "lb"
+  },
+  {
+    "name": "Tibialis Anterior Raise",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "secondaryMuscles": [
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Standing Calf Raise",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Seated Calf Raise",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "EZ Bar Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Paused Bottom-Half Dumbbell Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Single-Leg Squat",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Leg Balance Hold",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "glute_med_min",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Balance Drill",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "glute_med_min",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cross-Body Shoulder Stretch",
+    "category": "stretching",
+    "muscleGroup": "mobility/stretching",
+    "primaryMuscles": [
+      "rear_delts",
+      "rotator_cuff"
+    ],
+    "secondaryMuscles": [
+      "upper_traps",
+      "rhomboids"
+    ],
+    "defaultUnit": "kg"
+  }
+]

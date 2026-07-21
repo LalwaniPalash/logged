@@ -1,0 +1,613 @@
+import 'dart:collection';
+import 'dart:math' as math;
+
+import 'enums.dart';
+import 'live_muscle_state.dart';
+import 'muscle.dart';
+import 'streak.dart';
+import 'workout_metrics.dart';
+
+const exerciseBaselineObservationCount = 2;
+const exerciseInfluenceCap = 0.45;
+const productiveWeeklyEffectiveSetCap = 12.0;
+
+enum MuscleRank {
+  foundation('Foundation'),
+  bronze('Bronze'),
+  silver('Silver'),
+  gold('Gold'),
+  platinum('Platinum'),
+  elite('Elite');
+
+  const MuscleRank(this.label);
+  final String label;
+}
+
+enum MuscleMomentum {
+  improving('Improving'),
+  steady('Steady'),
+  declining('Declining'),
+  learningBaseline('Learning baseline');
+
+  const MuscleMomentum(this.label);
+  final String label;
+}
+
+class BodyweightEntry {
+  const BodyweightEntry({
+    required this.date,
+    required this.value,
+    required this.unit,
+  });
+
+  final DateTime date;
+  final double value;
+  final WeightUnit unit;
+
+  double get kg => weightKg(value, unit);
+}
+
+class MusclePerformanceRecord {
+  const MusclePerformanceRecord({
+    required this.date,
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.primaryMuscles,
+    required this.secondaryMuscles,
+    required this.loadingMode,
+    this.reps,
+    this.weightValue,
+    this.unit,
+    this.weightEntry = WeightEntry.total,
+    this.sideCount = 1,
+    this.durationSec,
+    this.distanceMeters,
+    this.bodyweightFactor = 1.0,
+    this.isWarmup = false,
+  });
+
+  final DateTime date;
+  final int exerciseId;
+  final String exerciseName;
+  final List<MuscleId> primaryMuscles;
+  final List<MuscleId> secondaryMuscles;
+  final LoadingMode loadingMode;
+  final int? reps;
+  final double? weightValue;
+  final WeightUnit? unit;
+  final WeightEntry weightEntry;
+  final int sideCount;
+  final int? durationSec;
+  final double? distanceMeters;
+  final double bodyweightFactor;
+  final bool isWarmup;
+}
+
+class ExerciseProgressPoint {
+  const ExerciseProgressPoint({
+    required this.date,
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.index,
+    required this.rawValue,
+    required this.lowerPrecision,
+  });
+
+  final DateTime date;
+  final int exerciseId;
+  final String exerciseName;
+  final double index;
+  final double rawValue;
+  final bool lowerPrecision;
+}
+
+class MuscleTrendPoint {
+  const MuscleTrendPoint({required this.date, required this.index});
+  final DateTime date;
+  final double index;
+}
+
+class MuscleExerciseProgress {
+  const MuscleExerciseProgress({
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.latestIndex,
+    required this.bestIndex,
+    required this.latestRawValue,
+    required this.bestRawValue,
+    required this.points,
+    required this.lowerPrecision,
+  });
+
+  final int exerciseId;
+  final String exerciseName;
+  final double latestIndex;
+  final double bestIndex;
+  final double latestRawValue;
+  final double bestRawValue;
+  final List<ExerciseProgressPoint> points;
+  final bool lowerPrecision;
+}
+
+class MuscleProgress {
+  const MuscleProgress({
+    required this.muscle,
+    required this.rank,
+    required this.rankScore,
+    required this.rankProgress,
+    required this.momentum,
+    required this.points,
+    required this.effectiveSetHistory,
+    required this.primarySets,
+    required this.secondarySets,
+    required this.lastTrained,
+    required this.exercises,
+  });
+
+  final MuscleId muscle;
+  final MuscleRank rank;
+  final double rankScore;
+  final double rankProgress;
+  final MuscleMomentum momentum;
+  final List<MuscleTrendPoint> points;
+  final Map<DateTime, double> effectiveSetHistory;
+  final int primarySets;
+  final int secondarySets;
+  final DateTime? lastTrained;
+  final List<MuscleExerciseProgress> exercises;
+
+  double? get latestIndex => points.isEmpty ? null : points.last.index;
+  double? get bestIndex => points.isEmpty
+      ? null
+      : points.map((point) => point.index).reduce(math.max);
+
+  bool get isLearning => points.length < 2;
+}
+
+class BodyProgressSummary {
+  const BodyProgressSummary({
+    required this.rank,
+    required this.rankScore,
+    required this.rankProgress,
+    required this.momentum,
+    required this.trainedMuscles,
+    required this.improvingMuscles,
+    required this.strongest,
+    required this.attentionNeeded,
+  });
+
+  final MuscleRank rank;
+  final double rankScore;
+  final double rankProgress;
+  final MuscleMomentum momentum;
+  final int trainedMuscles;
+  final int improvingMuscles;
+  final List<MuscleProgress> strongest;
+  final List<MuscleProgress> attentionNeeded;
+
+  String get nextFocusLabel => attentionNeeded.isEmpty
+      ? 'Keep building balanced progress'
+      : attentionNeeded.take(2).map((item) => item.muscle.label).join(' or ');
+}
+
+class _ExerciseObservation {
+  const _ExerciseObservation({
+    required this.record,
+    required this.value,
+    required this.lowerPrecision,
+  });
+
+  final MusclePerformanceRecord record;
+  final double value;
+  final bool lowerPrecision;
+}
+
+class _ExerciseSeries {
+  const _ExerciseSeries({
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.points,
+  });
+
+  final int exerciseId;
+  final String exerciseName;
+  final List<ExerciseProgressPoint> points;
+}
+
+class _Accumulator {
+  int primarySets = 0;
+  int secondarySets = 0;
+  final Map<DateTime, double> effectiveSetHistory = {};
+  DateTime? lastTrained;
+  final Map<int, double> exerciseWeights = {};
+}
+
+class _WeightedIndex {
+  const _WeightedIndex({required this.index, required this.weight});
+  final double index;
+  final double weight;
+}
+
+Map<MuscleId, MuscleProgress> buildMuscleProgress({
+  required Iterable<MusclePerformanceRecord> records,
+  Iterable<BodyweightEntry> bodyweights = const [],
+  DateTime? today,
+}) {
+  final sortedRecords = records.toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+  final sortedWeights = bodyweights.toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  final observationsByExercise = <int, List<_ExerciseObservation>>{};
+  final accumulators = {
+    for (final muscle in MuscleId.values) muscle: _Accumulator(),
+  };
+
+  for (final record in sortedRecords) {
+    if (record.isWarmup) continue;
+    final primary = record.primaryMuscles.toSet();
+    final secondary = record.secondaryMuscles.toSet().difference(primary);
+    if (primary.isEmpty && secondary.isEmpty) continue;
+
+    final day = dateOnly(record.date);
+    for (final muscle in primary) {
+      final acc = accumulators[muscle]!;
+      acc.primarySets++;
+      acc.lastTrained = record.date;
+      acc.effectiveSetHistory[day] = (acc.effectiveSetHistory[day] ?? 0) + 1;
+      acc.exerciseWeights[record.exerciseId] =
+          (acc.exerciseWeights[record.exerciseId] ?? 0) + 1;
+    }
+    for (final muscle in secondary) {
+      final acc = accumulators[muscle]!;
+      acc.secondarySets++;
+      acc.lastTrained = record.date;
+      acc.effectiveSetHistory[day] =
+          (acc.effectiveSetHistory[day] ?? 0) + secondaryMuscleSetWeight;
+      acc.exerciseWeights[record.exerciseId] =
+          (acc.exerciseWeights[record.exerciseId] ?? 0) +
+          secondaryMuscleSetWeight;
+    }
+
+    final signal = _performanceSignal(record, sortedWeights);
+    if (signal == null) continue;
+    (observationsByExercise[record.exerciseId] ??= []).add(signal);
+  }
+
+  final seriesByExercise = <int, _ExerciseSeries>{};
+  for (final entry in observationsByExercise.entries) {
+    final observations = entry.value;
+    if (observations.length < exerciseBaselineObservationCount) continue;
+    final baseline =
+        observations
+            .take(exerciseBaselineObservationCount)
+            .map((observation) => observation.value)
+            .fold(0.0, (sum, value) => sum + value) /
+        exerciseBaselineObservationCount;
+    if (baseline <= 0) continue;
+
+    final points = [
+      for (final observation in observations)
+        ExerciseProgressPoint(
+          date: observation.record.date,
+          exerciseId: observation.record.exerciseId,
+          exerciseName: observation.record.exerciseName,
+          index: ((observation.value / baseline) * 100).clamp(50.0, 175.0),
+          rawValue: observation.value,
+          lowerPrecision: observation.lowerPrecision,
+        ),
+    ];
+    seriesByExercise[entry.key] = _ExerciseSeries(
+      exerciseId: entry.key,
+      exerciseName: observations.last.record.exerciseName,
+      points: points,
+    );
+  }
+
+  return UnmodifiableMapView({
+    for (final muscle in MuscleId.values)
+      muscle: _buildProgressForMuscle(
+        muscle,
+        accumulators[muscle]!,
+        seriesByExercise,
+        today ?? DateTime.now(),
+      ),
+  });
+}
+
+_ExerciseObservation? _performanceSignal(
+  MusclePerformanceRecord record,
+  List<BodyweightEntry> bodyweights,
+) {
+  final sides = record.sideCount.clamp(1, 999);
+  if (record.reps != null && record.reps! > 0) {
+    final load = _resistedMassKg(record, bodyweights);
+    if (load != null && load > 0) {
+      return _ExerciseObservation(
+        record: record,
+        value: load * sides * (1 + record.reps! / 30),
+        lowerPrecision: false,
+      );
+    }
+    return _ExerciseObservation(
+      record: record,
+      value: record.reps!.toDouble() * sides,
+      lowerPrecision: true,
+    );
+  }
+  if (record.durationSec != null && record.durationSec! > 0) {
+    final load = _resistedMassKg(record, bodyweights);
+    return _ExerciseObservation(
+      record: record,
+      value: record.durationSec!.toDouble() * sides * (load ?? 1),
+      lowerPrecision: load == null,
+    );
+  }
+  if (record.distanceMeters != null && record.distanceMeters! > 0) {
+    return _ExerciseObservation(
+      record: record,
+      value: record.distanceMeters! * sides,
+      lowerPrecision: false,
+    );
+  }
+  return null;
+}
+
+double? _resistedMassKg(
+  MusclePerformanceRecord record,
+  List<BodyweightEntry> bodyweights,
+) {
+  final external = record.weightValue == null
+      ? null
+      : totalLoadKg(
+          record.weightValue!,
+          record.unit ?? WeightUnit.kg,
+          record.weightEntry,
+        );
+  final bodyweight = _bodyweightOnOrBefore(record.date, bodyweights);
+  final factor = record.bodyweightFactor.clamp(0.0, 1.0);
+
+  return switch (record.loadingMode) {
+    LoadingMode.external => external,
+    LoadingMode.bodyweight => bodyweight == null ? null : bodyweight * factor,
+    LoadingMode.bodyweightAdded =>
+      bodyweight == null ? external : bodyweight * factor + (external ?? 0),
+    LoadingMode.bodyweightAssisted =>
+      bodyweight == null
+          ? null
+          : (bodyweight * factor - (external ?? 0)) <= 0
+          ? null
+          : bodyweight * factor - (external ?? 0),
+  };
+}
+
+double? _bodyweightOnOrBefore(DateTime date, List<BodyweightEntry> entries) {
+  double? latest;
+  for (final entry in entries) {
+    if (!dateOnly(entry.date).isAfter(dateOnly(date))) latest = entry.kg;
+  }
+  return latest;
+}
+
+MuscleProgress _buildProgressForMuscle(
+  MuscleId muscle,
+  _Accumulator accumulator,
+  Map<int, _ExerciseSeries> seriesByExercise,
+  DateTime today,
+) {
+  final totalWeight = accumulator.exerciseWeights.values.fold(
+    0.0,
+    (sum, value) => sum + value,
+  );
+  final datedValues = <DateTime, List<_WeightedIndex>>{};
+  final exercises = <MuscleExerciseProgress>[];
+
+  if (totalWeight > 0) {
+    for (final entry in accumulator.exerciseWeights.entries) {
+      final series = seriesByExercise[entry.key];
+      if (series == null || series.points.isEmpty) continue;
+      final influence = math.min(
+        entry.value / totalWeight,
+        exerciseInfluenceCap,
+      );
+      for (final point in series.points) {
+        (datedValues[dateOnly(point.date)] ??= []).add(
+          _WeightedIndex(index: point.index, weight: influence),
+        );
+      }
+      final latest = series.points.last;
+      final best = series.points.reduce((a, b) => a.index >= b.index ? a : b);
+      exercises.add(
+        MuscleExerciseProgress(
+          exerciseId: series.exerciseId,
+          exerciseName: series.exerciseName,
+          latestIndex: latest.index,
+          bestIndex: best.index,
+          latestRawValue: latest.rawValue,
+          bestRawValue: best.rawValue,
+          points: series.points,
+          lowerPrecision: series.points.any((point) => point.lowerPrecision),
+        ),
+      );
+    }
+  }
+
+  final points = [
+    for (final entry in datedValues.entries)
+      MuscleTrendPoint(
+        date: entry.key,
+        index: entry.value.isEmpty
+            ? 100
+            : entry.value.fold(
+                    0.0,
+                    (sum, value) => sum + value.index * value.weight,
+                  ) /
+                  entry.value.fold(0.0, (sum, value) => sum + value.weight),
+      ),
+  ]..sort((a, b) => a.date.compareTo(b.date));
+
+  final rankScore = _rankScore(accumulator, points);
+  final rank = _rankFromScore(rankScore);
+  final nextThreshold = _nextRankThreshold(rank);
+  final currentThreshold = _rankThreshold(rank);
+  final progress = nextThreshold == null
+      ? 1.0
+      : ((rankScore - currentThreshold) / (nextThreshold - currentThreshold))
+            .clamp(0.0, 1.0);
+
+  return MuscleProgress(
+    muscle: muscle,
+    rank: rank,
+    rankScore: rankScore,
+    rankProgress: progress,
+    momentum: _momentum(points),
+    points: points,
+    effectiveSetHistory: UnmodifiableMapView(accumulator.effectiveSetHistory),
+    primarySets: accumulator.primarySets,
+    secondarySets: accumulator.secondarySets,
+    lastTrained: accumulator.lastTrained,
+    exercises: exercises..sort((a, b) => b.bestIndex.compareTo(a.bestIndex)),
+  );
+}
+
+BodyProgressSummary buildBodyProgressSummary(
+  Map<MuscleId, MuscleProgress> progressByMuscle,
+) {
+  final muscles = [
+    for (final muscle in MuscleId.values) progressByMuscle[muscle],
+  ].whereType<MuscleProgress>().toList();
+  if (muscles.isEmpty) {
+    return const BodyProgressSummary(
+      rank: MuscleRank.foundation,
+      rankScore: 0,
+      rankProgress: 0,
+      momentum: MuscleMomentum.learningBaseline,
+      trainedMuscles: 0,
+      improvingMuscles: 0,
+      strongest: [],
+      attentionNeeded: [],
+    );
+  }
+
+  final averageScore =
+      muscles.fold(0.0, (sum, muscle) => sum + muscle.rankScore) /
+      muscles.length;
+  final rank = _rankFromScore(averageScore);
+  final nextThreshold = _nextRankThreshold(rank);
+  final currentThreshold = _rankThreshold(rank);
+  final rankProgress = nextThreshold == null
+      ? 1.0
+      : ((averageScore - currentThreshold) / (nextThreshold - currentThreshold))
+            .clamp(0.0, 1.0);
+
+  final trained = muscles
+      .where((muscle) => muscle.lastTrained != null)
+      .toList();
+  final improving = muscles
+      .where((muscle) => muscle.momentum == MuscleMomentum.improving)
+      .toList();
+  final declining = muscles
+      .where((muscle) => muscle.momentum == MuscleMomentum.declining)
+      .toList();
+  final strongest = trained.toList()
+    ..sort((a, b) => b.rankScore.compareTo(a.rankScore));
+  final attention = muscles.toList()
+    ..sort((a, b) {
+      final aNever = a.lastTrained == null ? 0 : 1;
+      final bNever = b.lastTrained == null ? 0 : 1;
+      final byNever = aNever.compareTo(bNever);
+      if (byNever != 0) return byNever;
+      final byMomentum = _attentionPriority(
+        a.momentum,
+      ).compareTo(_attentionPriority(b.momentum));
+      if (byMomentum != 0) return byMomentum;
+      final byRank = a.rankScore.compareTo(b.rankScore);
+      if (byRank != 0) return byRank;
+      return MuscleId.values
+          .indexOf(a.muscle)
+          .compareTo(MuscleId.values.indexOf(b.muscle));
+    });
+
+  return BodyProgressSummary(
+    rank: rank,
+    rankScore: averageScore,
+    rankProgress: rankProgress,
+    momentum: improving.isNotEmpty
+        ? MuscleMomentum.improving
+        : declining.length > improving.length
+        ? MuscleMomentum.declining
+        : trained.length < 3
+        ? MuscleMomentum.learningBaseline
+        : MuscleMomentum.steady,
+    trainedMuscles: trained.length,
+    improvingMuscles: improving.length,
+    strongest: strongest.take(4).toList(),
+    attentionNeeded: attention.take(4).toList(),
+  );
+}
+
+int _attentionPriority(MuscleMomentum momentum) => switch (momentum) {
+  MuscleMomentum.declining => 0,
+  MuscleMomentum.learningBaseline => 1,
+  MuscleMomentum.steady => 2,
+  MuscleMomentum.improving => 3,
+};
+
+double _rankScore(_Accumulator accumulator, List<MuscleTrendPoint> points) {
+  final weeks = <DateTime, double>{};
+  accumulator.effectiveSetHistory.forEach((day, sets) {
+    final week = startOfWeek(day);
+    weeks[week] = math.min(
+      productiveWeeklyEffectiveSetCap,
+      (weeks[week] ?? 0) + sets,
+    );
+  });
+  final cappedExposure = weeks.values.fold(0.0, (sum, sets) => sum + sets);
+  final bestImprovement = points.isEmpty
+      ? 0.0
+      : math.max(0, points.map((point) => point.index).reduce(math.max) - 100);
+  final consistency = weeks.length * 2.0;
+  return cappedExposure + bestImprovement * 1.6 + consistency;
+}
+
+MuscleRank _rankFromScore(double score) {
+  if (score >= 300) return MuscleRank.elite;
+  if (score >= 200) return MuscleRank.platinum;
+  if (score >= 130) return MuscleRank.gold;
+  if (score >= 70) return MuscleRank.silver;
+  if (score >= 25) return MuscleRank.bronze;
+  return MuscleRank.foundation;
+}
+
+double _rankThreshold(MuscleRank rank) => switch (rank) {
+  MuscleRank.foundation => 0,
+  MuscleRank.bronze => 25,
+  MuscleRank.silver => 70,
+  MuscleRank.gold => 130,
+  MuscleRank.platinum => 200,
+  MuscleRank.elite => 300,
+};
+
+double? _nextRankThreshold(MuscleRank rank) => switch (rank) {
+  MuscleRank.foundation => 25,
+  MuscleRank.bronze => 70,
+  MuscleRank.silver => 130,
+  MuscleRank.gold => 200,
+  MuscleRank.platinum => 300,
+  MuscleRank.elite => null,
+};
+
+MuscleMomentum _momentum(List<MuscleTrendPoint> points) {
+  if (points.length < 4) return MuscleMomentum.learningBaseline;
+  final midpoint = points.length ~/ 2;
+  final previous = points.take(midpoint).map((point) => point.index).toList();
+  final recent = points.skip(midpoint).map((point) => point.index).toList();
+  final previousAvg =
+      previous.fold(0.0, (sum, value) => sum + value) / previous.length;
+  final recentAvg =
+      recent.fold(0.0, (sum, value) => sum + value) / recent.length;
+  final delta = recentAvg - previousAvg;
+  if (delta >= 3) return MuscleMomentum.improving;
+  if (delta <= -3) return MuscleMomentum.declining;
+  return MuscleMomentum.steady;
+}

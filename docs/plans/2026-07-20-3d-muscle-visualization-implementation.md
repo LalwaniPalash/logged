@@ -4,6 +4,8 @@
 **Date:** 2026-07-20  
 **Execution style:** Test-first, staged, and reversible
 
+**Status:** Implemented and verified on Android build, iOS build, and iOS Simulator runtime (2026-07-20)
+
 ## Constraints
 
 - Preserve existing user changes; most project files are currently untracked.
@@ -207,20 +209,17 @@ flutter analyze
 
 This phase is a compatibility gate before processing the full model.
 
-### Approval/toolchain gate
+### Resolved toolchain gate
 
-The installed Flutter SDK is 3.41.9 while `interactive_3d` 2.2.0 declares Flutter 3.44+. Before changing the global SDK, either:
-
-1. Install/use an isolated project SDK, or
-2. Obtain approval to upgrade the global stable Flutter SDK.
+Pin `interactive_3d` 2.1.0, the final release before the Flutter 3.44 minimum was introduced. It supports runtime PBR overrides on Flutter 3.41.9, so no global or isolated Flutter upgrade is necessary.
 
 ### Files
 
 - Update `pubspec.yaml` and `pubspec.lock`.
 - Update Android minimum SDK to 24.
 - Confirm iOS deployment target remains at least 13.
-- Create a temporary/prototype renderer adapter under `lib/features/exercise/widgets/`.
-- Add a small licensed chest/shoulder GLB and lighting asset under `assets/models/prototype/`.
+- Create the app-owned renderer view under `lib/features/exercise/widgets/`.
+- Add the final licensed muscle GLB under `assets/models/` and use the plugin's fallback three-point lighting.
 
 ### Prototype acceptance
 
@@ -246,36 +245,29 @@ flutter build ios --debug --no-codesign
 
 Physical-device interaction checks are required for this phase.
 
-## Phase 5: Build the Reproducible Z-Anatomy Asset
+## Phase 5: Pin and Validate the Anatomy Asset
 
 ### Files
 
-- Create `tools/blender/prepare_muscle_model.py`.
-- Create `tools/blender/README.md` with pinned source and exact command.
-- Add source/license records under `assets/models/licenses/`.
-- Create `assets/models/muscular_body.glb`.
-- Create `assets/models/muscular_body_manifest.json`.
-- Create or update `THIRD_PARTY_NOTICES.md`.
-- Create `test/data/muscle_model_manifest_test.dart`.
+- Add `assets/models/muscular.glb`.
+- Add `assets/models/ATTRIBUTION.md` and root `THIRD_PARTY_NOTICES.md`.
+- Create `lib/core/domain/muscle_model.dart` as the typed entity manifest.
+- Create `test/data/muscle_model_asset_test.dart` and `test/core/muscle_model_test.dart`.
 
 ### Processing
 
-1. Pin the Z-Anatomy source commit.
-2. Inventory source object names and map them to app `MuscleId` values.
-3. Keep only required visible/workout-relevant structures.
-4. Preserve and normalize left/right entities.
-5. Rename output entities deterministically.
-6. Decimate carefully and share mobile-friendly materials.
-7. Export GLB headlessly.
-8. Validate GLB structure and manifest completeness.
-9. Record attribution and CC BY-SA obligations.
+1. Pin the published GLB by URL, download date, and SHA-256.
+2. Parse and inventory its 47 named mesh nodes.
+3. Map every renderer entity deterministically to one app `MuscleId`.
+4. Validate GLB structure and manifest completeness in an automated asset test.
+5. Record BodyParts3D, Z-Anatomy, Adamas Designs, and CC BY-SA obligations.
 
 ### Asset acceptance
 
-- Every `MuscleId` maps to at least one model entity.
+- Every visualized `MuscleId` maps to at least one model entity; neck remains text-only because the selected superficial asset has no separate neck mesh.
 - Every manifest entity exists in the GLB.
 - No two muscle IDs accidentally claim the same entity unless explicitly documented.
-- Model meets the approximate triangle/entity/size budgets.
+- Model stays below the accepted 25 MB mobile asset ceiling and 100-entity ceiling.
 - Front, rear, and side contours remain recognizable.
 - Neutral and highlighted PBR materials look acceptable in both themes.
 
@@ -297,7 +289,7 @@ Physical-device interaction checks are required for this phase.
 2. Apply the current live state as initial material overrides after load.
 3. Diff later state and update only changed entities.
 4. Do not reload the GLB after each set.
-5. Add front, back, and reset-camera controls.
+5. Add 3D/2D mode controls and direct gesture guidance.
 6. Add the fixed effective-set legend and gesture hint.
 7. Map native entity selection back to `MuscleId`.
 8. Show friendly muscle details and exercise contributions.

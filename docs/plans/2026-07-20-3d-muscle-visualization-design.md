@@ -1,6 +1,6 @@
 # Live 3D Muscle Visualization Design
 
-**Status:** Approved  
+**Status:** Implemented
 **Date:** 2026-07-20  
 **Product:** Logged (Flutter, Android and iOS)
 
@@ -31,11 +31,11 @@ The replacement should show a realistic, skinless male anatomical model. A user 
 
 ## Selected Approach
 
-Use a mobile-optimized GLB derived from [Z-Anatomy](https://github.com/Z-Anatomy/Models-of-human-anatomy), rendered through [`interactive_3d`](https://pub.dev/packages/interactive_3d). Z-Anatomy is available under CC BY-SA 4.0 and contains separately identifiable anatomical structures. `interactive_3d` provides native Filament rendering on Android and SceneKit/GLTFSceneKit rendering on iOS, named-entity selection, gestures, visibility control, and runtime PBR material overrides.
+Use Adamas Designs' mobile-ready `muscular.glb`, whose geometry is derived from BodyParts3D and whose naming/identification process references [Z-Anatomy](https://github.com/Z-Anatomy/Models-of-human-anatomy), rendered through [`interactive_3d`](https://pub.dev/packages/interactive_3d). The compiled GLB is distributed under CC BY-SA 4.0. `interactive_3d` provides native Filament rendering on Android and SceneKit/GLTFSceneKit rendering on iOS, named-entity selection, gestures, visibility control, and runtime PBR material overrides.
 
 This is preferred over a WebView-based `<model-viewer>` integration because dynamic per-muscle selection and material updates would require a custom JavaScript bridge. An embedded Unity view would add disproportionate build size and integration complexity.
 
-The current `interactive_3d` release requires Flutter 3.44+, Android API 24+, and iOS 12+. The project currently uses Flutter 3.41.9 and targets iOS 13. The implementation therefore includes a contained native-renderer prototype and Flutter upgrade after the exercise anatomy work is complete.
+`interactive_3d` 2.1.0 is pinned because it contains runtime PBR material overrides while remaining compatible with Flutter 3.41.9. It requires Android API 24; the project already exceeds its iOS 12 requirement with an iOS 13 deployment target. No Flutter SDK upgrade is required.
 
 ## Architecture
 
@@ -65,12 +65,13 @@ Backup schema version 3 carries the new exercise fields. Imports remain tolerant
 
 The app uses familiar fitness regions while the GLB retains realistic anatomical shapes. One app muscle ID can address multiple left/right anatomical entities.
 
-- Chest: upper chest, mid/lower chest
-- Shoulders: front delts, side delts, rear delts
+- Chest: upper chest, mid/lower chest, serratus anterior
+- Shoulders: front delts, side delts, rear delts, rotator cuff
 - Back: lats, upper traps, mid/lower traps, rhomboids, spinal erectors
 - Arms: biceps, brachialis, triceps, forearms
 - Core: abs, obliques, hip flexors
 - Lower body: quads, hamstrings, glute max, glute med/min, adductors, calves, tibialis anterior
+- Neck: separately tracked for mobility and secondary shrug contribution; shown in text when the selected superficial GLB has no dedicated neck mesh
 
 A typed `MuscleId` domain model owns stable IDs and user-facing labels. A bundled model manifest maps each `MuscleId` to the GLB entity names that must be colored or selected. The manifest decouples workout analytics from future model revisions.
 
@@ -106,26 +107,11 @@ The Progress screen owns the renderer lifecycle. When the state changes, it upda
 
 The renderer package stays behind a small app-owned widget/controller interface. This isolates native plugin behavior, permits widget-test fakes, and leaves room to replace the engine without changing analytics or UI code.
 
-## Model Preparation Pipeline
+## Model Asset
 
-The derived model must be reproducible:
+The selected public derivative already provides the required muscle-only GLB, so no local Blender installation or unreproducible manual export is needed. The bundled artifact is pinned by source URL, download date, and SHA-256 in `assets/models/ATTRIBUTION.md` and `THIRD_PARTY_NOTICES.md`.
 
-1. Pin and record the exact Z-Anatomy source revision and license.
-2. Use a Blender preparation script to select workout-relevant musculature and remove organs, internal anatomy, and geometry that never appears.
-3. Normalize pose, origin, scale, and camera framing.
-4. Preserve left/right meshes and rename them to stable app entity names.
-5. Assign mobile-friendly PBR materials that accept runtime tinting.
-6. Reduce polygon count while visually checking important contours.
-7. Export GLB and validate it with the Khronos glTF validator.
-
-Initial budgets:
-
-- At most approximately 150,000 triangles.
-- Fewer than 100 selectable entities.
-- Compressed GLB below approximately 15 MB.
-- No network-fetched textures or lighting resources.
-
-The optimized derivative remains available under the applicable CC BY-SA terms. Settings and `THIRD_PARTY_NOTICES.md` include source, attribution, source revision, license, and a link to the model license.
+The accepted asset is 18.5 MB and contains 47 named, selectable muscle meshes with no network-fetched textures or lighting resources. An automated GLB contract test parses the binary JSON chunk and requires every expected renderer entity to exist exactly once. The app's typed manifest maps those 47 meshes onto the workout taxonomy. The derivative remains under CC BY-SA 4.0, and attribution is visible from Settings.
 
 ## Progress Experience
 
@@ -135,7 +121,7 @@ The card provides:
 
 - One-finger 360-degree rotation.
 - Two-finger zoom.
-- Front, back, and reset-camera controls.
+- A 3D/2D mode control plus direct drag rotation and pinch zoom.
 - A neutral desaturated muscle material for untrained regions.
 - A terracotta-to-amber intensity treatment that fits the current warm-earth theme.
 - A fixed effective-set legend.
@@ -160,7 +146,7 @@ Color is supplemented by text, fixed legend labels, selection state, and numeric
 
 ## Error Handling and Fallback
 
-- If the GLB or native renderer fails to load, show a retry action and the current 2D heatmap instead. The rest of Progress stays usable.
+- A permanently available 2D toggle provides an immediate fallback if the GLB or native renderer fails to load. The rest of Progress stays usable.
 - Aggregate the detailed taxonomy into the existing broad `BodyRegion` values for the fallback.
 - Do not silently invent anatomy for unknown exercises. Surface an **Assign muscles** action.
 - A failed anatomy-enrichment pass must be retryable and must not remove existing exercise or workout data.
@@ -223,8 +209,8 @@ Final verification includes `flutter analyze`, the complete Flutter test suite, 
 1. Define the muscle taxonomy and add complete primary/secondary mappings to all 200 exercises.
 2. Add schema v3, enrichment, custom-exercise fields, backup compatibility, and tests.
 3. Implement live current-week set-based analytics, including active sessions.
-4. Upgrade Flutter as required and prove the renderer with a small chest/shoulder GLB on both platforms.
-5. Create and validate the reproducible optimized Z-Anatomy derivative.
+4. Pin the Flutter-compatible renderer and prove native Android/iOS builds.
+5. Pin, validate, and attribute the pre-optimized BodyParts3D/Z-Anatomy-named derivative.
 6. Add the 3D renderer adapter, model manifest, and live material binding.
 7. Build tap details, controls, legend, accessible breakdown, and fallback.
 8. Complete automated and physical-device verification, then replace the old visualization by default.
