@@ -34,3 +34,24 @@ Format: [date] | what went wrong | rule to prevent it
 - 2026-07-21 | Before a first `git add -A`, always check what's being swept in: `dist/` held 248MB of
   APK/IPA build artifacts and a `.sqlite` device snapshot with personal data. Git history is permanent —
   audit and extend `.gitignore` BEFORE the commit, not after.
+- 2026-07-21 | `path_provider_foundation` 2.6.0 moved to Dart **native assets** (via `objective_c`),
+  which CocoaPods does NOT install — it never appears in Podfile.lock. An incremental iOS build
+  silently skipped bundling the dylib, so `dlopen` failed at runtime, `getApplicationDocumentsDirectory()`
+  threw, drift could not open the DB, and every data-backed screen fell back to its error state (the
+  3D muscle sculpture "not loading" was this, not a UI bug). Rule: after ANY dependency bump, run
+  `flutter clean && flutter pub get && (cd ios && pod install)` before trusting a run. A plugin missing
+  from Podfile.lock is not evidence it is unused — check for native assets.
+- 2026-07-21 | Seeding with `InsertMode.insertOrIgnore` means any field added to
+  `exercise_library.json` later NEVER reaches an existing install — fresh installs get it, upgrades
+  silently do not. `weightEntry` shipped correct and did nothing for 212 existing rows. Rule: when
+  adding a library-driven column, ship a backfill alongside it. If the column is user-editable, the
+  backfill must be ONE-TIME (flag in app_settings), or it overwrites the user's choice every launch.
+- 2026-07-21 | Running the real app found 3 bugs that `flutter analyze` + 67 green tests did not:
+  the missing backfill, the `kg/side` mis-tag, and the native-assets breakage. Two were data/asset
+  problems that unit tests structurally cannot see (they inject fixtures, not the seeded user DB).
+  Rule: for data-shaped features, verify against the actual on-device database — query it with
+  sqlite3 before and after, and diff the counts. Green tests are necessary, not sufficient.
+- 2026-07-21 | Heuristics over human-written prose need negative cases. `notes.contains('/side')`
+  matched both "8/side" (reps per side → sideCount 2) and "7.5-10 kg/side" (load per hand → perSide,
+  sideCount 1) — opposite meanings, same substring. Rule: when parsing free text into a semantic flag,
+  enumerate the strings that must NOT match and test them explicitly.
