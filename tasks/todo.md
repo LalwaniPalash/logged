@@ -1,15 +1,17 @@
 # Active task — Set logging UX + per-side load (2026-07-21)
 Full spec: `tasks/spec-set-logging.md`. Decisions locked with user via Q&A.
-- [ ] Schema v6: Exercises.weightEntry, SetEntries.weightEntry+sideCount, sidesPerSet on template/session exercises
-- [ ] `WeightEntry {total, perSide}` enum + `totalLoadKg` helper
-- [ ] Volume/muscle-load double for perSide; 1RM + charts stay per-hand (deliberate split)
-- [ ] Analytics queries + WorkoutSetRecord carry weight_entry / side_count
-- [ ] `SessionRepository.seedForNextSet` cascade: this session -> prescription -> last session
-- [ ] Inline set rows w/ steppers + Repeat set; modal demoted to "More" (RPE/notes/warmup/mode)
-- [ ] Split active_session_screen.dart (875 lines) into widgets/
-- [ ] Seed: sidesPerSet=2 for "/side" entries; weightEntry=perSide for dumbbell lifts
-- [ ] template_editor_screen: "each side" toggle
-- [ ] v5->v6 migration test proves existing sets keep identical volume + 1RM
+- [x] Schema v6: Exercises.weightEntry, SetEntries.weightEntry+sideCount, sidesPerSet on template/session exercises
+- [x] `WeightEntry {total, perSide}` enum + `totalLoadKg` helper
+- [x] Volume/muscle-load double for perSide; 1RM + charts stay per-hand (deliberate split)
+- [x] Analytics queries + WorkoutSetRecord carry weight_entry / side_count
+- [x] `SessionRepository.seedForNextSet` cascade: this session -> prescription -> last session
+- [x] Inline set rows w/ steppers + Repeat set; modal demoted to "More" (RPE/notes/warmup/mode)
+- [x] Split active_session_screen.dart (875 lines) into widgets/
+- [x] Seed: sidesPerSet=2 for "/side" entries; weightEntry=perSide for dumbbell lifts
+- [x] template_editor_screen: "each side" toggle
+- [x] v5->v6 migration test proves existing sets keep identical volume + 1RM
+- [x] Reviewed: 4 bugs found+fixed (sideCount clobber, delete-resets-defaults, setNumber collision, disposed controller)
+- [x] Baselined entire source in git (89abe3d) — lib/ had never been committed
 
 # Active task — Dashboard + Settings UX/vibe pass (2026-07-20)
 - [x] WeeklyProgressStrip widget (M-T-W-T-F-S-S dots, done/goal) → replaces ring

@@ -17,3 +17,20 @@ Format: [date] | what went wrong | rule to prevent it
   even after the `+` fix. Fixes: deduped the library (kept the arms variant), topped back to 200 with
   "Cable Face Pull", set seeding to InsertMode.insertOrIgnore, and the real-asset test now asserts
   name uniqueness + count>=200. Rule: any seeded list keyed by a UNIQUE column MUST be uniqueness-tested.
+- 2026-07-21 | The entire `lib/` tree had never been committed (only `docs/` was tracked), so after a
+  codex run touching 26 files there was NO baseline to diff against — codex modified two files outside
+  its spec (`muscle_anatomy_view.dart`, `app_icons.dart`) and the changes were unreviewable. Combined
+  with `--dangerously-bypass-approvals-and-sandbox`, that was also unrecoverable. Rule: commit a
+  baseline BEFORE delegating to codex, never after. `git diff HEAD` is the whole point of Mode B review.
+- 2026-07-21 | `seedForNextSet` passed `sessionExercise.sidesPerSet ?? 1` into a `copyWith` whose params
+  all fall back via `?? this.x`. Coalescing at the CALL SITE makes the value non-null, so it always won
+  and silently discarded the remembered sideCount — halving logged stretch duration. Rule: when feeding
+  an optional override into a `copyWith` that already handles null, pass the raw nullable through; never
+  pre-coalesce. Every sibling field in that same call was correct, which is what made it easy to miss.
+- 2026-07-21 | My own read-through and the codex Mode B review each found 2 real bugs, with ZERO overlap
+  (I found the sideCount clobber + a disposed-controller race; codex found delete-resets-logging-defaults
+  + a setNumber collision). Rule: don't treat either pass as sufficient on its own. Also: `flutter analyze`
+  clean + all tests green proved nothing here — all 4 bugs survived a green suite.
+- 2026-07-21 | Before a first `git add -A`, always check what's being swept in: `dist/` held 248MB of
+  APK/IPA build artifacts and a `.sqlite` device snapshot with personal data. Git history is permanent —
+  audit and extend `.gitignore` BEFORE the commit, not after.
