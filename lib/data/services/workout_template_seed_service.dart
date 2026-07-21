@@ -565,6 +565,19 @@ class _PrescriptionSeed {
   );
 }
 
+/// Number of sides one set covers, read from the prescription note.
+///
+/// "8/side", "15–20/side", "40s each side" describe work repeated on each side,
+/// so one set covers two. "7.5–10 kg/side" instead describes the *load* on each
+/// side of a simultaneous two-handed movement (a cable crossover) — that is a
+/// per-hand weight entry, not two sides of work, and must not be counted twice.
+int? _sidesFromNotes(String notes) {
+  if (RegExp(r'(kg|lb)\s*/\s*side', caseSensitive: false).hasMatch(notes)) {
+    return null;
+  }
+  return notes.contains('each side') || notes.contains('/side') ? 2 : null;
+}
+
 _PrescriptionSeed _p(
   String exerciseName,
   int targetSets,
@@ -577,9 +590,7 @@ _PrescriptionSeed _p(
   return _PrescriptionSeed(
     exerciseName,
     targetSets: targetSets,
-    sidesPerSet: notes.contains('each side') || notes.contains('/side')
-        ? 2
-        : null,
+    sidesPerSet: _sidesFromNotes(notes),
     minReps: minReps,
     maxReps: maxReps,
     restSeconds: restSeconds,

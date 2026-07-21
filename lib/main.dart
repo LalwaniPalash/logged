@@ -15,7 +15,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await ExerciseSeedService(appDatabase).seedIfEmpty();
-    await ExerciseAnatomyService(appDatabase).enrichBundledExercises();
+    final anatomyService = ExerciseAnatomyService(appDatabase);
+    await anatomyService.enrichBundledExercises();
+    await anatomyService.backfillWeightEntryOnce();
     if (const bool.fromEnvironment(
       'LOGGED_SEED_DEFAULT_TEMPLATES',
       defaultValue: true,

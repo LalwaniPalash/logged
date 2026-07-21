@@ -62,4 +62,76 @@ void main() {
       expect(jsonDecode(custom.secondaryMuscles), isEmpty);
     },
   );
+
+  test(
+    'backfills weightEntry once, then never overrides the user again',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Incline Dumbbell Bench Press',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+            ),
+          );
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'My Own Lift',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+              isCustom: const Value(true),
+            ),
+          );
+
+      const asset = '''
+[
+  {"name": "Incline Dumbbell Bench Press", "weightEntry": "perSide"},
+  {"name": "My Own Lift", "weightEntry": "perSide"}
+]
+''';
+      final service = ExerciseAnatomyService(
+        database,
+        loadAsset: () async => asset,
+      );
+
+      // First run upgrades the bundled row; the custom one is never touched.
+      expect(await service.backfillWeightEntryOnce(), 1);
+      final afterFirst = await database.select(database.exercises).get();
+      expect(
+        afterFirst
+            .singleWhere((e) => e.name == 'Incline Dumbbell Bench Press')
+            .weightEntry,
+        WeightEntry.perSide,
+      );
+      expect(
+        afterFirst.singleWhere((e) => e.name == 'My Own Lift').weightEntry,
+        WeightEntry.total,
+        reason: 'custom exercises must never be rewritten by the library',
+      );
+
+      // The user deliberately switches it back to total.
+      await (database.update(
+        database.exercises,
+      )..where((e) => e.name.equals('Incline Dumbbell Bench Press'))).write(
+        const ExercisesCompanion(weightEntry: Value(WeightEntry.total)),
+      );
+
+      // A later launch must NOT undo that choice.
+      expect(await service.backfillWeightEntryOnce(), 0);
+      final afterSecond = await database.select(database.exercises).get();
+      expect(
+        afterSecond
+            .singleWhere((e) => e.name == 'Incline Dumbbell Bench Press')
+            .weightEntry,
+        WeightEntry.total,
+        reason: 'backfill runs once; it must not fight the user every launch',
+      );
+    },
+  );
 }

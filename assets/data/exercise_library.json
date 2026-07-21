@@ -55,7 +55,8 @@
       "triceps",
       "serratus_anterior"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Decline Bench Press",
@@ -187,7 +188,8 @@
       "upper_chest",
       "front_delts"
     ],
-    "defaultUnit": "lb"
+    "defaultUnit": "lb",
+    "weightEntry": "perSide"
   },
   {
     "name": "Cable Crossover - Mid Pulley",
@@ -199,7 +201,8 @@
     "secondaryMuscles": [
       "front_delts"
     ],
-    "defaultUnit": "lb"
+    "defaultUnit": "lb",
+    "weightEntry": "perSide"
   },
   {
     "name": "Cable Crossover - High Pulley",
@@ -281,7 +284,8 @@
       "triceps",
       "serratus_anterior"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Single-Arm Cable Press",
@@ -503,7 +507,8 @@
       "forearms",
       "neck"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Barbell Shrug",
@@ -710,7 +715,8 @@
     "secondaryMuscles": [
       "upper_chest"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Cable Front Raise",
@@ -795,7 +801,8 @@
       "biceps",
       "forearms"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Landmine Shoulder Press",
@@ -989,7 +996,8 @@
       "glute_med_min",
       "calves"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Walking Lunge",
@@ -1067,7 +1075,8 @@
       "adductors",
       "forearms"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Seated Leg Curl",
@@ -1286,7 +1295,8 @@
       "brachialis",
       "forearms"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Spider Curl",
@@ -1780,7 +1790,8 @@
       "spinal_erectors",
       "calves"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Trap Bar Deadlift",
@@ -1917,7 +1928,8 @@
       "front_delts",
       "abs"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
   },
   {
     "name": "Kettlebell Clean",
