@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/app_icons.dart';
 import '../../../core/domain/enums.dart';
+import '../../../core/domain/progression.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/database/app_database.dart';
 
@@ -252,6 +253,7 @@ class SetRow extends StatefulWidget {
     required this.timed,
     required this.onCommit,
     required this.onOpenDetails,
+    this.suggestion,
   });
 
   final SetEntry set;
@@ -270,6 +272,7 @@ class SetRow extends StatefulWidget {
 
   final Future<void> Function(SetRowDraft draft) onCommit;
   final VoidCallback onOpenDetails;
+  final ProgressionSuggestion? suggestion;
 
   @override
   State<SetRow> createState() => _SetRowState();
@@ -418,6 +421,18 @@ class _SetRowState extends State<SetRow> {
     distanceMeters: _doubleOrNull(_distance.text),
   );
 
+  void _applySuggestion() {
+    final suggestion = widget.suggestion;
+    if (suggestion == null) return;
+    if (suggestion.weightValue != null) {
+      _weight.text = _formatDouble(suggestion.weightValue);
+    }
+    if (suggestion.reps != null) {
+      _reps.text = '${suggestion.reps}';
+    }
+    setState(() {});
+  }
+
   /// Anything about this set the column headings do not already say. Silence
   /// here must mean "the heading is accurate for this row" — a lb set sitting
   /// under a KG heading with no marker would misreport the load.
@@ -495,6 +510,21 @@ class _SetRowState extends State<SetRow> {
                   ),
                 ),
               ),
+            if (widget.suggestion case final suggestion?)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: _indexWidth + _indexGap,
+                  top: 3,
+                  bottom: 2,
+                ),
+                child: ActionChip(
+                  visualDensity: VisualDensity.compact,
+                  avatar: const Icon(AppIcons.bolt, size: 15),
+                  onPressed: _applySuggestion,
+                  tooltip: suggestion.rationale,
+                  label: Text(_suggestionLabel(suggestion)),
+                ),
+              ),
           ],
         ),
       ),
@@ -557,6 +587,21 @@ class _SetRowState extends State<SetRow> {
 
   static double _weightStepFor(WeightUnit unit) =>
       unit == WeightUnit.kg ? 2.5 : 5;
+
+  static String _suggestionLabel(ProgressionSuggestion suggestion) {
+    final load = suggestion.weightValue;
+    final reps = suggestion.reps;
+    final loadText = load == null
+        ? null
+        : '${_formatDouble(load)} ${suggestion.unit?.label ?? ''}'.trim();
+    final prescription = [
+      ?loadText,
+      if (reps != null) '$reps reps',
+    ].join(' × ');
+    return prescription.isEmpty
+        ? 'Suggested: match last time'
+        : 'Suggested: $prescription · Apply';
+  }
 }
 
 /// Set number badge. Fills with the accent once the set holds real data — it is

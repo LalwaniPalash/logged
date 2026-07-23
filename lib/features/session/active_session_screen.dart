@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
+import '../../core/domain/progression.dart';
+import '../../core/domain/training_goal.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/exercise_picker.dart';
@@ -389,6 +391,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final trainingGoal =
+        ref.watch(coachingPreferencesProvider).asData?.value.trainingGoal ??
+        TrainingGoal.build;
     return FutureBuilder<_SessionView>(
       future: _future,
       builder: (context, snapshot) {
@@ -444,6 +449,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                       .sessionExercise
                                       .id] ??
                                   const [],
+                              progressionAggressiveness:
+                                  trainingGoal.progressionAggressiveness,
                               onAddSet: () => _addSet(detail),
                               onRepeatSet: () => _repeatSet(detail),
                               onInlineCommit: (set, draft) =>
@@ -506,6 +513,7 @@ class _ExerciseCard extends StatelessWidget {
     required this.onInlineCommit,
     required this.onEditSet,
     required this.onRemove,
+    required this.progressionAggressiveness,
   });
 
   final SessionExerciseDetails detail;
@@ -515,6 +523,7 @@ class _ExerciseCard extends StatelessWidget {
   final Future<void> Function(SetEntry set, SetRowDraft draft) onInlineCommit;
   final ValueChanged<SetEntry> onEditSet;
   final VoidCallback onRemove;
+  final double progressionAggressiveness;
 
   Future<void> _openForm(String url) async {
     final uri = Uri.tryParse(url);
@@ -563,6 +572,17 @@ class _ExerciseCard extends StatelessWidget {
           : detail.sets.map((set) => set.loadingMode),
       timed: timed,
     );
+    final suggestion = timed
+        ? null
+        : suggestNextSet(
+            lastExerciseSets: previousSets,
+            minReps: detail.sessionExercise.minReps,
+            maxReps: detail.sessionExercise.maxReps,
+            targetRpe: _targetRpe(detail.sessionExercise.prescriptionNotes),
+            weightEntry: headerWeightEntry,
+            unit: headerUnit,
+            progressionAggressiveness: progressionAggressiveness,
+          );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -666,6 +686,7 @@ class _ExerciseCard extends StatelessWidget {
                     headerWeightEntry: headerWeightEntry,
                     headerSideCount: headerSideCount,
                     timed: timed,
+                    suggestion: set == detail.sets.last ? suggestion : null,
                     onCommit: (draft) => onInlineCommit(set, draft),
                     onOpenDetails: () => onEditSet(set),
                   ),
@@ -695,6 +716,15 @@ class _ExerciseCard extends StatelessWidget {
       ),
     );
   }
+}
+
+double? _targetRpe(String? notes) {
+  if (notes == null) return null;
+  final match = RegExp(
+    r'\bRPE\s*([1-9](?:\.\d+)?|10(?:\.0+)?)\b',
+    caseSensitive: false,
+  ).firstMatch(notes);
+  return double.tryParse(match?.group(1) ?? '');
 }
 
 String _formatPrescription({
