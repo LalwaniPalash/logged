@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/streak.dart';
+import '../../core/domain/enums.dart';
 import '../database/app_database.dart';
 
 class TemplateExerciseDetails {
@@ -11,6 +12,32 @@ class TemplateExerciseDetails {
 
   final TemplateExercise templateExercise;
   final Exercise exercise;
+}
+
+class ProgramImportExercise {
+  const ProgramImportExercise({
+    required this.day,
+    required this.exerciseName,
+    required this.targetSets,
+    this.exerciseId,
+    this.createCustom = false,
+    this.minReps,
+    this.maxReps,
+    this.restSeconds,
+    this.rpe,
+    this.notes,
+  });
+
+  final String day;
+  final String exerciseName;
+  final int targetSets;
+  final int? exerciseId;
+  final bool createCustom;
+  final int? minReps;
+  final int? maxReps;
+  final int? restSeconds;
+  final double? rpe;
+  final String? notes;
 }
 
 class TemplateRepository {
@@ -100,6 +127,90 @@ class TemplateRepository {
     });
     return copyId;
   });
+
+  Future<List<Template>> importProgram(List<ProgramImportExercise> items) =>
+      _database.transaction(() async {
+        if (items.isEmpty) {
+          throw ArgumentError.value(items, 'items', 'must not be empty');
+        }
+        if (items.any(
+          (item) =>
+              item.exerciseId == null &&
+              (!item.createCustom || item.exerciseName.trim().isEmpty),
+        )) {
+          throw ArgumentError('Every imported exercise needs a mapping.');
+        }
+        final existingTemplates = await _database
+            .select(_database.templates)
+            .get();
+        var nextPosition = existingTemplates.isEmpty
+            ? 0
+            : existingTemplates
+                      .map((template) => template.position)
+                      .reduce((a, b) => a > b ? a : b) +
+                  1;
+        final byDay = <String, List<ProgramImportExercise>>{};
+        for (final item in items) {
+          (byDay[item.day.trim()] ??= []).add(item);
+        }
+        final customIds = <String, int>{};
+        final imported = <Template>[];
+        for (final entry in byDay.entries) {
+          final templateId = await _database
+              .into(_database.templates)
+              .insert(
+                TemplatesCompanion.insert(
+                  name: entry.key,
+                  position: nextPosition++,
+                ),
+              );
+          for (var index = 0; index < entry.value.length; index++) {
+            final item = entry.value[index];
+            var exerciseId = item.exerciseId;
+            if (exerciseId == null) {
+              final key = item.exerciseName.trim().toLowerCase();
+              exerciseId = customIds[key];
+              exerciseId ??= await _database
+                  .into(_database.exercises)
+                  .insert(
+                    ExercisesCompanion.insert(
+                      name: item.exerciseName.trim(),
+                      category: ExerciseCategory.strength,
+                      muscleGroup: 'custom',
+                      isCustom: const Value(true),
+                    ),
+                  );
+              customIds[key] = exerciseId;
+            }
+            final noteParts = [
+              if (item.rpe != null) 'RPE ${item.rpe}',
+              if ((item.notes ?? '').trim().isNotEmpty) item.notes!.trim(),
+            ];
+            await _database
+                .into(_database.templateExercises)
+                .insert(
+                  TemplateExercisesCompanion.insert(
+                    templateId: templateId,
+                    exerciseId: exerciseId,
+                    position: index,
+                    targetSets: Value(item.targetSets),
+                    minReps: Value(item.minReps),
+                    maxReps: Value(item.maxReps),
+                    restSeconds: Value(item.restSeconds),
+                    prescriptionNotes: Value(
+                      noteParts.isEmpty ? null : noteParts.join(' · '),
+                    ),
+                  ),
+                );
+          }
+          imported.add(
+            await (_database.select(
+              _database.templates,
+            )..where((template) => template.id.equals(templateId))).getSingle(),
+          );
+        }
+        return imported;
+      });
 
   Future<Template> createDeloadWeek({
     DateTime? today,

@@ -8,6 +8,7 @@ import '../../core/widgets/app_widgets.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import 'template_editor_screen.dart';
+import 'import/import_screen.dart';
 
 class TemplatesScreen extends ConsumerWidget {
   const TemplatesScreen({super.key});
@@ -151,7 +152,18 @@ class TemplatesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Templates')),
+      appBar: AppBar(
+        title: const Text('Templates'),
+        actions: [
+          IconButton(
+            tooltip: 'Import program',
+            icon: const Icon(AppIcons.import),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProgramImportScreen()),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _create(context, ref),
         icon: const Icon(AppIcons.add),

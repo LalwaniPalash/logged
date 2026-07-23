@@ -173,4 +173,50 @@ void main() {
     expect(detail.templateExercise.targetSets, 3);
     expect(detail.templateExercise.prescriptionNotes, contains('3–4 reps'));
   });
+
+  test('program import commits templates and prescriptions together', () async {
+    final imported = await repository.importProgram([
+      ProgramImportExercise(
+        day: 'Push',
+        exerciseName: 'Barbell Back Squat',
+        exerciseId: exerciseId,
+        targetSets: 4,
+        minReps: 6,
+        maxReps: 8,
+        restSeconds: 120,
+        rpe: 8,
+        notes: 'Controlled',
+      ),
+      const ProgramImportExercise(
+        day: 'Pull',
+        exerciseName: 'My custom row',
+        targetSets: 3,
+        createCustom: true,
+      ),
+    ]);
+
+    expect(imported.map((template) => template.name), ['Push', 'Pull']);
+    final push = (await repository.exerciseDetails(imported.first.id)).single;
+    expect(push.templateExercise.targetSets, 4);
+    expect(push.templateExercise.minReps, 6);
+    expect(push.templateExercise.maxReps, 8);
+    expect(push.templateExercise.restSeconds, 120);
+    expect(push.templateExercise.prescriptionNotes, 'RPE 8.0 · Controlled');
+    final pull = (await repository.exerciseDetails(imported.last.id)).single;
+    expect(pull.exercise.isCustom, isTrue);
+  });
+
+  test('invalid program import rolls back without partial templates', () async {
+    await expectLater(
+      repository.importProgram([
+        const ProgramImportExercise(
+          day: 'Push',
+          exerciseName: 'Unmapped',
+          targetSets: 3,
+        ),
+      ]),
+      throwsArgumentError,
+    );
+    expect(await repository.watchAll().first, isEmpty);
+  });
 }
