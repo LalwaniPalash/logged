@@ -183,4 +183,100 @@ void main() {
       );
     },
   );
+
+  test(
+    'lastSetsForExercise returns one previous session and excludes current',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = SessionRepository(database);
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Dumbbell Row',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'back',
+            ),
+          );
+
+      Future<int> addSession(
+        DateTime startedAt, {
+        required bool complete,
+        required List<(int, double, WeightUnit, WeightEntry)> sets,
+      }) async {
+        final sessionId = await database
+            .into(database.sessions)
+            .insert(
+              SessionsCompanion.insert(
+                startedAt: startedAt,
+                endedAt: Value(
+                  complete ? startedAt.add(const Duration(hours: 1)) : null,
+                ),
+              ),
+            );
+        final linkId = await database
+            .into(database.sessionExercises)
+            .insert(
+              SessionExercisesCompanion.insert(
+                sessionId: sessionId,
+                exerciseId: exerciseId,
+                position: 0,
+              ),
+            );
+        for (var index = 0; index < sets.length; index++) {
+          final set = sets[index];
+          await database
+              .into(database.setEntries)
+              .insert(
+                SetEntriesCompanion.insert(
+                  sessionExerciseId: linkId,
+                  setNumber: index + 1,
+                  reps: Value(set.$1),
+                  weightValue: Value(set.$2),
+                  unit: Value(set.$3),
+                  weightEntry: Value(set.$4),
+                ),
+              );
+        }
+        return sessionId;
+      }
+
+      await addSession(
+        DateTime(2026, 7, 1),
+        complete: true,
+        sets: const [(8, 30, WeightUnit.kg, WeightEntry.total)],
+      );
+      final latestCompletedId = await addSession(
+        DateTime(2026, 7, 8),
+        complete: true,
+        sets: const [
+          (10, 35, WeightUnit.lb, WeightEntry.perSide),
+          (9, 35, WeightUnit.lb, WeightEntry.perSide),
+        ],
+      );
+      await addSession(
+        DateTime(2026, 7, 15),
+        complete: false,
+        sets: const [(12, 40, WeightUnit.kg, WeightEntry.total)],
+      );
+
+      final latest = await repository.lastSetsForExercise(exerciseId);
+      expect(latest.map((set) => set.reps), [10, 9]);
+      expect(latest.every((set) => set.unit == WeightUnit.lb), isTrue);
+      expect(
+        latest.every((set) => set.weightEntry == WeightEntry.perSide),
+        isTrue,
+      );
+      expect((await repository.lastSetForExercise(exerciseId))?.reps, 9);
+
+      final previous = await repository.lastSetsForExercise(
+        exerciseId,
+        excludingSessionId: latestCompletedId,
+      );
+      expect(previous.single.reps, 8);
+      expect(previous.single.weightValue, 30);
+      expect(previous.single.unit, WeightUnit.kg);
+    },
+  );
 }

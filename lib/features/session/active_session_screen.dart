@@ -51,7 +51,21 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     final repo = ref.read(sessionRepositoryProvider);
     final session = await repo.getSession(widget.sessionId);
     final details = await repo.details(widget.sessionId);
-    return _SessionView(session: session, details: details);
+    final previousSets = <int, List<SetEntry>>{};
+    await Future.wait([
+      for (final detail in details)
+        repo
+            .lastSetsForExercise(
+              detail.exercise.id,
+              excludingSessionId: widget.sessionId,
+            )
+            .then((sets) => previousSets[detail.sessionExercise.id] = sets),
+    ]);
+    return _SessionView(
+      session: session,
+      details: details,
+      previousSets: previousSets,
+    );
   }
 
   Future<void> _addExercise() async {
@@ -423,6 +437,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                           for (final detail in details)
                             _ExerciseCard(
                               detail: detail,
+                              previousSets:
+                                  view?.previousSets[detail
+                                      .sessionExercise
+                                      .id] ??
+                                  const [],
                               onAddSet: () => _addSet(detail),
                               onRepeatSet: () => _repeatSet(detail),
                               onInlineCommit: (set, draft) =>
@@ -466,14 +485,20 @@ int _nextSetNumber(SessionExerciseDetails detail) =>
     1;
 
 class _SessionView {
-  const _SessionView({required this.session, required this.details});
+  const _SessionView({
+    required this.session,
+    required this.details,
+    required this.previousSets,
+  });
   final Session? session;
   final List<SessionExerciseDetails> details;
+  final Map<int, List<SetEntry>> previousSets;
 }
 
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({
     required this.detail,
+    required this.previousSets,
     required this.onAddSet,
     required this.onRepeatSet,
     required this.onInlineCommit,
@@ -482,6 +507,7 @@ class _ExerciseCard extends StatelessWidget {
   });
 
   final SessionExerciseDetails detail;
+  final List<SetEntry> previousSets;
   final VoidCallback onAddSet;
   final VoidCallback onRepeatSet;
   final Future<void> Function(SetEntry set, SetRowDraft draft) onInlineCommit;
@@ -569,6 +595,10 @@ class _ExerciseCard extends StatelessWidget {
                               height: 1.4,
                             ),
                           ),
+                        ],
+                        if (previousSets.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          LastPerformanceHint(sets: previousSets),
                         ],
                         if ((detail.sessionExercise.prescriptionNotes ?? '')
                             .isNotEmpty) ...[

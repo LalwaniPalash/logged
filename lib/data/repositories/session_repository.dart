@@ -275,6 +275,41 @@ class SessionRepository {
   }
 
   Future<SetEntry?> lastSetForExercise(int exerciseId) async {
+    final sets = await lastSetsForExercise(exerciseId);
+    return sets.lastOrNull;
+  }
+
+  /// Every set from the most recent completed session containing [exerciseId].
+  ///
+  /// This deliberately selects the session first. Applying a limit directly
+  /// to the joined set rows could mix sessions or return only the final set.
+  Future<List<SetEntry>> lastSetsForExercise(
+    int exerciseId, {
+    int? excludingSessionId,
+    int limit = 20,
+  }) async {
+    final sessionQuery =
+        _database.select(_database.sessions).join([
+            innerJoin(
+              _database.sessionExercises,
+              _database.sessionExercises.sessionId.equalsExp(
+                _database.sessions.id,
+              ),
+            ),
+          ])
+          ..where(
+            _database.sessionExercises.exerciseId.equals(exerciseId) &
+                _database.sessions.endedAt.isNotNull() &
+                (excludingSessionId == null
+                    ? const Constant(true)
+                    : _database.sessions.id.isNotValue(excludingSessionId)),
+          )
+          ..orderBy([OrderingTerm.desc(_database.sessions.startedAt)])
+          ..limit(1);
+    final previousSession = await sessionQuery.getSingleOrNull();
+    if (previousSession == null) return const [];
+    final sessionId = previousSession.readTable(_database.sessions).id;
+
     final query =
         _database.select(_database.setEntries).join([
             innerJoin(
@@ -292,14 +327,14 @@ class SessionRepository {
           ])
           ..where(
             _database.sessionExercises.exerciseId.equals(exerciseId) &
-                _database.sessions.endedAt.isNotNull(),
+                _database.sessions.id.equals(sessionId),
           )
           ..orderBy([
-            OrderingTerm.desc(_database.sessions.startedAt),
-            OrderingTerm.desc(_database.setEntries.setNumber),
+            OrderingTerm.asc(_database.sessionExercises.position),
+            OrderingTerm.asc(_database.setEntries.setNumber),
           ])
-          ..limit(1);
-    final row = await query.getSingleOrNull();
-    return row?.readTable(_database.setEntries);
+          ..limit(limit);
+    final rows = await query.get();
+    return [for (final row in rows) row.readTable(_database.setEntries)];
   }
 }

@@ -118,6 +118,63 @@ class SetRowDraft {
   final double? distanceMeters;
 }
 
+/// Read-only, per-set history. Each item carries its own entered unit and
+/// loading qualifiers, so a mixed-unit workout is never relabelled by a shared
+/// header or a kg round-trip.
+class LastPerformanceHint extends StatelessWidget {
+  const LastPerformanceHint({super.key, required this.sets});
+
+  final List<SetEntry> sets;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sets.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Text(
+      'Last time: ${sets.map(_formatLastSet).join('  ·  ')}',
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontFeatures: const [FontFeature.tabularFigures()],
+        height: 1.35,
+      ),
+    );
+  }
+}
+
+String _formatLastSet(SetEntry set) {
+  final parts = <String>[];
+  if (set.reps != null && set.reps! > 0) {
+    parts.add('${set.reps}×');
+  }
+  if (set.weightValue != null && set.weightValue! > 0 && set.unit != null) {
+    final perHand = set.weightEntry == WeightEntry.perSide ? '/hand' : '';
+    parts.add(
+      '${_formatEnteredNumber(set.weightValue!)} ${set.unit!.label}$perHand',
+    );
+  } else if (set.durationSec != null && set.durationSec! > 0) {
+    parts.add(_formatLastDuration(set.durationSec!));
+  }
+  if (set.distanceMeters != null && set.distanceMeters! > 0) {
+    parts.add('${_formatEnteredNumber(set.distanceMeters!)} m');
+  }
+  if (set.sideCount > 1) {
+    parts.add('each side');
+  }
+  return parts.isEmpty ? 'set ${set.setNumber}' : parts.join(' ');
+}
+
+String _formatLastDuration(int seconds) {
+  if (seconds < 60) return '${seconds}s';
+  final minutes = seconds ~/ 60;
+  final remainder = seconds % 60;
+  return remainder == 0 ? '${minutes}m' : '${minutes}m ${remainder}s';
+}
+
+String _formatEnteredNumber(double value) =>
+    value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';
+
 /// Column headings for a set table. Carries the unit and the per-hand /
 /// per-side qualifiers once, instead of repeating them on every row.
 class SetTableHeader extends StatelessWidget {

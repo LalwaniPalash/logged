@@ -90,11 +90,7 @@ void main() {
     );
   }
 
-  Future<void> pumpAt(
-    WidgetTester tester,
-    Widget widget,
-    Size size,
-  ) async {
+  Future<void> pumpAt(WidgetTester tester, Widget widget, Size size) async {
     tester.view.physicalSize = size * tester.view.devicePixelRatio;
     tester.view.devicePixelRatio = tester.view.devicePixelRatio;
     addTearDown(tester.view.reset);
@@ -126,9 +122,7 @@ void main() {
     await pumpAt(
       tester,
       harness(
-        sets: [
-          for (var i = 1; i <= 4; i++) buildSet(setNumber: i),
-        ],
+        sets: [for (var i = 1; i <= 4; i++) buildSet(setNumber: i)],
         category: ExerciseCategory.strength,
       ),
       iphoneSize,
@@ -136,10 +130,9 @@ void main() {
 
     final rows = tester.widgetList(find.byType(SetRow)).length;
     expect(rows, 4);
-    final total = tester
-        .getRect(find.byType(SetRow).last)
-        .bottom
-        - tester.getRect(find.byType(SetRow).first).top;
+    final total =
+        tester.getRect(find.byType(SetRow).last).bottom -
+        tester.getRect(find.byType(SetRow).first).top;
     // The old layout needed ~215pt per set (860pt for four).
     expect(total, lessThan(260));
   });
@@ -172,6 +165,35 @@ void main() {
 
     expect(find.text('KG / HAND'), findsOneWidget);
     expect(find.text('REPS / SIDE'), findsOneWidget);
+  });
+
+  testWidgets('last-time hint preserves each set entered semantics', (
+    tester,
+  ) async {
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: LastPerformanceHint(
+            sets: [
+              buildSet(
+                setNumber: 1,
+                reps: 8,
+                weightValue: 40,
+                unit: WeightUnit.lb,
+                weightEntry: WeightEntry.perSide,
+                sideCount: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+      iphoneSize,
+    );
+
+    expect(find.text('Last time: 8× 40 lb/hand each side'), findsOneWidget);
+    expect(find.textContaining('kg'), findsNothing);
   });
 
   testWidgets('cardio shows time and distance columns, not weight', (
@@ -227,13 +249,16 @@ void main() {
       iphoneSize,
     );
 
-    expect(setColumnsFor(
-      category: ExerciseCategory.bodyweight,
-      loadingModes: const [
-        LoadingMode.bodyweight,
-        LoadingMode.bodyweightAdded,
-      ],
-    ), [SetField.weight, SetField.reps]);
+    expect(
+      setColumnsFor(
+        category: ExerciseCategory.bodyweight,
+        loadingModes: const [
+          LoadingMode.bodyweight,
+          LoadingMode.bodyweightAdded,
+        ],
+      ),
+      [SetField.weight, SetField.reps],
+    );
 
     // The bodyweight row holds the weight column with a placeholder, so the
     // grid stays aligned instead of shifting the reps field left.
