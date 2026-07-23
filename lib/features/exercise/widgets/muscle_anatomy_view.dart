@@ -9,6 +9,7 @@ import '../../../core/domain/live_muscle_state.dart';
 import '../../../core/domain/muscle.dart';
 import '../../../core/domain/muscle_map.dart';
 import '../../../core/domain/muscle_model.dart';
+import '../../../core/domain/volume_landmarks.dart';
 import 'muscle_heatmap.dart';
 
 class MuscleAnatomyView extends StatefulWidget {
@@ -19,6 +20,7 @@ class MuscleAnatomyView extends StatefulWidget {
     this.onOpenMuscle,
     this.onOpenAllMuscles,
     this.emptyAction,
+    this.landmarks = defaultLandmarks,
   });
 
   final LiveMuscleState state;
@@ -28,6 +30,7 @@ class MuscleAnatomyView extends StatefulWidget {
   final ValueChanged<MuscleId>? onOpenMuscle;
   final VoidCallback? onOpenAllMuscles;
   final Widget? emptyAction;
+  final Map<MuscleId, VolumeLandmarks> landmarks;
 
   @override
   State<MuscleAnatomyView> createState() => _MuscleAnatomyViewState();
@@ -65,7 +68,7 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
   Future<void> _syncMaterials() async {
     try {
       await _controller.setEntityMaterials(
-        _materialOverrides(Theme.of(context), widget.state),
+        _materialOverrides(Theme.of(context), widget.state, widget.landmarks),
       );
     } on StateError {
       // The widget's initial overrides cover first load. A live update can race
@@ -154,6 +157,7 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
         _supports3d
             ? _ThreeDimensionalMuscleModel(
                 state: widget.state,
+                landmarks: widget.landmarks,
                 controller: _controller,
                 defaultZoom: _defaultModelZoom,
                 onSelectionChanged: _onEntitiesSelected,
@@ -185,6 +189,7 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
                 _MuscleChip(
                   muscle: muscle,
                   load: widget.state[muscle],
+                  landmarks: widget.landmarks[muscle]!,
                   selected: _selectedMuscle == muscle,
                   onTap: () => setState(() => _selectedMuscle = muscle),
                 ),
@@ -230,6 +235,9 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
             isEmpty: widget.state.isEmpty,
             onOpenMuscle: widget.onOpenMuscle,
             emptyAction: widget.emptyAction,
+            landmarks: _selectedMuscle == null
+                ? null
+                : widget.landmarks[_selectedMuscle!],
           ),
         ),
       ],
@@ -240,12 +248,14 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
 class _ThreeDimensionalMuscleModel extends StatelessWidget {
   const _ThreeDimensionalMuscleModel({
     required this.state,
+    required this.landmarks,
     required this.controller,
     required this.defaultZoom,
     required this.onSelectionChanged,
   });
 
   final LiveMuscleState state;
+  final Map<MuscleId, VolumeLandmarks> landmarks;
   final Interactive3dController controller;
   final double defaultZoom;
   final ValueChanged<List<EntityData>> onSelectionChanged;
@@ -279,7 +289,7 @@ class _ThreeDimensionalMuscleModel extends StatelessWidget {
           solidBackgroundColor: _rgba(background),
           backgroundColor: background,
           selectionColor: const [1.0, 0.72, 0.16, 1.0],
-          initialMaterialOverrides: _materialOverrides(theme, state),
+          initialMaterialOverrides: _materialOverrides(theme, state, landmarks),
           onSelectionChanged: onSelectionChanged,
           loadingWidget: _ModelLoadingIndicator(background: background),
         ),
@@ -319,40 +329,34 @@ class _IntensityLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Semantics(
-      label: 'Color scale from untrained to twelve or more effective sets',
-      child: Row(
+      label: 'Volume coaching zones from below MEV to recovery risk',
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 6,
         children: [
-          Text(
-            '0 sets',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Row(
+          for (final zone in VolumeZone.values)
+            Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                for (final intensity in const [0.0, 0.2, 0.45, 0.7, 1.0])
-                  Expanded(
-                    child: Container(
-                      height: 9,
-                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                      decoration: BoxDecoration(
-                        color: _muscleColor(theme, intensity),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: _zoneColor(theme, zone, 0.85),
+                    shape: BoxShape.circle,
                   ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  zone == VolumeZone.overreaching
+                      ? 'recovery risk'
+                      : zone.label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '12+ effective',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
         ],
       ),
     );
@@ -365,12 +369,14 @@ class _MuscleChip extends StatelessWidget {
     required this.load,
     required this.selected,
     required this.onTap,
+    required this.landmarks,
   });
 
   final MuscleId muscle;
   final MuscleLoad? load;
   final bool selected;
   final VoidCallback onTap;
+  final VolumeLandmarks landmarks;
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +387,11 @@ class _MuscleChip extends StatelessWidget {
         width: 9,
         height: 9,
         decoration: BoxDecoration(
-          color: _muscleColor(theme, load?.intensity ?? 0),
+          color: _zoneColor(
+            theme,
+            zoneFor(load?.effectiveSets ?? 0, landmarks),
+            coachingIntensity(load?.effectiveSets ?? 0, landmarks),
+          ),
           shape: BoxShape.circle,
         ),
       ),
@@ -406,6 +416,7 @@ class _MuscleDetails extends StatelessWidget {
     required this.isEmpty,
     required this.onOpenMuscle,
     required this.emptyAction,
+    required this.landmarks,
   });
 
   final MuscleId? muscle;
@@ -413,6 +424,7 @@ class _MuscleDetails extends StatelessWidget {
   final bool isEmpty;
   final ValueChanged<MuscleId>? onOpenMuscle;
   final Widget? emptyAction;
+  final VolumeLandmarks? landmarks;
 
   @override
   Widget build(BuildContext context) {
@@ -446,6 +458,7 @@ class _MuscleDetails extends StatelessWidget {
     }
 
     if (load == null) {
+      final target = landmarks!;
       return _DetailShell(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -456,6 +469,13 @@ class _MuscleDetails extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              '0.0 effective sets · below MEV ${_sets(target.mev)}',
+              style: theme.textTheme.labelMedium,
+            ),
+            const SizedBox(height: 4),
+            Text('Add about ${_sets(target.mev)} sets this week to reach MEV.'),
             if (onOpenMuscle != null) ...[
               const SizedBox(height: 10),
               Align(
@@ -472,6 +492,8 @@ class _MuscleDetails extends StatelessWidget {
       );
     }
 
+    final target = landmarks!;
+    final zone = load!.zone(target);
     return _DetailShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -482,7 +504,11 @@ class _MuscleDetails extends StatelessWidget {
                 width: 11,
                 height: 11,
                 decoration: BoxDecoration(
-                  color: _muscleColor(theme, load!.intensity),
+                  color: _zoneColor(
+                    theme,
+                    zone,
+                    load!.coachingColorIntensity(target),
+                  ),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -504,6 +530,20 @@ class _MuscleDetails extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '${zone.label} · MEV ${_sets(target.mev)} · '
+            'MAV ${_sets(target.mav)} · MRV ${_sets(target.mrv)}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: _zoneColor(theme, zone, 0.9),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _zoneSuggestion(zone, load!.effectiveSets, target),
+            style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
           for (var index = 0; index < load!.exercises.length; index++) ...[
@@ -590,31 +630,86 @@ class _ExerciseContributionRow extends StatelessWidget {
 List<MaterialOverride> _materialOverrides(
   ThemeData theme,
   LiveMuscleState state,
+  Map<MuscleId, VolumeLandmarks> landmarks,
 ) {
-  final intensities = muscleModelIntensities(state);
   return [
-    for (final entry in intensities.entries)
-      MaterialOverride(
-        name: entry.key,
-        color: _rgba(_muscleColor(theme, entry.value)),
-        emissive: _emissive(_muscleColor(theme, entry.value), entry.value),
-        metallic: 0.0,
-        roughness: 0.72,
-      ),
+    for (final entry in muscleModelEntities.entries)
+      for (final entity in entry.value)
+        MaterialOverride(
+          name: entity,
+          color: _rgba(
+            _zoneColor(
+              theme,
+              zoneFor(
+                state[entry.key]?.effectiveSets ?? 0,
+                landmarks[entry.key]!,
+              ),
+              coachingIntensity(
+                state[entry.key]?.effectiveSets ?? 0,
+                landmarks[entry.key]!,
+              ),
+            ),
+          ),
+          emissive: _emissive(
+            _zoneColor(
+              theme,
+              zoneFor(
+                state[entry.key]?.effectiveSets ?? 0,
+                landmarks[entry.key]!,
+              ),
+              coachingIntensity(
+                state[entry.key]?.effectiveSets ?? 0,
+                landmarks[entry.key]!,
+              ),
+            ),
+            coachingIntensity(
+              state[entry.key]?.effectiveSets ?? 0,
+              landmarks[entry.key]!,
+            ),
+          ),
+          metallic: 0.0,
+          roughness: 0.72,
+        ),
   ];
 }
 
-Color _muscleColor(ThemeData theme, double intensity) {
+Color _zoneColor(ThemeData theme, VolumeZone zone, double intensity) {
   final dark = theme.brightness == Brightness.dark;
-  final resting = dark ? const Color(0xFF8A7A6E) : const Color(0xFF75695E);
-  final low = dark ? const Color(0xFF8D5A3D) : const Color(0xFF9A6144);
-  final active = dark ? const Color(0xFFFFB24A) : const Color(0xFFD98931);
-  if (intensity <= 0) return resting;
-  if (intensity < 0.55) {
-    return Color.lerp(resting, low, 0.32 + intensity.clamp(0, 0.55))!;
-  }
-  return Color.lerp(low, active, ((intensity - 0.55) / 0.45).clamp(0, 1))!;
+  final base = switch (zone) {
+    VolumeZone.belowMev =>
+      dark ? const Color(0xFF7D8791) : const Color(0xFF697783),
+    VolumeZone.developing =>
+      dark ? const Color(0xFF4DB6AC) : const Color(0xFF23877E),
+    VolumeZone.optimal =>
+      dark ? const Color(0xFF66BB6A) : const Color(0xFF388E3C),
+    VolumeZone.diminishing =>
+      dark ? const Color(0xFFFFB74D) : const Color(0xFFE08A17),
+    VolumeZone.overreaching =>
+      dark ? const Color(0xFFEF6C72) : const Color(0xFFC94149),
+  };
+  final surface = dark ? const Color(0xFF443F3B) : const Color(0xFFD1CBC5);
+  return Color.lerp(surface, base, (0.38 + intensity * 0.62).clamp(0, 1))!;
 }
+
+String _sets(double value) => value == value.roundToDouble()
+    ? '${value.toInt()}'
+    : value.toStringAsFixed(1);
+
+String _zoneSuggestion(
+  VolumeZone zone,
+  double effectiveSets,
+  VolumeLandmarks landmarks,
+) => switch (zone) {
+  VolumeZone.belowMev =>
+    'Add about ${_sets(landmarks.mev - effectiveSets)} sets to reach MEV.',
+  VolumeZone.developing =>
+    'Keep building gradually toward your maximum adaptive range.',
+  VolumeZone.optimal => 'You are in a productive weekly volume range.',
+  VolumeZone.diminishing =>
+    'Growth may continue here, but returns are diminishing.',
+  VolumeZone.overreaching =>
+    'Recovery risk is elevated; reduce volume or prioritize recovery.',
+};
 
 List<double> _rgba(Color color) => [color.r, color.g, color.b, color.a];
 

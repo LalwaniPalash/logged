@@ -1,3 +1,4 @@
+import '../../core/domain/training_goal.dart';
 import '../../core/domain/workout_settings.dart';
 import '../database/app_database.dart';
 
@@ -26,6 +27,16 @@ class ReminderPreferences {
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 }
 
+class CoachingPreferences {
+  const CoachingPreferences({
+    this.trainingGoal = TrainingGoal.build,
+    this.volumeLandmarkOverrides,
+  });
+
+  final TrainingGoal trainingGoal;
+  final String? volumeLandmarkOverrides;
+}
+
 class SettingsRepository {
   const SettingsRepository(this._database);
 
@@ -39,6 +50,8 @@ class SettingsRepository {
   static const _kReminderEnabled = 'reminderEnabled';
   static const _kReminderTime = 'reminderTime';
   static const _kOnboardingComplete = 'onboardingComplete';
+  static const _kTrainingGoal = 'trainingGoal';
+  static const _kVolumeLandmarkOverrides = 'volumeLandmarkOverrides';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -87,6 +100,22 @@ class SettingsRepository {
         '${minute.clamp(0, 59).toString().padLeft(2, '0')}',
       );
 
+  Stream<CoachingPreferences> watchCoachingPreferences() => _database
+      .select(_database.appSettings)
+      .watch()
+      .map(_coachingPreferencesFromRows);
+
+  Future<CoachingPreferences> readCoachingPreferences() async =>
+      _coachingPreferencesFromRows(
+        await _database.select(_database.appSettings).get(),
+      );
+
+  Future<void> setTrainingGoal(TrainingGoal goal) =>
+      _put(_kTrainingGoal, goal.name);
+
+  Future<void> setVolumeLandmarkOverrides(String? overridesJson) =>
+      _put(_kVolumeLandmarkOverrides, overridesJson?.trim() ?? '');
+
   Future<bool> readOnboardingComplete() async {
     final row =
         await (_database.select(_database.appSettings)
@@ -133,6 +162,24 @@ class SettingsRepository {
       enabled: bool.tryParse(map[_kReminderEnabled] ?? '') ?? defaults.enabled,
       hour: (parsedHour ?? defaults.hour).clamp(0, 23),
       minute: (parsedMinute ?? defaults.minute).clamp(0, 59),
+    );
+  }
+
+  CoachingPreferences _coachingPreferencesFromRows(List<AppSetting> rows) {
+    final map = {for (final row in rows) row.key: row.value};
+    var goal = TrainingGoal.build;
+    for (final candidate in TrainingGoal.values) {
+      if (candidate.name == map[_kTrainingGoal]) {
+        goal = candidate;
+        break;
+      }
+    }
+    final overrides = map[_kVolumeLandmarkOverrides]?.trim();
+    return CoachingPreferences(
+      trainingGoal: goal,
+      volumeLandmarkOverrides: overrides == null || overrides.isEmpty
+          ? null
+          : overrides,
     );
   }
 

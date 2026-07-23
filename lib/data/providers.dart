@@ -4,6 +4,7 @@ import '../core/domain/live_muscle_state.dart';
 import '../core/domain/muscle.dart';
 import '../core/domain/muscle_progress.dart'
     show BodyProgressSummary, MuscleProgress, buildBodyProgressSummary;
+import '../core/domain/volume_landmarks.dart';
 import '../core/domain/workout_settings.dart';
 import '../core/services/notification_service.dart';
 import 'database/app_database.dart';
@@ -69,6 +70,20 @@ final restTimerPreferencesProvider = StreamProvider<RestTimerPreferences>(
 final reminderPreferencesProvider = StreamProvider<ReminderPreferences>(
   (ref) => ref.watch(settingsRepositoryProvider).watchReminderPreferences(),
 );
+final coachingPreferencesProvider = StreamProvider<CoachingPreferences>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchCoachingPreferences(),
+);
+final effectiveVolumeLandmarksProvider =
+    Provider<AsyncValue<Map<MuscleId, VolumeLandmarks>>>((ref) {
+      return ref
+          .watch(coachingPreferencesProvider)
+          .whenData(
+            (preferences) => resolveLandmarks(
+              goal: preferences.trainingGoal,
+              overridesJson: preferences.volumeLandmarkOverrides,
+            ),
+          );
+    });
 
 final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
   (ref) => AnalyticsRepository(ref.watch(databaseProvider)),

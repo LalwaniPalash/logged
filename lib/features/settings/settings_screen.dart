@@ -9,6 +9,7 @@ import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/streak.dart';
+import '../../core/domain/training_goal.dart';
 import '../../core/domain/workout_settings.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/database/app_database.dart';
@@ -700,6 +701,9 @@ class SettingsScreen extends ConsumerWidget {
     final reminder =
         ref.watch(reminderPreferencesProvider).asData?.value ??
         const ReminderPreferences();
+    final coaching =
+        ref.watch(coachingPreferencesProvider).asData?.value ??
+        const CoachingPreferences();
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -713,6 +717,11 @@ class SettingsScreen extends ConsumerWidget {
               await repo.setRestWeekdays(weekdays);
               await ref.read(reminderSchedulerProvider).sync();
             },
+          ),
+          const SizedBox(height: 12),
+          _TrainingGoalCard(
+            selected: coaching.trainingGoal,
+            onChanged: repo.setTrainingGoal,
           ),
           const SizedBox(height: 12),
           _ReminderSettingsCard(
@@ -1396,6 +1405,39 @@ class _ScheduleCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TrainingGoalCard extends StatelessWidget {
+  const _TrainingGoalCard({required this.selected, required this.onChanged});
+
+  final TrainingGoal selected;
+  final ValueChanged<TrainingGoal> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ActionCard(
+      children: [
+        ListTile(
+          leading: const Icon(AppIcons.target),
+          title: const Text('Training goal'),
+          subtitle: const Text(
+            'Tunes volume landmarks, progression, and recovery guidance',
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: SegmentedButton<TrainingGoal>(
+            segments: [
+              for (final goal in TrainingGoal.values)
+                ButtonSegment(value: goal, label: Text(goal.label)),
+            ],
+            selected: {selected},
+            onSelectionChanged: (value) => onChanged(value.single),
+          ),
+        ),
+      ],
     );
   }
 }

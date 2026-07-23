@@ -11,6 +11,7 @@ import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart';
 import '../../core/domain/progress_analytics.dart';
 import '../../core/domain/workout_metrics.dart';
+import '../../core/domain/volume_landmarks.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/exercise_picker.dart';
@@ -68,6 +69,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ref.watch(completedSetsProvider).asData?.value ??
         const <WorkoutSetRecord>[];
     final liveMuscles = ref.watch(liveMuscleStateProvider);
+    final landmarks =
+        ref.watch(effectiveVolumeLandmarksProvider).asData?.value ??
+        defaultLandmarks;
     final bodySummary = ref.watch(bodyProgressSummaryProvider).asData?.value;
 
     final weekly = weeklyStats(sets, weeks: 8);
@@ -85,6 +89,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             child: liveMuscles.when(
               data: (state) => MuscleAnatomyView(
                 state: state,
+                landmarks: landmarks,
                 onOpenMuscle: (muscle) => _openMuscleProgress(muscle),
                 onOpenAllMuscles: _openAllMuscleProgress,
                 emptyAction: FilledButton.icon(
@@ -122,6 +127,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          if (liveMuscles.asData case final state?)
+            _Card(
+              child: _WeeklyMuscleBalance(
+                state: state.value,
+                landmarks: landmarks,
+              ),
+            ),
           const SizedBox(height: 26),
           const SectionHeader('Rank breakdown'),
           _Card(child: _RankBreakdown(summary: bodySummary)),
@@ -984,6 +997,83 @@ class _BreakdownLine extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _WeeklyMuscleBalance extends StatelessWidget {
+  const _WeeklyMuscleBalance({required this.state, required this.landmarks});
+
+  final LiveMuscleState state;
+  final Map<MuscleId, VolumeLandmarks> landmarks;
+
+  @override
+  Widget build(BuildContext context) {
+    final below = MuscleId.values
+        .where(
+          (muscle) =>
+              (state[muscle]?.effectiveSets ?? 0) < landmarks[muscle]!.mev,
+        )
+        .toList();
+    final above = MuscleId.values
+        .where(
+          (muscle) =>
+              (state[muscle]?.effectiveSets ?? 0) > landmarks[muscle]!.mrv,
+        )
+        .toList();
+    final theme = Theme.of(context);
+
+    Widget group(String title, List<MuscleId> muscles, Color color) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$title · ${muscles.length}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 7),
+          if (muscles.isEmpty)
+            Text(
+              'None',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final muscle in muscles)
+                  Chip(
+                    visualDensity: VisualDensity.compact,
+                    label: Text(muscle.label),
+                  ),
+              ],
+            ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Weekly muscle balance', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Compared with your current coaching landmarks.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 14),
+        group('Below MEV', below, theme.colorScheme.primary),
+        const SizedBox(height: 16),
+        group('Above MRV', above, theme.colorScheme.error),
       ],
     );
   }

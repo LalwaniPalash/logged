@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'muscle.dart';
 import 'streak.dart';
+import 'volume_landmarks.dart';
 
 const secondaryMuscleSetWeight = 0.35;
 const muscleIntensitySetCeiling = 12.0;
@@ -55,6 +56,12 @@ class MuscleLoad {
 
   double get intensity =>
       (effectiveSets / muscleIntensitySetCeiling).clamp(0.0, 1.0);
+
+  VolumeZone zone(VolumeLandmarks landmarks) =>
+      zoneFor(effectiveSets, landmarks);
+
+  double coachingColorIntensity(VolumeLandmarks landmarks) =>
+      coachingIntensity(effectiveSets, landmarks);
 }
 
 class LiveMuscleState {
