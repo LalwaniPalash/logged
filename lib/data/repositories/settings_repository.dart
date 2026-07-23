@@ -11,6 +11,21 @@ class RestTimerPreferences {
   final bool notificationsEnabled;
 }
 
+class ReminderPreferences {
+  const ReminderPreferences({
+    this.enabled = false,
+    this.hour = 18,
+    this.minute = 0,
+  });
+
+  final bool enabled;
+  final int hour;
+  final int minute;
+
+  String get encodedTime =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+}
+
 class SettingsRepository {
   const SettingsRepository(this._database);
 
@@ -21,6 +36,8 @@ class SettingsRepository {
   static const _kDefaultRestSeconds = 'defaultRestSeconds';
   static const _kRestTimerNotificationsEnabled =
       'restTimerNotificationsEnabled';
+  static const _kReminderEnabled = 'reminderEnabled';
+  static const _kReminderTime = 'reminderTime';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -49,6 +66,26 @@ class SettingsRepository {
   Future<void> setRestTimerNotificationsEnabled(bool enabled) =>
       _put(_kRestTimerNotificationsEnabled, '$enabled');
 
+  Stream<ReminderPreferences> watchReminderPreferences() => _database
+      .select(_database.appSettings)
+      .watch()
+      .map(_reminderPreferencesFromRows);
+
+  Future<ReminderPreferences> readReminderPreferences() async =>
+      _reminderPreferencesFromRows(
+        await _database.select(_database.appSettings).get(),
+      );
+
+  Future<void> setReminderEnabled(bool enabled) =>
+      _put(_kReminderEnabled, '$enabled');
+
+  Future<void> setReminderTime({required int hour, required int minute}) =>
+      _put(
+        _kReminderTime,
+        '${hour.clamp(0, 23).toString().padLeft(2, '0')}:'
+        '${minute.clamp(0, 59).toString().padLeft(2, '0')}',
+      );
+
   WorkoutSettings _fromRows(List<AppSetting> rows) {
     final map = {for (final row in rows) row.key: row.value};
     final restRaw = map[_kRestWeekdays];
@@ -72,6 +109,19 @@ class SettingsRepository {
     return RestTimerPreferences(
       defaultSeconds: seconds.clamp(15, 3600),
       notificationsEnabled: notificationsEnabled,
+    );
+  }
+
+  ReminderPreferences _reminderPreferencesFromRows(List<AppSetting> rows) {
+    final map = {for (final row in rows) row.key: row.value};
+    final defaults = const ReminderPreferences();
+    final time = (map[_kReminderTime] ?? '').split(':');
+    final parsedHour = time.length == 2 ? int.tryParse(time[0]) : null;
+    final parsedMinute = time.length == 2 ? int.tryParse(time[1]) : null;
+    return ReminderPreferences(
+      enabled: bool.tryParse(map[_kReminderEnabled] ?? '') ?? defaults.enabled,
+      hour: (parsedHour ?? defaults.hour).clamp(0, 23),
+      minute: (parsedMinute ?? defaults.minute).clamp(0, 59),
     );
   }
 

@@ -16,6 +16,7 @@ import '../../data/providers.dart';
 import '../../data/repositories/rest_day_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../data/services/backup_service.dart';
+import 'reminder_scheduler.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -646,6 +647,47 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _setReminderEnabled(
+    BuildContext context,
+    WidgetRef ref,
+    bool enabled,
+  ) async {
+    var resolved = enabled;
+    if (enabled) {
+      resolved = await ref
+          .read(notificationServiceProvider)
+          .requestPermission();
+    }
+    await ref.read(settingsRepositoryProvider).setReminderEnabled(resolved);
+    await ref.read(reminderSchedulerProvider).sync();
+    if (enabled && !resolved && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Training reminders need notification permission.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickReminderTime(
+    BuildContext context,
+    WidgetRef ref,
+    ReminderPreferences preferences,
+  ) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: preferences.hour,
+        minute: preferences.minute,
+      ),
+    );
+    if (picked == null) return;
+    await ref
+        .read(settingsRepositoryProvider)
+        .setReminderTime(hour: picked.hour, minute: picked.minute);
+    await ref.read(reminderSchedulerProvider).sync();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
@@ -655,6 +697,9 @@ class SettingsScreen extends ConsumerWidget {
     final restTimer =
         ref.watch(restTimerPreferencesProvider).asData?.value ??
         const RestTimerPreferences();
+    final reminder =
+        ref.watch(reminderPreferencesProvider).asData?.value ??
+        const ReminderPreferences();
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -664,7 +709,17 @@ class SettingsScreen extends ConsumerWidget {
           _ScheduleCard(
             settings: settings,
             onGoalChanged: repo.setWeeklyGoal,
-            onRestDaysChanged: repo.setRestWeekdays,
+            onRestDaysChanged: (weekdays) async {
+              await repo.setRestWeekdays(weekdays);
+              await ref.read(reminderSchedulerProvider).sync();
+            },
+          ),
+          const SizedBox(height: 12),
+          _ReminderSettingsCard(
+            preferences: reminder,
+            onEnabledChanged: (enabled) =>
+                _setReminderEnabled(context, ref, enabled),
+            onTimeTap: () => _pickReminderTime(context, ref, reminder),
           ),
           const SizedBox(height: 24),
           const SectionHeader('Rest timer'),
@@ -756,6 +811,51 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReminderSettingsCard extends StatelessWidget {
+  const _ReminderSettingsCard({
+    required this.preferences,
+    required this.onEnabledChanged,
+    required this.onTimeTap,
+  });
+
+  final ReminderPreferences preferences;
+  final ValueChanged<bool> onEnabledChanged;
+  final VoidCallback onTimeTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final time = TimeOfDay(
+      hour: preferences.hour,
+      minute: preferences.minute,
+    ).format(context);
+    return Card(
+      child: Column(
+        children: [
+          SwitchListTile(
+            secondary: const Icon(AppIcons.calendarCheck),
+            title: const Text('Training reminders'),
+            subtitle: const Text(
+              'Only on training days, until that day is logged',
+            ),
+            value: preferences.enabled,
+            onChanged: onEnabledChanged,
+          ),
+          if (preferences.enabled) ...[
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('Reminder time'),
+              subtitle: Text(time),
+              trailing: const Icon(AppIcons.chevronRight),
+              onTap: onTimeTap,
+            ),
+          ],
         ],
       ),
     );
@@ -1083,6 +1183,7 @@ class _RestDaySection extends ConsumerWidget {
   Future<void> _pickAnother(
     BuildContext context,
     RestDayRepository repo,
+    WidgetRef ref,
   ) async {
     final now = dateOnly(DateTime.now());
     final picked = await showDatePicker(
@@ -1094,6 +1195,7 @@ class _RestDaySection extends ConsumerWidget {
     );
     if (picked == null) return;
     await repo.log(dateOnly(picked));
+    await ref.read(reminderSchedulerProvider).sync();
   }
 
   @override
@@ -1132,7 +1234,10 @@ class _RestDaySection extends ConsumerWidget {
               ? null
               : loggedToday
               ? OutlinedButton(
-                  onPressed: () => repo.remove(today),
+                  onPressed: () async {
+                    await repo.remove(today);
+                    await ref.read(reminderSchedulerProvider).sync();
+                  },
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1144,7 +1249,10 @@ class _RestDaySection extends ConsumerWidget {
                   child: const Text('Undo'),
                 )
               : FilledButton(
-                  onPressed: () => repo.log(today),
+                  onPressed: () async {
+                    await repo.log(today);
+                    await ref.read(reminderSchedulerProvider).sync();
+                  },
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1161,7 +1269,7 @@ class _RestDaySection extends ConsumerWidget {
           icon: AppIcons.calendarCheck,
           title: 'Mark another day',
           subtitle: 'Plan an upcoming day off',
-          onTap: () => _pickAnother(context, repo),
+          onTap: () => _pickAnother(context, repo, ref),
         ),
         if (upcoming.isNotEmpty) ...[
           const Divider(height: 1),
@@ -1179,7 +1287,10 @@ class _RestDaySection extends ConsumerWidget {
               trailing: IconButton(
                 icon: const Icon(AppIcons.trash),
                 tooltip: 'Remove',
-                onPressed: () => repo.remove(day),
+                onPressed: () async {
+                  await repo.remove(day);
+                  await ref.read(reminderSchedulerProvider).sync();
+                },
               ),
             ),
         ],

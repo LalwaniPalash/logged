@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/enums.dart';
+import '../../core/domain/streak.dart';
 import '../database/app_database.dart';
 
 class SessionExerciseDetails {
@@ -94,6 +95,13 @@ class SessionRepository {
             )
             .toList(),
       );
+
+  Future<List<DateTime>> trainingDays() async {
+    final rows = await (_database.select(
+      _database.sessions,
+    )..where((row) => row.endedAt.isNotNull())).get();
+    return [for (final row in rows) dateOnly(row.startedAt)];
+  }
 
   Future<int> start({int? templateId, DateTime? startedAt}) => _database
       .into(_database.sessions)

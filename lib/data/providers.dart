@@ -66,6 +66,9 @@ final workoutSettingsProvider = StreamProvider<WorkoutSettings>(
 final restTimerPreferencesProvider = StreamProvider<RestTimerPreferences>(
   (ref) => ref.watch(settingsRepositoryProvider).watchRestTimerPreferences(),
 );
+final reminderPreferencesProvider = StreamProvider<ReminderPreferences>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchReminderPreferences(),
+);
 
 final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
   (ref) => AnalyticsRepository(ref.watch(databaseProvider)),

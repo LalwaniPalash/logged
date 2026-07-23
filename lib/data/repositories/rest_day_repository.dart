@@ -13,6 +13,11 @@ class RestDayRepository {
       .watch()
       .map((rows) => rows.map((row) => dateOnly(row.date)).toList());
 
+  Future<List<DateTime>> all() async {
+    final rows = await _database.select(_database.restDays).get();
+    return [for (final row in rows) dateOnly(row.date)];
+  }
+
   Future<void> log(DateTime date, {String? note}) => _database
       .into(_database.restDays)
       .insert(

@@ -12,6 +12,7 @@ import '../../core/widgets/exercise_picker.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../data/providers.dart';
+import '../settings/reminder_scheduler.dart';
 import 'widgets/set_editor_sheet.dart';
 import 'rest_timer_controller.dart';
 import 'widgets/rest_timer_bar.dart';
@@ -353,6 +354,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     );
     if (confirm != true) return;
     await ref.read(sessionRepositoryProvider).finish(widget.sessionId);
+    await ref.read(reminderSchedulerProvider).sync();
     if (mounted) Navigator.pop(context);
   }
 
