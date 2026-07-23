@@ -9,68 +9,14 @@ import '../../core/domain/workout_settings.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/providers.dart';
 import '../session/active_session_screen.dart';
+import '../session/start_workout_flow.dart';
 import '../templates/templates_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   Future<void> _start(BuildContext context, WidgetRef ref) async {
-    final session = ref.read(sessionRepositoryProvider);
-    final templates = await ref
-        .read(templateRepositoryProvider)
-        .watchAll()
-        .first;
-    if (!context.mounted) return;
-    final choice = await showModalBottomSheet<Object>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        final theme = Theme.of(context);
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  'Start a workout',
-                  style: theme.textTheme.titleLarge,
-                ),
-              ),
-              _StartTile(
-                icon: AppIcons.bolt,
-                title: 'Empty workout',
-                subtitle: 'Add exercises as you go',
-                onTap: () => Navigator.pop(context, 'empty'),
-              ),
-              if (templates.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const SectionHeader('From a template'),
-                for (final item in templates)
-                  _StartTile(
-                    icon: AppIcons.templates,
-                    title: item.name,
-                    subtitle: 'Pre-filled exercises',
-                    onTap: () => Navigator.pop(context, item.id),
-                  ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-    if (choice == null || !context.mounted) return; // dismissed
-    final templateId = choice is int ? choice : null;
-    final id = await session.start(templateId: templateId);
-    if (templateId != null) {
-      await session.startFromTemplate(sessionId: id, templateId: templateId);
-    }
-    if (context.mounted) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ActiveSessionScreen(sessionId: id)),
-      );
-    }
+    await showStartWorkoutFlow(context, ref);
   }
 
   @override
@@ -178,7 +124,7 @@ class DashboardScreen extends ConsumerWidget {
                 builder: (context, snapshot) {
                   final sessions = snapshot.data ?? const [];
                   if (sessions.isEmpty) {
-                    return const _EmptyRecent();
+                    return _EmptyRecent(onStart: () => _start(context, ref));
                   }
                   return Column(
                     children: [
@@ -353,67 +299,6 @@ class _NextFocusCard extends StatelessWidget {
   }
 }
 
-class _StartTile extends StatelessWidget {
-  const _StartTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  foregroundColor: theme.colorScheme.onPrimaryContainer,
-                  child: Icon(icon),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: theme.textTheme.titleMedium),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  AppIcons.chevronRight,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _SessionTile extends StatelessWidget {
   const _SessionTile({required this.date, required this.active, this.onTap});
 
@@ -493,7 +378,9 @@ class _SessionTile extends StatelessWidget {
 }
 
 class _EmptyRecent extends StatelessWidget {
-  const _EmptyRecent();
+  const _EmptyRecent({required this.onStart});
+
+  final VoidCallback onStart;
 
   @override
   Widget build(BuildContext context) {
@@ -522,6 +409,12 @@ class _EmptyRecent extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: onStart,
+            icon: const Icon(AppIcons.play),
+            label: const Text('Start your first workout'),
           ),
         ],
       ),

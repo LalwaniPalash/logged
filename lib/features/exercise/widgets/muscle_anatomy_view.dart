@@ -18,6 +18,7 @@ class MuscleAnatomyView extends StatefulWidget {
     this.enable3d = true,
     this.onOpenMuscle,
     this.onOpenAllMuscles,
+    this.emptyAction,
   });
 
   final LiveMuscleState state;
@@ -26,6 +27,7 @@ class MuscleAnatomyView extends StatefulWidget {
   final bool enable3d;
   final ValueChanged<MuscleId>? onOpenMuscle;
   final VoidCallback? onOpenAllMuscles;
+  final Widget? emptyAction;
 
   @override
   State<MuscleAnatomyView> createState() => _MuscleAnatomyViewState();
@@ -227,6 +229,7 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
                 : widget.state[_selectedMuscle!],
             isEmpty: widget.state.isEmpty,
             onOpenMuscle: widget.onOpenMuscle,
+            emptyAction: widget.emptyAction,
           ),
         ),
       ],
@@ -402,12 +405,14 @@ class _MuscleDetails extends StatelessWidget {
     required this.load,
     required this.isEmpty,
     required this.onOpenMuscle,
+    required this.emptyAction,
   });
 
   final MuscleId? muscle;
   final MuscleLoad? load;
   final bool isEmpty;
   final ValueChanged<MuscleId>? onOpenMuscle;
+  final Widget? emptyAction;
 
   @override
   Widget build(BuildContext context) {
@@ -415,15 +420,24 @@ class _MuscleDetails extends StatelessWidget {
     if (muscle == null) {
       if (isEmpty) {
         return _DetailShell(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(AppIcons.bolt, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Complete a working set to light up this week’s muscles.',
-                ),
+              Row(
+                children: [
+                  Icon(AppIcons.bolt, color: theme.colorScheme.primary),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Complete a working set to light up this week’s muscles.',
+                    ),
+                  ),
+                ],
               ),
+              if (emptyAction != null) ...[
+                const SizedBox(height: 12),
+                Align(alignment: Alignment.centerLeft, child: emptyAction!),
+              ],
             ],
           ),
         );

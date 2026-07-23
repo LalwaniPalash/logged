@@ -13,7 +13,7 @@ import 'data/services/exercise_anatomy_service.dart';
 import 'data/services/exercise_seed_service.dart';
 import 'data/services/workout_template_seed_service.dart';
 import 'data/providers.dart';
-import 'features/home/home_shell.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'features/settings/reminder_scheduler.dart';
 
 final appDatabase = AppDatabase();
@@ -76,7 +76,7 @@ class LoggedApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
-      home: const HomeShell(),
+      home: const OnboardingGate(),
     );
   }
 }

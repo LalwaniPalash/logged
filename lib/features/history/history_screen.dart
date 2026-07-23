@@ -7,6 +7,7 @@ import '../../core/widgets/app_widgets.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../session/active_session_screen.dart';
+import '../session/start_workout_flow.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -27,11 +28,16 @@ class HistoryScreen extends ConsumerWidget {
         builder: (context, snapshot) {
           final sessions = snapshot.data ?? const <Session>[];
           if (sessions.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: AppIcons.history,
               title: 'No history yet',
               message:
                   'Finish a workout and it will appear here, grouped by month.',
+              action: FilledButton.icon(
+                onPressed: () => showStartWorkoutFlow(context, ref),
+                icon: const Icon(AppIcons.play),
+                label: const Text('Start a workout'),
+              ),
             );
           }
 

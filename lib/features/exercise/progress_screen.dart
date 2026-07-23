@@ -17,6 +17,7 @@ import '../../core/widgets/exercise_picker.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/analytics_repository.dart';
+import '../session/start_workout_flow.dart';
 import 'widgets/muscle_anatomy_view.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
@@ -86,6 +87,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 state: state,
                 onOpenMuscle: (muscle) => _openMuscleProgress(muscle),
                 onOpenAllMuscles: _openAllMuscleProgress,
+                emptyAction: FilledButton.icon(
+                  onPressed: () => showStartWorkoutFlow(context, ref),
+                  icon: const Icon(AppIcons.play),
+                  label: const Text('Log a set'),
+                ),
               ),
               loading: () => const SizedBox(
                 height: 220,

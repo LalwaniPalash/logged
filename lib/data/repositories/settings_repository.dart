@@ -38,6 +38,7 @@ class SettingsRepository {
       'restTimerNotificationsEnabled';
   static const _kReminderEnabled = 'reminderEnabled';
   static const _kReminderTime = 'reminderTime';
+  static const _kOnboardingComplete = 'onboardingComplete';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -85,6 +86,16 @@ class SettingsRepository {
         '${hour.clamp(0, 23).toString().padLeft(2, '0')}:'
         '${minute.clamp(0, 59).toString().padLeft(2, '0')}',
       );
+
+  Future<bool> readOnboardingComplete() async {
+    final row =
+        await (_database.select(_database.appSettings)
+              ..where((setting) => setting.key.equals(_kOnboardingComplete)))
+            .getSingleOrNull();
+    return bool.tryParse(row?.value ?? '') ?? false;
+  }
+
+  Future<void> setOnboardingComplete() => _put(_kOnboardingComplete, 'true');
 
   WorkoutSettings _fromRows(List<AppSetting> rows) {
     final map = {for (final row in rows) row.key: row.value};
