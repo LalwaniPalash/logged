@@ -28,6 +28,109 @@ class TemplateRepository {
         .insert(TemplatesCompanion.insert(name: name, position: count));
   }
 
+  Future<void> rename(int id, String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError.value(name, 'name', 'must not be blank');
+    }
+    return (_database.update(_database.templates)
+          ..where((row) => row.id.equals(id)))
+        .write(TemplatesCompanion(name: Value(trimmed)));
+  }
+
+  /// Removes only the reusable plan. Historical workout data is preserved and
+  /// its nullable source-template link is cleared first for FK integrity.
+  Future<void> delete(int id) => _database.transaction(() async {
+    await (_database.update(_database.sessions)
+          ..where((row) => row.templateId.equals(id)))
+        .write(const SessionsCompanion(templateId: Value(null)));
+    await (_database.delete(
+      _database.templateExercises,
+    )..where((row) => row.templateId.equals(id))).go();
+    await (_database.delete(
+      _database.templates,
+    )..where((row) => row.id.equals(id))).go();
+    await _normalizePositions();
+  });
+
+  Future<int> duplicate(int id) => _database.transaction(() async {
+    final source = await (_database.select(
+      _database.templates,
+    )..where((row) => row.id.equals(id))).getSingle();
+    final exercises =
+        await (_database.select(_database.templateExercises)
+              ..where((row) => row.templateId.equals(id))
+              ..orderBy([(row) => OrderingTerm.asc(row.position)]))
+            .get();
+    final rows = await _database.select(_database.templates).get();
+    final nextPosition = rows.isEmpty
+        ? 0
+        : rows.map((row) => row.position).reduce((a, b) => a > b ? a : b) + 1;
+    final copyId = await _database
+        .into(_database.templates)
+        .insert(
+          TemplatesCompanion.insert(
+            name: '${source.name} (copy)',
+            position: nextPosition,
+          ),
+        );
+    await _database.batch((batch) {
+      batch.insertAll(_database.templateExercises, [
+        for (final item in exercises)
+          TemplateExercisesCompanion.insert(
+            templateId: copyId,
+            exerciseId: item.exerciseId,
+            position: item.position,
+            targetSets: Value(item.targetSets),
+            sidesPerSet: Value(item.sidesPerSet),
+            minReps: Value(item.minReps),
+            maxReps: Value(item.maxReps),
+            targetDurationSec: Value(item.targetDurationSec),
+            targetDistanceMeters: Value(item.targetDistanceMeters),
+            restSeconds: Value(item.restSeconds),
+            eccentricSec: Value(item.eccentricSec),
+            bottomPauseSec: Value(item.bottomPauseSec),
+            concentricSec: Value(item.concentricSec),
+            topPauseSec: Value(item.topPauseSec),
+            prescriptionNotes: Value(item.prescriptionNotes),
+            formUrl: Value(item.formUrl),
+          ),
+      ]);
+    });
+    return copyId;
+  });
+
+  Future<void> reorder(List<int> orderedIds) => _database.transaction(() async {
+    if (orderedIds.toSet().length != orderedIds.length) {
+      throw ArgumentError.value(
+        orderedIds,
+        'orderedIds',
+        'must not contain duplicates',
+      );
+    }
+    final existing = await _database.select(_database.templates).get();
+    if (existing
+            .map((row) => row.id)
+            .toSet()
+            .difference(orderedIds.toSet())
+            .isNotEmpty ||
+        orderedIds
+            .toSet()
+            .difference(existing.map((row) => row.id).toSet())
+            .isNotEmpty) {
+      throw ArgumentError.value(
+        orderedIds,
+        'orderedIds',
+        'must contain every template exactly once',
+      );
+    }
+    for (var position = 0; position < orderedIds.length; position++) {
+      await (_database.update(_database.templates)
+            ..where((row) => row.id.equals(orderedIds[position])))
+          .write(TemplatesCompanion(position: Value(position)));
+    }
+  });
+
   Future<void> replaceExercises(int templateId, List<int> exerciseIds) =>
       replaceExerciseDetails(templateId, [
         for (var index = 0; index < exerciseIds.length; index++)
@@ -86,5 +189,16 @@ class TemplateRepository {
           ),
         )
         .toList();
+  }
+
+  Future<void> _normalizePositions() async {
+    final templates = await (_database.select(
+      _database.templates,
+    )..orderBy([(row) => OrderingTerm.asc(row.position)])).get();
+    for (var position = 0; position < templates.length; position++) {
+      await (_database.update(_database.templates)
+            ..where((row) => row.id.equals(templates[position].id)))
+          .write(TemplatesCompanion(position: Value(position)));
+    }
   }
 }

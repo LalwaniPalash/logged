@@ -20,6 +20,7 @@ class TemplateEditorScreen extends ConsumerStatefulWidget {
 
 class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   late Future<void> _loadFuture;
+  late String _name = widget.template.name;
   List<_TemplateExerciseDraft> _selected = [];
   bool _dirty = false;
 
@@ -77,6 +78,37 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     }
   }
 
+  Future<void> _rename() async {
+    final controller = TextEditingController(text: _name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename template'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Name'),
+          onSubmitted: (value) => Navigator.pop(context, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.isEmpty || name == _name) return;
+    await ref.read(templateRepositoryProvider).rename(widget.template.id, name);
+    if (mounted) setState(() => _name = name);
+  }
+
   Future<void> _edit(_TemplateExerciseDraft draft) async {
     final updated = await showModalBottomSheet<_TemplateExerciseDraft>(
       context: context,
@@ -103,7 +135,27 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.template.name),
+        title: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: _rename,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    _name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(AppIcons.edit, size: 17),
+              ],
+            ),
+          ),
+        ),
         actions: [
           if (_dirty)
             Padding(

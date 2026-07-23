@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -51,6 +53,100 @@ class TemplatesScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _rename(
+    BuildContext context,
+    WidgetRef ref,
+    Template template,
+  ) async {
+    final controller = TextEditingController(text: template.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename template'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Name'),
+          onSubmitted: (value) => Navigator.pop(context, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.isEmpty) return;
+    await ref.read(templateRepositoryProvider).rename(template.id, name);
+  }
+
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    Template template,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete “${template.name}”?'),
+        content: const Text(
+          'The template will be removed. Past workouts and their sets will stay in History.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(templateRepositoryProvider).delete(template.id);
+  }
+
+  Future<void> _duplicate(
+    BuildContext context,
+    WidgetRef ref,
+    Template template,
+  ) async {
+    await ref.read(templateRepositoryProvider).duplicate(template.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Copied ${template.name}.')));
+    }
+  }
+
+  Future<void> _handleAction(
+    BuildContext context,
+    WidgetRef ref,
+    Template template,
+    String action,
+  ) async {
+    switch (action) {
+      case 'rename':
+        await _rename(context, ref, template);
+      case 'duplicate':
+        await _duplicate(context, ref, template);
+      case 'delete':
+        await _delete(context, ref, template);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -78,11 +174,20 @@ class TemplatesScreen extends ConsumerWidget {
               ),
             );
           }
-          return ListView(
+          return ReorderableListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
+            buildDefaultDragHandles: false,
+            onReorder: (oldIndex, newIndex) {
+              if (newIndex > oldIndex) newIndex--;
+              final ordered = [for (final template in templates) template.id];
+              final moved = ordered.removeAt(oldIndex);
+              ordered.insert(newIndex, moved);
+              unawaited(ref.read(templateRepositoryProvider).reorder(ordered));
+            },
             children: [
               for (final template in templates)
                 Padding(
+                  key: ValueKey(template.id),
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Material(
                     color: theme.colorScheme.surfaceContainerLow,
@@ -120,9 +225,34 @@ class TemplatesScreen extends ConsumerWidget {
                                 style: theme.textTheme.titleMedium,
                               ),
                             ),
-                            Icon(
-                              AppIcons.chevronRight,
-                              color: theme.colorScheme.onSurfaceVariant,
+                            PopupMenuButton<String>(
+                              tooltip: 'Template actions',
+                              onSelected: (action) =>
+                                  _handleAction(context, ref, template, action),
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'rename',
+                                  child: Text('Rename'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'duplicate',
+                                  child: Text('Duplicate'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text('Delete'),
+                                ),
+                              ],
+                            ),
+                            ReorderableDragStartListener(
+                              index: templates.indexOf(template),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(
+                                  AppIcons.drag,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                             ),
                           ],
                         ),
