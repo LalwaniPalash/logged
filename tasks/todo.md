@@ -109,10 +109,10 @@ change). Per-exercise rest already lives in `SessionExercises.restSeconds`.
 haptic (`HapticFeedback.heavyImpact`) + local notification if app backgrounded. Timer state is
 per-active-session; leaving the session cancels it.
 **Acceptance**:
-- [ ] Completing a set auto-starts the countdown with the exercise's prescribed rest.
+- [x] Completing a set auto-starts the countdown with the exercise's prescribed rest.
 - [ ] Notification fires with the app backgrounded on a real device (both platforms).
-- [ ] Switching tabs and returning keeps the countdown accurate (provider-held, not rebuilt).
-- [ ] Permission denial degrades gracefully (in-app timer still works; no crash).
+- [x] Switching tabs and returning keeps the countdown accurate (provider-held, not rebuilt).
+- [x] Permission denial degrades gracefully (in-app timer still works; no crash).
 **Tests**: unit-test the controller's tick/skip/adjust math (inject a clock; no real timer);
 `flutter analyze` clean, `flutter test` green. Manual device verification per Ground Rule 6.
 
@@ -129,10 +129,10 @@ set row, so progressive overload is visible while logging.
   formatting (Ground Rule 3) — show the value as it was entered, not re-normalized.
 - edit `active_session_screen.dart`: fetch last-session data alongside `details()` and pass down.
 **Acceptance**:
-- [ ] Each exercise in an active session shows its last completed-session numbers; brand-new exercises
+- [x] Each exercise in an active session shows its last completed-session numbers; brand-new exercises
       show nothing (no "0 × 0").
-- [ ] The hint reflects the entered unit/per-hand semantics, not a kg round-trip.
-- [ ] Purely additive — does not change the seeded/auto-filled input values (that's `seedForNextSet`).
+- [x] The hint reflects the entered unit/per-hand semantics, not a kg round-trip.
+- [x] Purely additive — does not change the seeded/auto-filled input values (that's `seedForNextSet`).
 **Tests**: repository test with two sessions (older + current) asserting the correct "last" set is
 returned and the current session is excluded. Analyze/test green.
 
@@ -147,10 +147,10 @@ returned and the current session is excluded. Analyze/test green.
   today's. Reschedule whenever `restWeekdays` or `reminderTime` change.
 - edit `settings_screen.dart`: "Reminders" section (enable toggle + time picker) under Schedule.
 **Acceptance**:
-- [ ] With reminders on and today a training day and not yet trained, a notification is scheduled for
+- [x] With reminders on and today a training day and not yet trained, a notification is scheduled for
       `reminderTime`; training beforehand cancels it.
-- [ ] Rest days (scheduled or logged) get no reminder.
-- [ ] Changing rest weekdays / time reschedules correctly.
+- [x] Rest days (scheduled or logged) get no reminder.
+- [x] Changing rest weekdays / time reschedules correctly.
 **Tests**: unit-test the "should remind on day D?" pure function against rest weekdays + trained set +
 logged rest days (mirror the streak module's style). Device-verify one real fire.
 
@@ -168,9 +168,9 @@ logged rest days (mirror the streak module's style). Device-verify one real fire
   ("Start your first workout"), Templates ("Create a template"), History, Progress ("Log a set to light
   up your body").
 **Acceptance**:
-- [ ] First launch shows onboarding once; subsequent launches go straight to HomeShell.
-- [ ] Every major empty screen has a one-tap primary action.
-- [ ] Flag failure / read error falls back to HomeShell without crashing.
+- [x] First launch shows onboarding once; subsequent launches go straight to HomeShell.
+- [x] Every major empty screen has a one-tap primary action.
+- [x] Flag failure / read error falls back to HomeShell without crashing.
 **Tests**: widget test that onboarding shows when flag unset and is skipped when set. Analyze/test green.
 
 ## PHASE T1.5 — Template CRUD (rename / delete / duplicate / reorder)
@@ -195,11 +195,11 @@ past session points to would dangle/violate the FK. The delete transaction must 
 link), THEN delete the template's `TemplateExercises`, THEN the `Templates` row. A finished session must
 survive deletion of the template it came from.
 **Acceptance**:
-- [ ] Rename works from both the templates list and inside the editor; persists.
-- [ ] Delete confirms, removes the template + its exercises, but historical sessions that used it stay
+- [x] Rename works from both the templates list and inside the editor; persists.
+- [x] Delete confirms, removes the template + its exercises, but historical sessions that used it stay
       intact (their `templateId` goes null, the session and its logged sets remain).
-- [ ] Duplicate produces an independent copy carrying ALL prescription fields.
-- [ ] Reorder persists across app restarts (position column).
+- [x] Duplicate produces an independent copy carrying ALL prescription fields.
+- [x] Reorder persists across app restarts (position column).
 **Tests**: repository tests for rename/delete/duplicate/reorder + a test proving deleting a template
 does NOT delete or corrupt a historical session that referenced it. Analyze/test green.
 
@@ -256,12 +256,12 @@ is NOT repurposed here — it is unified into the goal-scaled landmarks in T2.5.
 - add a Progress "Weekly muscle balance" card (in `progress_screen.dart`): lists muscles below MEV
   (neglected) and above MRV (overreached) this week. Reuse `liveMuscleStateProvider`.
 **Acceptance**:
-- [ ] A muscle at 4 effective sets vs MEV 8 renders in the "below" color and reads "below MEV".
-- [ ] A muscle inside its MAV band reads "optimal"; above MRV reads "overreaching / recovery risk"
+- [x] A muscle at 4 effective sets vs MEV 8 renders in the "below" color and reads "below MEV".
+- [x] A muscle inside its MAV band reads "optimal"; above MRV reads "overreaching / recovery risk"
       (never "junk volume").
-- [ ] Numbers shown are effective sets (primary 1.0 + secondary 0.35), matching the existing model.
-- [ ] Removing/adding a set this week moves the color/zone live (it flows through `liveMuscleStateProvider`).
-- [ ] Default landmarks are overridable via the `app_settings` JSON read path (defaults when unset).
+- [x] Numbers shown are effective sets (primary 1.0 + secondary 0.35), matching the existing model.
+- [x] Removing/adding a set this week moves the color/zone live (it flows through `liveMuscleStateProvider`).
+- [x] Default landmarks are overridable via the `app_settings` JSON read path (defaults when unset).
 **Tests**: unit-test `zoneFor` at every boundary (below/at MEV, mid-MAV, at MRV, above) and
 `coachingIntensity` monotonicity; a golden-ish test that a known weekly set count maps to the expected
 zone per muscle. Analyze/test green.
@@ -286,10 +286,10 @@ entered value; do not double `perSide` loads.**
 **UI**: on the set row (extends T1.2's "last time"), show "Suggested: 82.5 kg × 5" with a one-tap apply
 that fills the input. Never auto-commit.
 **Acceptance**:
-- [ ] Hitting the top of the rep range at/under target RPE proposes +1 increment and rep reset.
-- [ ] A missed or high-RPE session proposes a hold, not an increase.
-- [ ] Dumbbell/`perSide` exercises suggest per-hand values consistent with how they're logged.
-- [ ] No template rep range/RPE → falls back to "match last time" (no crash, sensible default).
+- [x] Hitting the top of the rep range at/under target RPE proposes +1 increment and rep reset.
+- [x] A missed or high-RPE session proposes a hold, not an increase.
+- [x] Dumbbell/`perSide` exercises suggest per-hand values consistent with how they're logged.
+- [x] No template rep range/RPE → falls back to "match last time" (no crash, sensible default).
 **Tests**: table-driven unit tests over the rule matrix (hit/miss/borderline × kg/lb × total/perSide).
 Analyze/test green.
 
@@ -311,10 +311,10 @@ Fire when ≥2 of: (a) a muscle above MRV for ≥2 consecutive weeks, (b) est-1R
 deload"; a one-tap "generate deload week" creates a template at ~50% of current weekly volume (halve
 `targetSets` or load, keep exercises).
 **Acceptance**:
-- [ ] With <2 signals, no card. With ≥2, a dismissible card appears with the specific reasons.
-- [ ] "Generate deload week" produces a valid Template (opens in the template editor for review; does
+- [x] With <2 signals, no card. With ≥2, a dismissible card appears with the specific reasons.
+- [x] "Generate deload week" produces a valid Template (opens in the template editor for review; does
       not silently alter the user's program).
-- [ ] Dismiss persists for the current week (store a `deloadDismissedWeek` `app_settings` key).
+- [x] Dismiss persists for the current week (store a `deloadDismissedWeek` `app_settings` key).
 **Tests**: unit-test the signal logic (0/1/2/3 signals) and the deload-template generation. Analyze/test green.
 
 ## PHASE T2.4 — Muscle-map-driven workout building
@@ -330,10 +330,10 @@ exercise substitution ("swap for another that hits this muscle").
   opens a filtered `exercise_picker` (reuse `lib/core/widgets/exercise_picker.dart`).
 - add "Swap" on a session/template exercise row → picker filtered to the same primary muscle(s).
 **Acceptance**:
-- [ ] Tapping a muscle (e.g. from the below-MEV balance card) offers exercises that train it, primary
+- [x] Tapping a muscle (e.g. from the below-MEV balance card) offers exercises that train it, primary
       first; adding one inserts it into the current session/template.
-- [ ] Swap replaces an exercise while preserving its prescription slot where sensible.
-- [ ] Archived exercises are excluded; custom exercises with muscle metadata are included.
+- [x] Swap replaces an exercise while preserving its prescription slot where sensible.
+- [x] Archived exercises are excluded; custom exercises with muscle metadata are included.
 **Tests**: repository test that the reverse index maps a known exercise to the right muscles with
 correct primary/secondary ranking. Analyze/test green.
 
@@ -420,18 +420,18 @@ training, never fake achievement.
   `progress_analytics.dart` `recentPrs`; no new math). Keep both lightweight — no coins/XP.
 
 **Acceptance (T2.5)**:
-- [ ] Goal profile changes landmarks + rank thresholds + progression + deload together; default `build`.
-- [ ] Goal is changeable AT ANY TIME in Settings; changing it live-recomputes landmarks, ranks,
+- [x] Goal profile changes landmarks + rank thresholds + progression + deload together; default `build`.
+- [x] Goal is changeable AT ANY TIME in Settings; changing it live-recomputes landmarks, ranks,
       progression and deload (all derived — no data migration, no history rewrite).
-- [ ] Rank reflects RECENT state: neglecting a muscle lowers its rank over time (not locked to best-ever).
-- [ ] Rank uses the goal-scaled landmarks — `productiveWeeklyEffectiveSetCap` is gone/unified; the 3D
+- [x] Rank reflects RECENT state: neglecting a muscle lowers its rank over time (not locked to best-ever).
+- [x] Rank uses the goal-scaled landmarks — `productiveWeeklyEffectiveSetCap` is gone/unified; the 3D
       color (T2.1) and the rank now agree on "productive volume."
-- [ ] Dashboard rank card is tappable and pushes the Ranks page; there is NO new bottom-nav tab.
-- [ ] Ranks page lists all 27 muscles with a concrete "how to improve" line each; Progress no longer
+- [x] Dashboard rank card is tappable and pushes the Ranks page; there is NO new bottom-nav tab.
+- [x] Ranks page lists all 27 muscles with a concrete "how to improve" line each; Progress no longer
       duplicates the rank cards.
-- [ ] Strength Standards appears only for logged benchmark lifts once sex + bodyweight are set; sex is
+- [x] Strength Standards appears only for logged benchmark lifts once sex + bodyweight are set; sex is
       optional and only used here; Weighted Pull-up includes bodyweight in the load.
-- [ ] Rank-up and PR moments fire on real events only; no fake-reward mechanics anywhere.
+- [x] Rank-up and PR moments fire on real events only; no fake-reward mechanics anywhere.
 **Tests**: pure-unit tests for `TrainingGoal` scaling, the new rank score (recency/decay, landmark
 adequacy, boundary tiers), `rankExplainer` output, and `standardFor` at each level boundary for both
 sexes incl. the Weighted Pull-up bodyweight case. Rank-up detection test (rise fires once, decrease
@@ -457,11 +457,11 @@ exercise-name mapping step.
   manually. Preview the resulting templates, then commit in a transaction.
 - edit `templates_screen.dart`: an "Import program" action.
 **Acceptance**:
-- [ ] A valid CSV produces the right Templates with per-exercise sets/reps/rest/notes populated.
-- [ ] Unmatched exercise names are surfaced for mapping (never silently dropped or mis-mapped).
-- [ ] Malformed rows are reported with row numbers; the rest still import (no crash, no partial-commit
+- [x] A valid CSV produces the right Templates with per-exercise sets/reps/rest/notes populated.
+- [x] Unmatched exercise names are surfaced for mapping (never silently dropped or mis-mapped).
+- [x] Malformed rows are reported with row numbers; the rest still import (no crash, no partial-commit
       without confirmation).
-- [ ] Import is one transaction; failure rolls back cleanly.
+- [x] Import is one transaction; failure rolls back cleanly.
 **Tests** (Ground Rule 7 — negative cases are mandatory): parser unit tests including malformed rows,
 duplicate exercise names, empty cells, and strings that must NOT match a library exercise. Fuzzy-match
 tests for near-miss names. Analyze/test green.
@@ -469,12 +469,12 @@ tests for near-miss names. Analyze/test green.
 ---
 
 ## Cross-cutting done criteria for this spec
-- [ ] `flutter analyze` clean and `flutter test` green after EVERY phase (not just at the end).
-- [ ] Any schema touch: version bumped in `app_database.dart` AND `backup_service.dart`, `onUpgrade`
+- [x] `flutter analyze` clean and `flutter test` green after EVERY phase (not just at the end).
+- [x] Any schema touch: version bumped in `app_database.dart` AND `backup_service.dart`, `onUpgrade`
       migration added, a v(old)→v(new) migration test proves existing data is preserved, and backup
       export/import round-trips the new fields.
-- [ ] No new network calls, no analytics, no account surface introduced.
-- [ ] Each phase committed separately with a `feat:`/`fix:` message; `git diff HEAD` reviewable.
+- [x] No new network calls, no analytics, no account surface introduced.
+- [x] Each phase committed separately with a `feat:`/`fix:` message; `git diff HEAD` reviewable.
 - [ ] Native (T1.1/T1.3) verified on a real backgrounded device on BOTH platforms.
 
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
