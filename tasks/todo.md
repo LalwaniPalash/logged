@@ -116,6 +116,20 @@ per-active-session; leaving the session cancels it.
 **Tests**: unit-test the controller's tick/skip/adjust math (inject a clock; no real timer);
 `flutter analyze` clean, `flutter test` green. Manual device verification per Ground Rule 6.
 
+**Implementation record — completed 2026-07-23 (`7ef47d7`)**
+- Added the notification service and native Android/iOS notification configuration, including the
+  Android rest-timer channel and runtime permission handling.
+- Added a Riverpod-owned, end-time-based rest timer plus the sticky in-session timer bar with
+  skip, +15s, −15s, preset, and custom-duration controls.
+- Completing a previously incomplete set starts the exercise-specific/default timer; leaving the
+  active session cancels its timer. Notification denial only disables the native notification—the
+  in-app countdown remains functional.
+- Added Settings controls for the default duration and notification preference.
+- **Verified:** controller behavior and app integration are covered by automated tests; the final
+  Android debug APK and iOS simulator debug builds both succeeded.
+- **Still open:** confirm an actual backgrounded/screen-off notification on physical Android and iOS
+  devices. This is deliberately left unchecked above and in the cross-cutting criteria.
+
 ## PHASE T1.2 — "Last time" inline reference
 **Goal**: show the previous session's performance for the same exercise as a read-only hint on each
 set row, so progressive overload is visible while logging.
@@ -136,6 +150,15 @@ set row, so progressive overload is visible while logging.
 **Tests**: repository test with two sessions (older + current) asserting the correct "last" set is
 returned and the current session is excluded. Analyze/test green.
 
+**Implementation record — completed 2026-07-23 (`73f7169`)**
+- Added `SessionRepository.lastSetsForExercise`, which selects the newest completed workout and
+  excludes the active/incomplete session.
+- Active-session loading fetches previous performance alongside session details and renders a
+  read-only hint without changing the existing next-set seed values.
+- Formatting preserves the originally entered unit and per-hand/each-side semantics rather than
+  round-tripping the display value through kilograms.
+- **Verified:** repository selection/exclusion and widget rendering are covered by automated tests.
+
 ## PHASE T1.3 — Local reminder notifications
 **Goal**: scheduled "train today" reminders on scheduled training days, suppressed once trained.
 **Dep**: reuse `notification_service.dart` from T1.1.
@@ -153,6 +176,16 @@ returned and the current session is excluded. Analyze/test green.
 - [x] Changing rest weekdays / time reschedules correctly.
 **Tests**: unit-test the "should remind on day D?" pure function against rest weekdays + trained set +
 logged rest days (mirror the streak module's style). Device-verify one real fire.
+
+**Implementation record — completed 2026-07-23 (`3562259`)**
+- Added a pure reminder planner and rolling 28-day one-shot schedule, accounting for configured rest
+  weekdays, manually logged rest days, workouts already completed, enablement, and reminder time.
+- Reminder schedules resynchronize on app open, reminder/schedule changes, rest-day changes, and
+  workout completion. Permission denial is handled without blocking the app.
+- Added the Reminders Settings section with enablement and time selection.
+- **Verified:** scheduler decisions and rescheduling inputs are covered by automated tests.
+- **Still open:** confirm a scheduled reminder actually fires while the app is backgrounded on
+  physical Android and iOS devices.
 
 ## PHASE T1.4 — Onboarding + empty-state guidance
 **Goal**: a short first-run flow + empty states that lead somewhere; lead with the muscle model (hook).
@@ -172,6 +205,14 @@ logged rest days (mirror the streak module's style). Device-verify one real fire
 - [x] Every major empty screen has a one-tap primary action.
 - [x] Flag failure / read error falls back to HomeShell without crashing.
 **Tests**: widget test that onboarding shows when flag unset and is skipped when set. Analyze/test green.
+
+**Implementation record — completed 2026-07-23 (`1632ace`)**
+- Added a four-page first-run flow, Skip/Get started persistence, and a non-blocking root gate that
+  safely falls back to the home shell if the onboarding flag cannot be read.
+- Added a shared start-workout flow and actionable empty states across Dashboard, Templates, History,
+  and Progress. The onboarding goal choice was subsequently integrated by T2.5.
+- **Verified:** first-run, subsequent-launch, skip, and failure-fallback paths are covered by widget
+  tests.
 
 ## PHASE T1.5 — Template CRUD (rename / delete / duplicate / reorder)
 **Goal**: complete missing template management. Today you can create a template and edit its exercises,
@@ -202,6 +243,14 @@ survive deletion of the template it came from.
 - [x] Reorder persists across app restarts (position column).
 **Tests**: repository tests for rename/delete/duplicate/reorder + a test proving deleting a template
 does NOT delete or corrupt a historical session that referenced it. Analyze/test green.
+
+**Implementation record — completed 2026-07-23 (`1418479`)**
+- Added transactional repository operations for rename, delete, duplicate, and persisted reorder,
+  with list-row actions, confirmation UI, drag-to-reorder, and editor-title rename.
+- Delete first clears matching nullable `Sessions.templateId` references, preserving historical
+  sessions and logged sets. Duplicate copies every prescription field into an independent template.
+- **Verified:** repository tests cover all four operations, complete-field duplication, persisted
+  ordering, and historical-session preservation after deletion.
 
 ═══════════════════════════════════════════════════════════════════════════════════════════════
 # TIER 2 — The muscle model becomes a coach (the differentiator)
@@ -266,6 +315,15 @@ is NOT repurposed here — it is unified into the goal-scaled landmarks in T2.5.
 `coachingIntensity` monotonicity; a golden-ish test that a known weekly set count maps to the expected
 zone per muscle. Analyze/test green.
 
+**Implementation record — completed 2026-07-23 (`e69814b`)**
+- Added the default 27-muscle volume-landmark table, goal-scaled landmarks, validated JSON overrides,
+  zone classification, coaching intensity, and consistent zone colors.
+- The live 3D muscle state and Weekly Muscle Balance use the same effective-set calculation; tapping
+  a muscle exposes its current volume, landmark band, and coaching copy.
+- Added the training-goal Settings control used by the coaching stack.
+- **Verified:** boundary behavior, monotonic intensity, override fallback, and known-volume mappings
+  are covered by automated tests.
+
 ## PHASE T2.2 — Auto-progression / next-weight suggestions
 **Goal**: suggest the next set's load/reps from history + prescription, one-tap to accept.
 **Schema**: none (reads history + prescription). Prefer stateless — do not persist suggestions.
@@ -293,6 +351,14 @@ that fills the input. Never auto-commit.
 **Tests**: table-driven unit tests over the rule matrix (hit/miss/borderline × kg/lb × total/perSide).
 Analyze/test green.
 
+**Implementation record — completed 2026-07-23 (`66ef61f`)**
+- Added the pure double-progression engine with unit-aware 2.5 kg/5 lb increments, rep-range logic,
+  high-RPE holds, prescription-free fallback, and goal-based aggressiveness.
+- Suggestions operate on the entered value for per-side loads and appear as an optional set-row action
+  that fills the editor without saving or completing the set.
+- **Verified:** table-driven tests cover hit/miss/borderline cases, kg/lb, total/per-side entries,
+  RPE handling, and missing prescriptions.
+
 ## PHASE T2.3 — Fatigue / deload awareness
 **Goal**: detect stalling/overreaching and offer a deload.
 **Schema**: none for detection. "Generate deload week" writes a new Template (reuses template schema).
@@ -317,6 +383,16 @@ deload"; a one-tap "generate deload week" creates a template at ~50% of current 
 - [x] Dismiss persists for the current week (store a `deloadDismissedWeek` `app_settings` key).
 **Tests**: unit-test the signal logic (0/1/2/3 signals) and the deload-template generation. Analyze/test green.
 
+**Implementation record — completed 2026-07-23 (`a096ae6`)**
+- Added pure two-of-three fatigue detection using consecutive above-MRV weeks, stalled/declining
+  estimated 1RM, and rising RPE at equal load, with repository aggregation for the required history.
+- Added the dismissible Progress card and current-week dismissal persistence.
+- “Generate deload week” transactionally creates a reviewable template with roughly half the working
+  sets, preserves the exercise structure, and opens it in the template editor without changing the
+  active program.
+- **Verified:** 0/1/2/3-signal behavior, dismissal, aggregation, and deload-template generation are
+  covered by automated tests.
+
 ## PHASE T2.4 — Muscle-map-driven workout building
 **Goal**: build/extend sessions & templates by tapping a muscle → pick exercises that train it; also
 exercise substitution ("swap for another that hits this muscle").
@@ -336,6 +412,17 @@ exercise substitution ("swap for another that hits this muscle").
 - [x] Archived exercises are excluded; custom exercises with muscle metadata are included.
 **Tests**: repository test that the reverse index maps a known exercise to the right muscles with
 correct primary/secondary ranking. Analyze/test green.
+
+**Implementation record — completed 2026-07-23 (`18d3dd5`)**
+- Added a reverse muscle→exercise index that excludes archived exercises, includes custom exercises
+  with muscle metadata, ranks primary before secondary matches, and uses training frequency as a
+  tie-breaker.
+- Added build/add entry points from muscle detail, muscle balance, active sessions, and template
+  editing, all reusing the filtered exercise picker.
+- Session/template swaps preserve the prescription slot. Session swaps explicitly confirm removal of
+  incompatible logged sets before replacement.
+- **Verified:** index membership/ranking, archived/custom handling, add flows, prescription
+  preservation, and swap safety are covered by automated tests.
 
 ## PHASE T2.5 — Rank redesign + goal profile + Ranks page + Strength Standards
 **Order**: do AFTER T2.1 (it shares the goal-scaled landmarks). One phase, five parts (A–E). Rank is
@@ -437,6 +524,20 @@ adequacy, boundary tiers), `rankExplainer` output, and `standardFor` at each lev
 sexes incl. the Weighted Pull-up bodyweight case. Rank-up detection test (rise fires once, decrease
 never). Analyze/test green.
 
+**Implementation record — completed 2026-07-23 (`46fef11`)**
+- Replaced the best-ever/flat-cap rank with recent strength trend, goal-scaled productive volume, and
+  consistency/recency components with decay. Existing ranks intentionally recompute and may shift.
+- Added Maintain/Build/Push across onboarding and Settings; the selected goal consistently scales
+  landmarks, rank thresholds, progression behavior, and deload sensitivity.
+- Added the Dashboard-linked Ranks screen with all 27 muscles, progress-to-next-tier, concrete
+  explainers, and no additional bottom-navigation tab; duplicate rank cards were removed from Progress.
+- Added opt-in, sex-specific strength standards using the latest bodyweight for the six benchmark
+  lifts. Added the `Pull-Up` seed and idempotent existing-install backfill; weighted pull-up standards
+  use bodyweight plus added load.
+- Added one-time real rank-up celebrations and session-finish PR moments.
+- **Verified:** goal scaling, rank boundaries/decay/explainers, both-sex standard boundaries,
+  weighted pull-up math, event deduplication, and seed backfill are covered by automated tests.
+
 ═══════════════════════════════════════════════════════════════════════════════════════════════
 # TIER 3 — Program / template import
 ═══════════════════════════════════════════════════════════════════════════════════════════════
@@ -466,6 +567,16 @@ exercise-name mapping step.
 duplicate exercise names, empty cells, and strings that must NOT match a library exercise. Fuzzy-match
 tests for near-miss names. Analyze/test green.
 
+**Implementation record — completed 2026-07-23 (`978b92f`)**
+- Added a total-function CSV parser with documented columns, quoted-cell support, row-numbered errors,
+  and partial valid results that remain reviewable instead of crashing or silently committing.
+- Added conservative exact/normalized/token exercise matching plus explicit manual mapping and custom
+  exercise creation for unresolved names.
+- Added paste/file input, mapping, preview, and a single transactional repository commit. Because the
+  existing prescription schema has no RPE column, imported RPE is retained in prescription notes.
+- **Verified:** malformed rows, duplicate names, empty cells, non-matches, near matches, mapping,
+  successful import, and transaction rollback are covered by automated tests.
+
 ---
 
 ## Cross-cutting done criteria for this spec
@@ -476,6 +587,17 @@ tests for near-miss names. Analyze/test green.
 - [x] No new network calls, no analytics, no account surface introduced.
 - [x] Each phase committed separately with a `feat:`/`fix:` message; `git diff HEAD` reviewable.
 - [ ] Native (T1.1/T1.3) verified on a real backgrounded device on BOTH platforms.
+
+**Final verification record — 2026-07-23 (`027fd8d` checklist baseline)**
+- `flutter analyze`: clean.
+- `flutter test`: 138 tests passing.
+- `flutter build apk --debug`: succeeded.
+- `flutter build ios --simulator --debug`: succeeded.
+- T1–T3 required no database schema-version change; new preferences use the existing
+  `app_settings` store, and the Pull-Up addition uses an idempotent data backfill.
+- Every implementation phase has its own commit; the hashes are recorded under the corresponding
+  phase above. The only unverified done criterion is the two-platform physical-device background
+  notification check.
 
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 PR-celebration moment (reuse `recentPrs`), plate calculator, warm-up set generator, home-screen
