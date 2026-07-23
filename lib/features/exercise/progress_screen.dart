@@ -21,6 +21,7 @@ import '../../data/providers.dart';
 import '../../data/repositories/analytics_repository.dart';
 import '../session/start_workout_flow.dart';
 import '../templates/template_editor_screen.dart';
+import '../ranks/ranks_screen.dart';
 import 'widgets/muscle_anatomy_view.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
@@ -74,7 +75,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final landmarks =
         ref.watch(effectiveVolumeLandmarksProvider).asData?.value ??
         defaultLandmarks;
-    final bodySummary = ref.watch(bodyProgressSummaryProvider).asData?.value;
     final deloadSignal = ref.watch(deloadSignalProvider).asData?.value;
 
     final weekly = weeklyStats(sets, weeks: 8);
@@ -93,8 +93,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             ),
             const SizedBox(height: 18),
           ],
-          _BodyDevelopmentCard(summary: bodySummary),
-          const SizedBox(height: 26),
           const SectionHeader('Muscle sculpture'),
           _Card(
             child: liveMuscles.when(
@@ -148,9 +146,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 onMuscleTap: _buildFromMuscle,
               ),
             ),
-          const SizedBox(height: 26),
-          const SectionHeader('Rank breakdown'),
-          _Card(child: _RankBreakdown(summary: bodySummary)),
           const SizedBox(height: 26),
           const SectionHeader('Weekly volume'),
           _Card(child: _WeeklyVolumeChart(stats: weekly)),
@@ -232,7 +227,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   void _openAllMuscleProgress() {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const AllMuscleProgressScreen()));
+    ).push(MaterialPageRoute(builder: (_) => const RanksScreen()));
   }
 
   Future<void> _dismissDeload() async {
@@ -369,8 +364,6 @@ class _MuscleProgressScreenState extends ConsumerState<MuscleProgressScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
             children: [
-              _MuscleRankCard(progress: progress),
-              const SizedBox(height: 18),
               _RangeSelector(
                 selected: _range,
                 onChanged: (range) => setState(() => _range = range),
@@ -515,81 +508,6 @@ class _AllMuscleProgressScreenState
           return bDate.compareTo(aDate);
         });
     }
-  }
-}
-
-class _MuscleRankCard extends StatelessWidget {
-  const _MuscleRankCard({required this.progress});
-  final MuscleProgress progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(AppIcons.trophy, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  progress.rank.label,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              _StatusPill(label: progress.momentum.label),
-            ],
-          ),
-          const SizedBox(height: 14),
-          LinearProgressIndicator(value: progress.rankProgress),
-          const SizedBox(height: 10),
-          Text(
-            '${(progress.rankProgress * 100).round()}% toward next rank · '
-            '${progress.primarySets} primary / ${progress.secondarySets} secondary sets',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            progress.lastTrained == null
-                ? 'Last trained: never'
-                : 'Last trained: ${DateFormat.yMMMd().format(progress.lastTrained!)}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSecondaryContainer,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
   }
 }
 
@@ -979,138 +897,6 @@ class _ProgressError extends StatelessWidget {
     message:
         'Muscle analytics could not be loaded. Your workout data is unchanged.',
   );
-}
-
-class _BodyDevelopmentCard extends StatelessWidget {
-  const _BodyDevelopmentCard({required this.summary});
-  final BodyProgressSummary? summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final rank = summary?.rank.label ?? 'Foundation';
-    final progress = ((summary?.rankProgress ?? 0) * 100).round();
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(AppIcons.trophy, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              Text('Body rank', style: theme.textTheme.titleMedium),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            rank,
-            style: theme.textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(value: summary?.rankProgress ?? 0),
-          const SizedBox(height: 10),
-          Text(
-            '$progress% to next rank · ${summary?.momentum.label ?? 'Learning baseline'}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RankBreakdown extends StatelessWidget {
-  const _RankBreakdown({required this.summary});
-  final BodyProgressSummary? summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    if (summary == null) {
-      return Text(
-        'Build a baseline to see rank breakdowns.',
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _BreakdownLine(
-          label: 'Next focus',
-          value: summary!.nextFocusLabel,
-          icon: AppIcons.target,
-        ),
-        const Divider(height: 22),
-        _BreakdownLine(
-          label: 'Improving',
-          value: summary!.improvingMuscles == 0
-              ? 'Learning baseline'
-              : '${summary!.improvingMuscles} muscles',
-          icon: AppIcons.progress,
-        ),
-        const Divider(height: 22),
-        _BreakdownLine(
-          label: 'Strongest',
-          value: summary!.strongest.isEmpty
-              ? 'No ranked muscles yet'
-              : summary!.strongest
-                    .take(2)
-                    .map((item) => item.muscle.label)
-                    .join(', '),
-          icon: AppIcons.trophy,
-        ),
-      ],
-    );
-  }
-}
-
-class _BreakdownLine extends StatelessWidget {
-  const _BreakdownLine({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: theme.textTheme.labelMedium),
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _WeeklyMuscleBalance extends StatelessWidget {

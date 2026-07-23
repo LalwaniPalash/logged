@@ -5,11 +5,12 @@ import 'enums.dart';
 import 'live_muscle_state.dart';
 import 'muscle.dart';
 import 'streak.dart';
+import 'training_goal.dart';
+import 'volume_landmarks.dart';
 import 'workout_metrics.dart';
 
 const exerciseBaselineObservationCount = 2;
 const exerciseInfluenceCap = 0.45;
-const productiveWeeklyEffectiveSetCap = 12.0;
 
 enum MuscleRank {
   foundation('Foundation'),
@@ -232,6 +233,8 @@ Map<MuscleId, MuscleProgress> buildMuscleProgress({
   required Iterable<MusclePerformanceRecord> records,
   Iterable<BodyweightEntry> bodyweights = const [],
   DateTime? today,
+  TrainingGoal goal = TrainingGoal.build,
+  Map<MuscleId, VolumeLandmarks>? landmarks,
 }) {
   final sortedRecords = records.toList()
     ..sort((a, b) => a.date.compareTo(b.date));
@@ -311,6 +314,8 @@ Map<MuscleId, MuscleProgress> buildMuscleProgress({
         accumulators[muscle]!,
         seriesByExercise,
         today ?? DateTime.now(),
+        goal,
+        (landmarks ?? resolveLandmarks(goal: goal))[muscle]!,
       ),
   });
 }
@@ -394,6 +399,8 @@ MuscleProgress _buildProgressForMuscle(
   _Accumulator accumulator,
   Map<int, _ExerciseSeries> seriesByExercise,
   DateTime today,
+  TrainingGoal goal,
+  VolumeLandmarks landmarks,
 ) {
   final totalWeight = accumulator.exerciseWeights.values.fold(
     0.0,
@@ -446,10 +453,10 @@ MuscleProgress _buildProgressForMuscle(
       ),
   ]..sort((a, b) => a.date.compareTo(b.date));
 
-  final rankScore = _rankScore(accumulator, points);
-  final rank = _rankFromScore(rankScore);
-  final nextThreshold = _nextRankThreshold(rank);
-  final currentThreshold = _rankThreshold(rank);
+  final rankScore = _rankScore(accumulator, points, today, landmarks);
+  final rank = rankFromScore(rankScore, goal);
+  final nextThreshold = nextRankThreshold(rank, goal);
+  final currentThreshold = rankThreshold(rank, goal);
   final progress = nextThreshold == null
       ? 1.0
       : ((rankScore - currentThreshold) / (nextThreshold - currentThreshold))
@@ -471,8 +478,9 @@ MuscleProgress _buildProgressForMuscle(
 }
 
 BodyProgressSummary buildBodyProgressSummary(
-  Map<MuscleId, MuscleProgress> progressByMuscle,
-) {
+  Map<MuscleId, MuscleProgress> progressByMuscle, {
+  TrainingGoal goal = TrainingGoal.build,
+}) {
   final muscles = [
     for (final muscle in MuscleId.values) progressByMuscle[muscle],
   ].whereType<MuscleProgress>().toList();
@@ -492,9 +500,9 @@ BodyProgressSummary buildBodyProgressSummary(
   final averageScore =
       muscles.fold(0.0, (sum, muscle) => sum + muscle.rankScore) /
       muscles.length;
-  final rank = _rankFromScore(averageScore);
-  final nextThreshold = _nextRankThreshold(rank);
-  final currentThreshold = _rankThreshold(rank);
+  final rank = rankFromScore(averageScore, goal);
+  final nextThreshold = nextRankThreshold(rank, goal);
+  final currentThreshold = rankThreshold(rank, goal);
   final rankProgress = nextThreshold == null
       ? 1.0
       : ((averageScore - currentThreshold) / (nextThreshold - currentThreshold))
@@ -553,49 +561,132 @@ int _attentionPriority(MuscleMomentum momentum) => switch (momentum) {
   MuscleMomentum.improving => 3,
 };
 
-double _rankScore(_Accumulator accumulator, List<MuscleTrendPoint> points) {
+double _rankScore(
+  _Accumulator accumulator,
+  List<MuscleTrendPoint> points,
+  DateTime today,
+  VolumeLandmarks landmarks,
+) {
   final weeks = <DateTime, double>{};
   accumulator.effectiveSetHistory.forEach((day, sets) {
     final week = startOfWeek(day);
-    weeks[week] = math.min(
-      productiveWeeklyEffectiveSetCap,
-      (weeks[week] ?? 0) + sets,
-    );
+    weeks[week] = (weeks[week] ?? 0) + sets;
   });
-  final cappedExposure = weeks.values.fold(0.0, (sum, sets) => sum + sets);
-  final bestImprovement = points.isEmpty
-      ? 0.0
-      : math.max(0, points.map((point) => point.index).reduce(math.max) - 100);
-  final consistency = weeks.length * 2.0;
-  return cappedExposure + bestImprovement * 1.6 + consistency;
+  final currentWeek = startOfWeek(today);
+  var adequacyWeighted = 0.0;
+  var consistencyWeighted = 0.0;
+  var weightTotal = 0.0;
+  for (var offset = 0; offset < 8; offset++) {
+    final weight = math.pow(0.82, offset).toDouble();
+    final value = weeks[currentWeek.subtract(Duration(days: offset * 7))] ?? 0;
+    adequacyWeighted += _volumeAdequacy(value, landmarks) * weight;
+    if (value >= landmarks.mev) consistencyWeighted += weight;
+    weightTotal += weight;
+  }
+  final volumeScore = weightTotal == 0
+      ? 0
+      : adequacyWeighted / weightTotal * 35;
+  final consistencyScore = weightTotal == 0
+      ? 0
+      : consistencyWeighted / weightTotal * 15;
+
+  final recent = points
+      .where(
+        (point) => !point.date.isBefore(
+          dateOnly(today).subtract(const Duration(days: 84)),
+        ),
+      )
+      .toList();
+  var strengthScore = 0.0;
+  if (recent.isNotEmpty) {
+    var weighted = 0.0;
+    var strengthWeights = 0.0;
+    for (var index = 0; index < recent.length; index++) {
+      final weight = (index + 1).toDouble();
+      weighted += recent[index].index * weight;
+      strengthWeights += weight;
+    }
+    final recentIndex = weighted / strengthWeights;
+    strengthScore = ((recentIndex - 85) / 45).clamp(0.0, 1.0) * 50;
+  }
+  return (strengthScore + volumeScore + consistencyScore).clamp(0, 100);
 }
 
-MuscleRank _rankFromScore(double score) {
-  if (score >= 300) return MuscleRank.elite;
-  if (score >= 200) return MuscleRank.platinum;
-  if (score >= 130) return MuscleRank.gold;
-  if (score >= 70) return MuscleRank.silver;
-  if (score >= 25) return MuscleRank.bronze;
+double _volumeAdequacy(double sets, VolumeLandmarks landmarks) {
+  if (sets <= 0) return 0;
+  if (sets < landmarks.mev) return sets / landmarks.mev * 0.55;
+  if (sets <= landmarks.mav) {
+    return 0.75 +
+        (sets - landmarks.mev) /
+            math.max(landmarks.mav - landmarks.mev, 1) *
+            0.25;
+  }
+  if (sets <= landmarks.mrv) {
+    return 1 -
+        (sets - landmarks.mav) /
+            math.max(landmarks.mrv - landmarks.mav, 1) *
+            0.25;
+  }
+  return 0.55;
+}
+
+MuscleRank rankFromScore(double score, TrainingGoal goal) {
+  if (score >= rankThreshold(MuscleRank.elite, goal)) {
+    return MuscleRank.elite;
+  }
+  if (score >= rankThreshold(MuscleRank.platinum, goal)) {
+    return MuscleRank.platinum;
+  }
+  if (score >= rankThreshold(MuscleRank.gold, goal)) return MuscleRank.gold;
+  if (score >= rankThreshold(MuscleRank.silver, goal)) {
+    return MuscleRank.silver;
+  }
+  if (score >= rankThreshold(MuscleRank.bronze, goal)) {
+    return MuscleRank.bronze;
+  }
   return MuscleRank.foundation;
 }
 
-double _rankThreshold(MuscleRank rank) => switch (rank) {
-  MuscleRank.foundation => 0,
-  MuscleRank.bronze => 25,
-  MuscleRank.silver => 70,
-  MuscleRank.gold => 130,
-  MuscleRank.platinum => 200,
-  MuscleRank.elite => 300,
-};
+double rankThreshold(MuscleRank rank, TrainingGoal goal) {
+  final base = switch (rank) {
+    MuscleRank.foundation => 0,
+    MuscleRank.bronze => 18,
+    MuscleRank.silver => 36,
+    MuscleRank.gold => 55,
+    MuscleRank.platinum => 73,
+    MuscleRank.elite => 90,
+  };
+  return base * goal.rankThresholdScale;
+}
 
-double? _nextRankThreshold(MuscleRank rank) => switch (rank) {
-  MuscleRank.foundation => 25,
-  MuscleRank.bronze => 70,
-  MuscleRank.silver => 130,
-  MuscleRank.gold => 200,
-  MuscleRank.platinum => 300,
+double? nextRankThreshold(MuscleRank rank, TrainingGoal goal) => switch (rank) {
+  MuscleRank.foundation => rankThreshold(MuscleRank.bronze, goal),
+  MuscleRank.bronze => rankThreshold(MuscleRank.silver, goal),
+  MuscleRank.silver => rankThreshold(MuscleRank.gold, goal),
+  MuscleRank.gold => rankThreshold(MuscleRank.platinum, goal),
+  MuscleRank.platinum => rankThreshold(MuscleRank.elite, goal),
   MuscleRank.elite => null,
 };
+
+String rankExplainer(
+  MuscleProgress progress,
+  TrainingGoal goal, {
+  VolumeLandmarks? landmarks,
+}) {
+  final target = landmarks ?? resolveLandmarks(goal: goal)[progress.muscle]!;
+  if (progress.lastTrained == null) {
+    return 'Start with ${target.mev.round()}–${target.mav.round()} effective sets per week to build a baseline.';
+  }
+  if (progress.rank == MuscleRank.elite) {
+    return 'Keep recent performance and weekly volume inside the ${target.mev.round()}–${target.mav.round()} set band.';
+  }
+  final next = MuscleRank.values[progress.rank.index + 1];
+  final strength = progress.momentum == MuscleMomentum.declining
+      ? 'reverse the recent performance dip'
+      : 'add about 5% to a recent exercise';
+  return 'To reach ${next.label}: train ${progress.muscle.label.toLowerCase()} near '
+      '${target.mev.round()}–${target.mav.round()} sets for a few weeks and $strength.';
+}
 
 MuscleMomentum _momentum(List<MuscleTrendPoint> points) {
   if (points.length < 4) return MuscleMomentum.learningBaseline;

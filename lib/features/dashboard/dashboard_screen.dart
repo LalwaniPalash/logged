@@ -4,13 +4,17 @@ import 'package:intl/intl.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/muscle_progress.dart';
+import '../../core/domain/muscle.dart';
 import '../../core/domain/streak.dart';
 import '../../core/domain/workout_settings.dart';
+import '../../core/domain/training_goal.dart';
+import '../../core/domain/rank_events.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/providers.dart';
 import '../session/active_session_screen.dart';
 import '../session/start_workout_flow.dart';
 import '../templates/templates_screen.dart';
+import '../ranks/ranks_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -19,8 +23,35 @@ class DashboardScreen extends ConsumerWidget {
     await showStartWorkoutFlow(context, ref);
   }
 
+  Future<void> _handleRankUpdates(
+    BuildContext context,
+    WidgetRef ref,
+    Map<MuscleId, MuscleProgress> progress,
+  ) async {
+    final repository = ref.read(settingsRepositoryProvider);
+    final previous = await repository.readLastSeenRanks();
+    final current = {
+      for (final entry in progress.entries) entry.key: entry.value.rank,
+    };
+    await repository.setLastSeenRanks(current);
+    if (previous.isEmpty || !context.mounted) return;
+    final events = detectRankUps(previous: previous, current: current);
+    if (events.isEmpty) return;
+    final event = events.first;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${event.muscle.label} ranked up to ${event.current.label}.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(muscleProgressProvider, (previous, next) {
+      next.whenData((progress) => _handleRankUpdates(context, ref, progress));
+    });
     final theme = Theme.of(context);
     final recent = ref.watch(sessionRepositoryProvider).watchRecent(limit: 3);
     final bodySummary = ref.watch(bodyProgressSummaryProvider);
@@ -32,6 +63,9 @@ class DashboardScreen extends ConsumerWidget {
         ref.watch(workoutSettingsProvider).asData?.value ??
         WorkoutSettings.defaults;
     final now = DateTime.now();
+    final goal =
+        ref.watch(coachingPreferencesProvider).asData?.value.trainingGoal ??
+        TrainingGoal.build;
 
     final daysThisWeek = trainingDaysThisWeek(days, today: now);
     final weekStates = _weekStates(
@@ -108,7 +142,13 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 22),
-              _BodyRankHero(summary: bodySummary.asData?.value),
+              _BodyRankHero(
+                summary: bodySummary.asData?.value,
+                goal: goal,
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const RanksScreen())),
+              ),
               const SizedBox(height: 14),
               _NextFocusCard(summary: bodySummary.asData?.value),
               const SizedBox(height: 18),
@@ -181,8 +221,14 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 class _BodyRankHero extends StatelessWidget {
-  const _BodyRankHero({required this.summary});
+  const _BodyRankHero({
+    required this.summary,
+    required this.goal,
+    required this.onTap,
+  });
   final BodyProgressSummary? summary;
+  final TrainingGoal goal;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -191,52 +237,59 @@ class _BodyRankHero extends StatelessWidget {
     final progress = ((summary?.rankProgress ?? 0) * 100).round();
     final momentum = summary?.momentum.label ?? 'Learning baseline';
     final trained = summary?.trainedMuscles ?? 0;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
+    return Material(
+      color: theme.colorScheme.primaryContainer,
+      borderRadius: BorderRadius.circular(26),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(26),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'BODY RANK',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer.withValues(
-                alpha: 0.72,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'BODY RANK',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer.withValues(
+                    alpha: 0.72,
+                  ),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                ),
               ),
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.4,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            rank,
-            style: theme.textTheme.displaySmall?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: summary?.rankProgress ?? 0,
-            backgroundColor: theme.colorScheme.onPrimaryContainer.withValues(
-              alpha: 0.14,
-            ),
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '$progress% to next rank · $momentum · $trained muscles trained',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onPrimaryContainer.withValues(
-                alpha: 0.82,
+              const SizedBox(height: 10),
+              Text(
+                '$rank · ${goal.label}',
+                style: theme.textTheme.displaySmall?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: summary?.rankProgress ?? 0,
+                backgroundColor: theme.colorScheme.onPrimaryContainer
+                    .withValues(alpha: 0.14),
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '$progress% to next rank · $momentum · $trained muscles trained',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer.withValues(
+                    alpha: 0.82,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Icon(AppIcons.chevronRight),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

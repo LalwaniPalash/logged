@@ -134,4 +134,22 @@ void main() {
       );
     },
   );
+
+  test('backfills Pull-Up once for existing installs', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final service = ExerciseAnatomyService(
+      database,
+      loadAsset: () async => '[]',
+    );
+
+    expect(await service.backfillPullUpOnce(), isTrue);
+    expect(await service.backfillPullUpOnce(), isFalse);
+    final pullUps = await (database.select(
+      database.exercises,
+    )..where((exercise) => exercise.name.equals('Pull-Up'))).get();
+    expect(pullUps, hasLength(1));
+    expect(pullUps.single.category, ExerciseCategory.bodyweight);
+    expect(pullUps.single.preferredLoadingMode, LoadingMode.bodyweightAdded);
+  });
 }

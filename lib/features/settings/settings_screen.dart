@@ -10,6 +10,7 @@ import '../../core/domain/enums.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/streak.dart';
 import '../../core/domain/training_goal.dart';
+import '../../core/domain/strength_standards.dart';
 import '../../core/domain/workout_settings.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/database/app_database.dart';
@@ -754,6 +755,11 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const SectionHeader('Bodyweight history'),
           _BodyweightSection(onAdd: () => _addBodyweight(context, ref)),
+          const SizedBox(height: 12),
+          _SexSettingsCard(
+            selected: coaching.userSex,
+            onChanged: repo.setUserSex,
+          ),
           const SizedBox(height: 24),
           const SectionHeader('Exercises'),
           _ActionCard(
@@ -1435,6 +1441,50 @@ class _TrainingGoalCard extends StatelessWidget {
             ],
             selected: {selected},
             onSelectionChanged: (value) => onChanged(value.single),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: Text(switch (selected) {
+            TrainingGoal.maintain =>
+              'Lower volume targets and conservative progression.',
+            TrainingGoal.build =>
+              'Balanced growth, progression, and recovery guidance.',
+            TrainingGoal.push =>
+              'Higher volume targets with more aggressive progression.',
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+class _SexSettingsCard extends StatelessWidget {
+  const _SexSettingsCard({required this.selected, required this.onChanged});
+
+  final UserSex selected;
+  final ValueChanged<UserSex> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ActionCard(
+      children: [
+        ListTile(
+          leading: const Icon(AppIcons.body),
+          title: const Text('Sex for strength standards'),
+          subtitle: const Text(
+            'Optional. Used only for population lift comparisons, never muscle ranks.',
+          ),
+          trailing: DropdownButton<UserSex>(
+            value: selected,
+            onChanged: (value) {
+              if (value != null) onChanged(value);
+            },
+            items: const [
+              DropdownMenuItem(value: UserSex.unset, child: Text('Not set')),
+              DropdownMenuItem(value: UserSex.female, child: Text('Female')),
+              DropdownMenuItem(value: UserSex.male, child: Text('Male')),
+            ],
           ),
         ),
       ],

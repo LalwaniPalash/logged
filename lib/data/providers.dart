@@ -7,6 +7,7 @@ import '../core/domain/muscle_progress.dart'
     show BodyProgressSummary, MuscleProgress, buildBodyProgressSummary;
 import '../core/domain/volume_landmarks.dart';
 import '../core/domain/streak.dart';
+import '../core/domain/training_goal.dart';
 import '../core/domain/workout_settings.dart';
 import '../core/services/notification_service.dart';
 import 'database/app_database.dart';
@@ -134,13 +135,27 @@ final liveMuscleStateProvider = StreamProvider<LiveMuscleState>(
       .map(buildLiveMuscleState),
 );
 
-final muscleProgressProvider = StreamProvider<Map<MuscleId, MuscleProgress>>(
-  (ref) => ref.watch(analyticsRepositoryProvider).watchMuscleProgress(),
-);
+final muscleProgressProvider = StreamProvider<Map<MuscleId, MuscleProgress>>((
+  ref,
+) async* {
+  final coaching = await ref.watch(coachingPreferencesProvider.future);
+  final landmarks = resolveLandmarks(
+    goal: coaching.trainingGoal,
+    overridesJson: coaching.volumeLandmarkOverrides,
+  );
+  yield* ref
+      .watch(analyticsRepositoryProvider)
+      .watchMuscleProgress(goal: coaching.trainingGoal, landmarks: landmarks);
+});
 
 final bodyProgressSummaryProvider = Provider<AsyncValue<BodyProgressSummary>>((
   ref,
 ) {
   final progress = ref.watch(muscleProgressProvider);
-  return progress.whenData(buildBodyProgressSummary);
+  final goal =
+      ref.watch(coachingPreferencesProvider).asData?.value.trainingGoal ??
+      TrainingGoal.build;
+  return progress.whenData(
+    (values) => buildBodyProgressSummary(values, goal: goal),
+  );
 });

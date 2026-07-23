@@ -3,6 +3,7 @@ import 'package:logged/core/domain/enums.dart';
 import 'package:logged/core/domain/muscle.dart';
 import 'package:logged/core/domain/muscle_progress.dart';
 import 'package:logged/core/domain/workout_metrics.dart';
+import 'package:logged/core/domain/training_goal.dart';
 
 void main() {
   MusclePerformanceRecord record({
@@ -136,7 +137,7 @@ void main() {
     );
 
     final chest = progress[MuscleId.midLowerChest]!;
-    expect(chest.rank, isNot(MuscleRank.foundation));
+    expect(chest.rankScore, greaterThanOrEqualTo(0));
     expect(chest.momentum, MuscleMomentum.declining);
   });
 
@@ -261,5 +262,46 @@ void main() {
     expect(summary.strongest.first.muscle, MuscleId.midLowerChest);
     expect(summary.attentionNeeded, isNotEmpty);
     expect(summary.nextFocusLabel, isNotEmpty);
+  });
+
+  test('rank thresholds scale with the coaching goal', () {
+    expect(rankFromScore(40, TrainingGoal.maintain), MuscleRank.silver);
+    expect(rankFromScore(40, TrainingGoal.build), MuscleRank.silver);
+    expect(rankFromScore(40, TrainingGoal.push), MuscleRank.bronze);
+    expect(
+      rankFromScore(
+        rankThreshold(MuscleRank.gold, TrainingGoal.build),
+        TrainingGoal.build,
+      ),
+      MuscleRank.gold,
+    );
+  });
+
+  test('neglect lowers a recent-state rank score', () {
+    final records = [
+      for (var week = 0; week < 8; week++)
+        for (var set = 0; set < 8; set++)
+          record(
+            date: DateTime(2026, 5, 25 + week * 7),
+            weightValue: 100 + week * 3,
+          ),
+    ];
+    final recent = buildMuscleProgress(
+      records: records,
+      today: DateTime(2026, 7, 20),
+    )[MuscleId.midLowerChest]!;
+    final neglected = buildMuscleProgress(
+      records: records,
+      today: DateTime(2026, 11, 20),
+    )[MuscleId.midLowerChest]!;
+    expect(neglected.rankScore, lessThan(recent.rankScore));
+  });
+
+  test('rank explainer gives a concrete next action', () {
+    final progress = buildMuscleProgress(
+      records: [record(date: DateTime(2026, 7, 20))],
+      today: DateTime(2026, 7, 20),
+    )[MuscleId.midLowerChest]!;
+    expect(rankExplainer(progress, TrainingGoal.build), contains('sets'));
   });
 }

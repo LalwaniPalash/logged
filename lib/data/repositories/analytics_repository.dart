@@ -7,6 +7,8 @@ import '../../core/domain/live_muscle_state.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart' as progress;
 import '../../core/domain/streak.dart';
+import '../../core/domain/training_goal.dart';
+import '../../core/domain/volume_landmarks.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../database/app_database.dart';
 
@@ -141,25 +143,29 @@ class AnalyticsRepository {
       .watch()
       .map(_mapLiveMuscleSets);
 
-  Stream<Map<MuscleId, progress.MuscleProgress>> watchMuscleProgress() =>
-      _database
-          .customSelect(
-            _muscleProgressQuery,
-            readsFrom: {
-              _database.setEntries,
-              _database.sessionExercises,
-              _database.sessions,
-              _database.exercises,
-              _database.bodyweightEntries,
-            },
-          )
-          .watch()
-          .asyncMap(
-            (rows) async => progress.buildMuscleProgress(
-              records: _mapMuscleProgressRecords(rows),
-              bodyweights: await _loadBodyweights(),
-            ),
-          );
+  Stream<Map<MuscleId, progress.MuscleProgress>> watchMuscleProgress({
+    TrainingGoal goal = TrainingGoal.build,
+    Map<MuscleId, VolumeLandmarks>? landmarks,
+  }) => _database
+      .customSelect(
+        _muscleProgressQuery,
+        readsFrom: {
+          _database.setEntries,
+          _database.sessionExercises,
+          _database.sessions,
+          _database.exercises,
+          _database.bodyweightEntries,
+        },
+      )
+      .watch()
+      .asyncMap(
+        (rows) async => progress.buildMuscleProgress(
+          records: _mapMuscleProgressRecords(rows),
+          bodyweights: await _loadBodyweights(),
+          goal: goal,
+          landmarks: landmarks,
+        ),
+      );
 
   Future<DeloadData> loadDeloadData({DateTime? today, int weeks = 4}) async {
     final rows = await _database.customSelect(_deloadQuery).get();

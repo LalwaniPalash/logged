@@ -1,4 +1,9 @@
+import 'dart:convert';
+
+import '../../core/domain/muscle.dart';
+import '../../core/domain/muscle_progress.dart';
 import '../../core/domain/training_goal.dart';
+import '../../core/domain/strength_standards.dart';
 import '../../core/domain/workout_settings.dart';
 import '../database/app_database.dart';
 
@@ -31,10 +36,12 @@ class CoachingPreferences {
   const CoachingPreferences({
     this.trainingGoal = TrainingGoal.build,
     this.volumeLandmarkOverrides,
+    this.userSex = UserSex.unset,
   });
 
   final TrainingGoal trainingGoal;
   final String? volumeLandmarkOverrides;
+  final UserSex userSex;
 }
 
 class SettingsRepository {
@@ -53,6 +60,8 @@ class SettingsRepository {
   static const _kTrainingGoal = 'trainingGoal';
   static const _kVolumeLandmarkOverrides = 'volumeLandmarkOverrides';
   static const _kDeloadDismissedWeek = 'deloadDismissedWeek';
+  static const _kUserSex = 'userSex';
+  static const _kLastSeenRanks = 'lastSeenRanks';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -114,6 +123,8 @@ class SettingsRepository {
   Future<void> setTrainingGoal(TrainingGoal goal) =>
       _put(_kTrainingGoal, goal.name);
 
+  Future<void> setUserSex(UserSex sex) => _put(_kUserSex, sex.name);
+
   Future<void> setVolumeLandmarkOverrides(String? overridesJson) =>
       _put(_kVolumeLandmarkOverrides, overridesJson?.trim() ?? '');
 
@@ -128,6 +139,32 @@ class SettingsRepository {
 
   Future<void> dismissDeloadForWeek(String weekKey) =>
       _put(_kDeloadDismissedWeek, weekKey);
+
+  Future<Map<MuscleId, MuscleRank>> readLastSeenRanks() async {
+    final row =
+        await (_database.select(_database.appSettings)
+              ..where((setting) => setting.key.equals(_kLastSeenRanks)))
+            .getSingleOrNull();
+    if (row == null) return const {};
+    try {
+      final decoded = jsonDecode(row.value) as Map<String, dynamic>;
+      return {
+        for (final entry in decoded.entries)
+          MuscleId.fromId(entry.key): MuscleRank.values.byName(
+            entry.value as String,
+          ),
+      };
+    } on Object {
+      return const {};
+    }
+  }
+
+  Future<void> setLastSeenRanks(Map<MuscleId, MuscleRank> ranks) => _put(
+    _kLastSeenRanks,
+    jsonEncode({
+      for (final entry in ranks.entries) entry.key.id: entry.value.name,
+    }),
+  );
 
   Future<bool> readOnboardingComplete() async {
     final row =
@@ -188,11 +225,19 @@ class SettingsRepository {
       }
     }
     final overrides = map[_kVolumeLandmarkOverrides]?.trim();
+    var userSex = UserSex.unset;
+    for (final candidate in UserSex.values) {
+      if (candidate.name == map[_kUserSex]) {
+        userSex = candidate;
+        break;
+      }
+    }
     return CoachingPreferences(
       trainingGoal: goal,
       volumeLandmarkOverrides: overrides == null || overrides.isEmpty
           ? null
           : overrides,
+      userSex: userSex,
     );
   }
 

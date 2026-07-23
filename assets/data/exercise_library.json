@@ -571,6 +571,23 @@
     "defaultUnit": "lb"
   },
   {
+    "name": "Pull-Up",
+    "category": "bodyweight",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 1.0
+  },
+  {
     "name": "Inverted Row",
     "category": "strength",
     "muscleGroup": "back",

@@ -18,6 +18,7 @@ class ExerciseAnatomyService {
   final Future<String> Function() _loadAsset;
 
   static const _weightEntryBackfillKey = 'weightEntryBackfilled';
+  static const _pullUpBackfillKey = 'pullUpExerciseBackfilled';
 
   /// Returns how many bundled exercise rows changed.
   Future<int> enrichBundledExercises() async {
@@ -116,5 +117,41 @@ class ExerciseAnatomyService {
       );
     });
     return changes.length;
+  }
+
+  Future<bool> backfillPullUpOnce() async {
+    final alreadyRun = await (_database.select(
+      _database.appSettings,
+    )..where((row) => row.key.equals(_pullUpBackfillKey))).getSingleOrNull();
+    if (alreadyRun != null) return false;
+    final existing = await (_database.select(
+      _database.exercises,
+    )..where((exercise) => exercise.name.equals('Pull-Up'))).getSingleOrNull();
+    await _database.transaction(() async {
+      if (existing == null) {
+        await _database
+            .into(_database.exercises)
+            .insert(
+              ExercisesCompanion.insert(
+                name: 'Pull-Up',
+                category: ExerciseCategory.bodyweight,
+                muscleGroup: 'back',
+                primaryMuscles: const Value('["lats"]'),
+                secondaryMuscles: const Value(
+                  '["biceps","brachialis","mid_lower_traps","forearms"]',
+                ),
+                preferredLoadingMode: const Value(LoadingMode.bodyweightAdded),
+                bodyweightFactor: const Value(1),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      }
+      await _database
+          .into(_database.appSettings)
+          .insertOnConflictUpdate(
+            AppSettingsCompanion.insert(key: _pullUpBackfillKey, value: 'true'),
+          );
+    });
+    return existing == null;
   }
 }

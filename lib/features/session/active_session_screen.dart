@@ -8,6 +8,8 @@ import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/progression.dart';
 import '../../core/domain/muscle.dart';
+import '../../core/domain/progress_analytics.dart';
+import '../../core/domain/streak.dart';
 import '../../core/domain/training_goal.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../../core/widgets/app_widgets.dart';
@@ -447,8 +449,42 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       ),
     );
     if (confirm != true) return;
+    final session = await ref
+        .read(sessionRepositoryProvider)
+        .getSession(widget.sessionId);
     await ref.read(sessionRepositoryProvider).finish(widget.sessionId);
     await ref.read(reminderSchedulerProvider).sync();
+    final prs = recentPrs(
+      await ref.read(analyticsRepositoryProvider).loadCompletedSets(),
+      limit: 20,
+    );
+    final currentPr = session == null
+        ? null
+        : prs.cast<PrEvent?>().firstWhere(
+            (event) =>
+                event != null &&
+                dateOnly(event.date) == dateOnly(session.startedAt),
+            orElse: () => null,
+          );
+    if (mounted && currentPr != null) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          icon: const Icon(AppIcons.trophy),
+          title: const Text('New personal record'),
+          content: Text(
+            '${currentPr.exerciseName} · estimated 1RM '
+            '${currentPr.oneRepMaxKg.toStringAsFixed(1)} kg',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Nice'),
+            ),
+          ],
+        ),
+      );
+    }
     if (mounted) Navigator.pop(context);
   }
 

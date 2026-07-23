@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_icons.dart';
+import '../../core/domain/training_goal.dart';
 import '../../data/providers.dart';
 import '../home/home_shell.dart';
 
@@ -64,19 +65,20 @@ class _OnboardingGateState extends ConsumerState<OnboardingGate> {
   }
 }
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, required this.onComplete});
 
   final Future<void> Function() onComplete;
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _controller = PageController();
   var _index = 0;
   var _saving = false;
+  var _goal = TrainingGoal.build;
 
   static const _pages = [
     _OnboardingPageData(
@@ -101,17 +103,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'The live 3D muscle model reacts this week, helping you see what is trained and what needs attention.',
     ),
     _OnboardingPageData(
-      icon: AppIcons.play,
-      eyebrow: 'READY WHEN YOU ARE',
-      title: 'Walk in and start.',
-      body:
-          'Begin an empty workout and add exercises as you go, or launch a full day from a template.',
+      icon: AppIcons.target,
+      eyebrow: 'YOUR COACHING PROFILE',
+      title: 'What are you training for?',
+      body: 'Choose an intent now. You can change it any time in Settings.',
     ),
   ];
 
   Future<void> _complete() async {
     if (_saving) return;
     setState(() => _saving = true);
+    await ref.read(settingsRepositoryProvider).setTrainingGoal(_goal);
     await widget.onComplete();
   }
 
@@ -144,8 +146,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 controller: _controller,
                 itemCount: _pages.length,
                 onPageChanged: (index) => setState(() => _index = index),
-                itemBuilder: (context, index) =>
-                    _OnboardingPage(data: _pages[index]),
+                itemBuilder: (context, index) => _OnboardingPage(
+                  data: _pages[index],
+                  goal: index == _pages.length - 1 ? _goal : null,
+                  onGoalChanged: index == _pages.length - 1
+                      ? (goal) => setState(() => _goal = goal)
+                      : null,
+                ),
               ),
             ),
             Row(
@@ -197,9 +204,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.data});
+  const _OnboardingPage({required this.data, this.goal, this.onGoalChanged});
 
   final _OnboardingPageData data;
+  final TrainingGoal? goal;
+  final ValueChanged<TrainingGoal>? onGoalChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -248,6 +257,33 @@ class _OnboardingPage extends StatelessWidget {
               height: 1.5,
             ),
           ),
+          if (goal != null) ...[
+            const SizedBox(height: 24),
+            SegmentedButton<TrainingGoal>(
+              segments: [
+                for (final value in TrainingGoal.values)
+                  ButtonSegment(value: value, label: Text(value.label)),
+              ],
+              selected: {goal!},
+              onSelectionChanged: (values) =>
+                  onGoalChanged?.call(values.single),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              switch (goal!) {
+                TrainingGoal.maintain =>
+                  'Lower volume targets and conservative progression.',
+                TrainingGoal.build =>
+                  'Balanced growth, progression, and recovery guidance.',
+                TrainingGoal.push =>
+                  'Higher volume targets with more aggressive progression.',
+              },
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ),
     );
