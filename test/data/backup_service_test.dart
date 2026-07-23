@@ -25,6 +25,7 @@ void main() {
             secondaryMuscles: Value(jsonEncode(['front_delts', 'triceps'])),
             defaultUnit: const Value(WeightUnit.kg),
             weightEntry: const Value(WeightEntry.perSide),
+            videoUrl: const Value('https://youtu.be/demo'),
             isCustom: const Value(false),
             isArchived: const Value(false),
           ),
@@ -69,10 +70,11 @@ void main() {
           ),
         );
     final payload = await BackupService(source).exportPayload();
-    expect(payload['schemaVersion'], 6);
+    expect(payload['schemaVersion'], 7);
     await BackupService(target).replaceFromPayload(payload);
     final exercises = await target.select(target.exercises).get();
     expect(exercises, hasLength(1));
+    expect(exercises.single.videoUrl, 'https://youtu.be/demo');
     expect(jsonDecode(exercises.single.primaryMuscles), ['mid_lower_chest']);
     expect(jsonDecode(exercises.single.secondaryMuscles), [
       'front_delts',

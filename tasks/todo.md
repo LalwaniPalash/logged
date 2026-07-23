@@ -630,6 +630,21 @@ the systems that consume it. Fixed at the root:
       `loadingMode`. Tests added for each.
 - [x] `flutter analyze` clean · **153 tests green** (was 138).
 
+# Feature — Per-exercise video link + play button (2026-07-23)
+User: in an active workout (from template OR ad-hoc added exercises), show a button to play an
+exercise's YouTube/demo video, opening in the browser / YouTube app. Implemented (no review, per user):
+- [x] Schema v7: nullable `Exercises.videoUrl` (link belongs to the exercise, shows in every workout
+      it appears in). Migration `from < 7` addColumn; no backfill (null = no video). v6→v7 migration test.
+- [x] Backup: bumped `_schemaVersion`/supported to 7; export/import round-trip videoUrl (toJson/fromJson,
+      tolerant of old backups). Round-trip assertion added to backup test.
+- [x] `ExerciseRepository.updateVideoUrl(id, url?)`.
+- [x] Active session header button: effective link = `sessionExercise.formUrl` (template override) ??
+      `exercise.videoUrl`; play button opens externally (LaunchMode.externalApplication — already). No
+      link → an "add video" (YouTube icon) button opens a paste dialog saving to the exercise; existing
+      link editable via long-press (+ Remove in the dialog).
+- [x] Custom-exercise dialog: optional "Video link" field.
+- [x] `flutter analyze` clean · **154 tests green**.
+
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 PR-celebration moment (reuse `recentPrs`), plate calculator, warm-up set generator, home-screen
 widget, Health/Health Connect one-way export.

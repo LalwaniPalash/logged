@@ -126,6 +126,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _addExercise(BuildContext context, WidgetRef ref) async {
     final name = TextEditingController();
     final bodyweightFactor = TextEditingController(text: '1.0');
+    final videoUrl = TextEditingController();
     var category = ExerciseCategory.strength;
     var primary = <MuscleId>{};
     var secondary = <MuscleId>{};
@@ -260,6 +261,17 @@ class SettingsScreen extends ConsumerWidget {
                       setDialogState(() => secondary = value);
                     },
                   ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: videoUrl,
+                    keyboardType: TextInputType.url,
+                    decoration: const InputDecoration(
+                      labelText: 'Video link (optional)',
+                      hintText: 'YouTube or any demo link',
+                    ),
+                    onTapOutside: (_) =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                  ),
                 ],
               ),
             ),
@@ -297,6 +309,9 @@ class SettingsScreen extends ConsumerWidget {
             defaultUnit: const Value(WeightUnit.kg),
             preferredLoadingMode: Value(loadingMode),
             bodyweightFactor: Value(factor),
+            videoUrl: Value(
+              videoUrl.text.trim().isEmpty ? null : videoUrl.text.trim(),
+            ),
             isCustom: const Value(true),
             isArchived: const Value(false),
           ),

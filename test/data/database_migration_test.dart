@@ -265,4 +265,65 @@ void main() {
       );
     },
   );
+
+  test('v6 gains a null video_url column without losing exercises', () async {
+    final executor = NativeDatabase.memory(
+      setup: (database) {
+        database.execute('''
+          CREATE TABLE exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            category TEXT NOT NULL,
+            muscle_group TEXT NOT NULL,
+            primary_muscles TEXT NOT NULL DEFAULT '[]',
+            secondary_muscles TEXT NOT NULL DEFAULT '[]',
+            default_unit TEXT NOT NULL DEFAULT 'kg',
+            weight_entry TEXT NOT NULL DEFAULT 'total',
+            preferred_loading_mode TEXT NOT NULL DEFAULT 'external',
+            bodyweight_factor REAL NOT NULL DEFAULT 1.0,
+            is_custom INTEGER NOT NULL DEFAULT 0,
+            is_archived INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+        // beforeOpen creates indexes on these, so they must exist to open.
+        database.execute('''
+          CREATE TABLE sessions (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            started_at INTEGER NOT NULL,
+            ended_at INTEGER,
+            template_id INTEGER,
+            notes TEXT
+          )
+        ''');
+        database.execute('''
+          CREATE TABLE session_exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            exercise_id INTEGER NOT NULL,
+            position INTEGER NOT NULL
+          )
+        ''');
+        database.execute('''
+          CREATE TABLE set_entries (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_exercise_id INTEGER NOT NULL,
+            set_number INTEGER NOT NULL
+          )
+        ''');
+        database.execute('''
+          INSERT INTO exercises (name, category, muscle_group)
+          VALUES ('Legacy Row', 'strength', 'back')
+        ''');
+        database.userVersion = 6;
+      },
+    );
+    final database = AppDatabase(executor);
+    addTearDown(database.close);
+
+    final exercise = await database.select(database.exercises).getSingle();
+    expect(exercise.name, 'Legacy Row');
+    expect(exercise.videoUrl, isNull);
+    expect(database.schemaVersion, 7);
+  });
 }

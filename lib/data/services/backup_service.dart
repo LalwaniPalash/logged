@@ -21,8 +21,8 @@ class BackupService {
   final ExerciseAnatomyService _anatomyService;
 
   /// Schema versions this build can read. The current writer is [_schemaVersion].
-  static const Set<int> _supportedSchemaVersions = {1, 2, 3, 4, 5, 6};
-  static const int _schemaVersion = 6;
+  static const Set<int> _supportedSchemaVersions = {1, 2, 3, 4, 5, 6, 7};
+  static const int _schemaVersion = 7;
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';

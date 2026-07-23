@@ -17,6 +17,7 @@ class AppIcons {
 
   // Actions
   static const play = PhosphorIconsFill.play;
+  static const videoAdd = PhosphorIconsRegular.youtubeLogo;
   static const add = PhosphorIconsRegular.plus;
   static const check = PhosphorIconsRegular.check;
   static const circle = PhosphorIconsRegular.circle;

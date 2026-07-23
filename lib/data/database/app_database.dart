@@ -19,6 +19,10 @@ class Exercises extends Table {
   TextColumn get preferredLoadingMode =>
       textEnum<LoadingMode>().withDefault(const Constant('external'))();
   RealColumn get bodyweightFactor => real().withDefault(const Constant(1.0))();
+  // Optional demo/form video (e.g. a YouTube link) that belongs to the exercise
+  // itself, so it shows in any workout the exercise appears in. A per-template
+  // override still lives on TemplateExercises/SessionExercises.formUrl.
+  TextColumn get videoUrl => text().nullable()();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -143,7 +147,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'logged'));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -270,6 +274,11 @@ class AppDatabase extends _$AppDatabase {
           sessionExercises,
           sessionExercises.sidesPerSet,
         );
+      }
+      // v7: per-exercise demo/form video link (nullable — null means no video,
+      // so existing rows need no backfill).
+      if (from < 7) {
+        await migrator.addColumn(exercises, exercises.videoUrl);
       }
     },
     beforeOpen: (details) async {

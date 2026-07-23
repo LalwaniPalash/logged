@@ -187,6 +187,49 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     setState(_refresh);
   }
 
+  /// Add / edit / clear the exercise's own demo video link. Stored on the
+  /// exercise so it shows in every workout it appears in, not just this one.
+  Future<void> _editVideoUrl(SessionExerciseDetails detail) async {
+    final controller = TextEditingController(text: detail.exercise.videoUrl ?? '');
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Video for ${detail.exercise.name}'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: const InputDecoration(
+            labelText: 'Video link',
+            hintText: 'Paste a YouTube (or any) link',
+          ),
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        ),
+        actions: [
+          if ((detail.exercise.videoUrl ?? '').isNotEmpty)
+            TextButton(
+              onPressed: () => Navigator.pop(context, ''),
+              child: const Text('Remove'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result == null) return; // cancelled
+    await ref
+        .read(exerciseRepositoryProvider)
+        .updateVideoUrl(detail.exercise.id, result.isEmpty ? null : result);
+    setState(_refresh);
+  }
+
   Future<void> _openSet(
     SessionExerciseDetails detail, {
     SetEntry? existing,
@@ -593,6 +636,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                               onSwap: () => _swapExercise(detail),
                               onRemove: () =>
                                   _removeExercise(detail.sessionExercise.id),
+                              onEditVideoUrl: () => _editVideoUrl(detail),
                             ),
                           const SizedBox(height: 8),
                           if (!completed)
@@ -648,6 +692,7 @@ class _ExerciseCard extends StatelessWidget {
     required this.onEditSet,
     required this.onRemove,
     required this.onSwap,
+    required this.onEditVideoUrl,
     required this.progressionAggressiveness,
   });
 
@@ -659,6 +704,7 @@ class _ExerciseCard extends StatelessWidget {
   final ValueChanged<SetEntry> onEditSet;
   final VoidCallback onRemove;
   final VoidCallback onSwap;
+  final VoidCallback onEditVideoUrl;
   final double progressionAggressiveness;
 
   Future<void> _openForm(String url) async {
@@ -773,14 +819,47 @@ class _ExerciseCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if ((detail.sessionExercise.formUrl ?? '').isNotEmpty)
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () =>
-                          _openForm(detail.sessionExercise.formUrl!),
-                      icon: const Icon(AppIcons.play, size: 18),
-                      tooltip: 'Open form video',
-                    ),
+                  // A per-template link (formUrl) overrides the exercise's own
+                  // saved video; either one shows a one-tap play button that
+                  // opens in the YouTube app / browser. With no link, an add
+                  // button lets you attach one to the exercise on the spot.
+                  Builder(
+                    builder: (context) {
+                      final link =
+                          (detail.sessionExercise.formUrl?.isNotEmpty ?? false)
+                          ? detail.sessionExercise.formUrl!
+                          : (detail.exercise.videoUrl ?? '');
+                      if (link.isEmpty) {
+                        return IconButton(
+                          visualDensity: VisualDensity.compact,
+                          onPressed: onEditVideoUrl,
+                          icon: Icon(
+                            AppIcons.videoAdd,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          tooltip: 'Add a video link',
+                        );
+                      }
+                      // Long-press edits the exercise's own saved link; a
+                      // template override can only be changed in the template.
+                      return GestureDetector(
+                        onLongPress: (detail.exercise.videoUrl ?? '').isNotEmpty
+                            ? onEditVideoUrl
+                            : null,
+                        child: IconButton(
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => _openForm(link),
+                          icon: Icon(
+                            AppIcons.play,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                          tooltip: 'Play video',
+                        ),
+                      );
+                    },
+                  ),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     onPressed: onRemove,

@@ -24,6 +24,12 @@ class ExerciseRepository {
             ..where((row) => row.id.equals(exerciseId)))
           .write(ExercisesCompanion(defaultUnit: Value(unit)));
 
+  /// Sets (or clears, with null) the exercise's demo/form video link.
+  Future<void> updateVideoUrl(int exerciseId, String? url) =>
+      (_database.update(_database.exercises)
+            ..where((row) => row.id.equals(exerciseId)))
+          .write(ExercisesCompanion(videoUrl: Value(url)));
+
   Future<void> updateLoggingDefaults(
     int exerciseId, {
     required WeightUnit unit,
