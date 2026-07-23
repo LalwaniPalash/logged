@@ -52,6 +52,7 @@ class SettingsRepository {
   static const _kOnboardingComplete = 'onboardingComplete';
   static const _kTrainingGoal = 'trainingGoal';
   static const _kVolumeLandmarkOverrides = 'volumeLandmarkOverrides';
+  static const _kDeloadDismissedWeek = 'deloadDismissedWeek';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -115,6 +116,18 @@ class SettingsRepository {
 
   Future<void> setVolumeLandmarkOverrides(String? overridesJson) =>
       _put(_kVolumeLandmarkOverrides, overridesJson?.trim() ?? '');
+
+  Future<String?> readDeloadDismissedWeek() async {
+    final row =
+        await (_database.select(_database.appSettings)
+              ..where((setting) => setting.key.equals(_kDeloadDismissedWeek)))
+            .getSingleOrNull();
+    final value = row?.value.trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
+  Future<void> dismissDeloadForWeek(String weekKey) =>
+      _put(_kDeloadDismissedWeek, weekKey);
 
   Future<bool> readOnboardingComplete() async {
     final row =

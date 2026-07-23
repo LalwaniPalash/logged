@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
+import '../../core/domain/deload.dart';
 import '../../core/domain/live_muscle_state.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart';
@@ -19,6 +20,7 @@ import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/analytics_repository.dart';
 import '../session/start_workout_flow.dart';
+import '../templates/template_editor_screen.dart';
 import 'widgets/muscle_anatomy_view.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
@@ -73,6 +75,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ref.watch(effectiveVolumeLandmarksProvider).asData?.value ??
         defaultLandmarks;
     final bodySummary = ref.watch(bodyProgressSummaryProvider).asData?.value;
+    final deloadSignal = ref.watch(deloadSignalProvider).asData?.value;
 
     final weekly = weeklyStats(sets, weeks: 8);
     final prs = recentPrs(sets, limit: 6);
@@ -82,6 +85,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
         children: [
+          if (deloadSignal != null) ...[
+            _DeloadCard(
+              signal: deloadSignal,
+              onDismiss: _dismissDeload,
+              onGenerate: _generateDeload,
+            ),
+            const SizedBox(height: 18),
+          ],
           _BodyDevelopmentCard(summary: bodySummary),
           const SizedBox(height: 26),
           const SectionHeader('Muscle sculpture'),
@@ -220,6 +231,90 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const AllMuscleProgressScreen()));
+  }
+
+  Future<void> _dismissDeload() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .dismissDeloadForWeek(currentWeekKey());
+    ref.invalidate(deloadSignalProvider);
+  }
+
+  Future<void> _generateDeload() async {
+    try {
+      final template = await ref
+          .read(templateRepositoryProvider)
+          .createDeloadWeek();
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TemplateEditorScreen(template: template),
+        ),
+      );
+    } on StateError catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+}
+
+class _DeloadCard extends StatelessWidget {
+  const _DeloadCard({
+    required this.signal,
+    required this.onDismiss,
+    required this.onGenerate,
+  });
+
+  final DeloadSignal signal;
+  final VoidCallback onDismiss;
+  final VoidCallback onGenerate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.tertiaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 8, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(AppIcons.rest, color: theme.colorScheme.tertiary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Consider a deload',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onDismiss,
+                  tooltip: 'Dismiss for this week',
+                  icon: const Icon(AppIcons.close),
+                ),
+              ],
+            ),
+            for (final reason in signal.reasons)
+              Padding(
+                padding: const EdgeInsets.only(left: 4, top: 5),
+                child: Text('• $reason'),
+              ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onGenerate,
+              icon: const Icon(AppIcons.add),
+              label: const Text('Generate deload week'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

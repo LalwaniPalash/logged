@@ -132,4 +132,45 @@ void main() {
     );
     expect(await database.select(database.setEntries).get(), hasLength(1));
   });
+
+  test('deload template keeps this week exercises at half volume', () async {
+    final today = DateTime(2026, 7, 23);
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(
+          SessionsCompanion.insert(
+            startedAt: today,
+            endedAt: Value(today.add(const Duration(hours: 1))),
+          ),
+        );
+    final linkId = await database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+    await database.batch((batch) {
+      batch.insertAll(database.setEntries, [
+        for (var index = 0; index < 5; index++)
+          SetEntriesCompanion.insert(
+            sessionExerciseId: linkId,
+            setNumber: index + 1,
+            reps: const Value(8),
+            weightValue: const Value(80),
+            unit: const Value(WeightUnit.kg),
+          ),
+      ]);
+    });
+
+    final template = await repository.createDeloadWeek(today: today);
+    final detail = (await repository.exerciseDetails(template.id)).single;
+
+    expect(template.name, contains('Deload'));
+    expect(detail.exercise.id, exerciseId);
+    expect(detail.templateExercise.targetSets, 3);
+    expect(detail.templateExercise.prescriptionNotes, contains('3–4 reps'));
+  });
 }

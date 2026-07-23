@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../core/domain/streak.dart';
 import '../database/app_database.dart';
 
 class TemplateExerciseDetails {
@@ -98,6 +99,65 @@ class TemplateRepository {
       ]);
     });
     return copyId;
+  });
+
+  Future<Template> createDeloadWeek({
+    DateTime? today,
+  }) => _database.transaction(() async {
+    final weekStart = startOfWeek(today ?? DateTime.now());
+    final rows = await _database
+        .customSelect(
+          'SELECT sx.exercise_id AS exercise_id, MIN(sx.position) AS position, '
+          'COUNT(se.id) AS set_count '
+          'FROM set_entries se '
+          'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
+          'JOIN sessions s ON s.id = sx.session_id '
+          'WHERE s.ended_at IS NOT NULL AND s.started_at >= ? '
+          'AND se.is_warmup = 0 '
+          'GROUP BY sx.exercise_id ORDER BY position',
+          variables: [Variable.withDateTime(weekStart)],
+        )
+        .get();
+    if (rows.isEmpty) {
+      throw StateError(
+        'Complete at least one workout this week before generating a deload.',
+      );
+    }
+    final templates = await _database.select(_database.templates).get();
+    final position = templates.isEmpty
+        ? 0
+        : templates
+                  .map((template) => template.position)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
+    final weekKey = weekStart.toIso8601String().substring(0, 10);
+    final id = await _database
+        .into(_database.templates)
+        .insert(
+          TemplatesCompanion.insert(
+            name: 'Deload · $weekKey',
+            position: position,
+          ),
+        );
+    await _database.batch((batch) {
+      batch.insertAll(_database.templateExercises, [
+        for (var index = 0; index < rows.length; index++)
+          TemplateExercisesCompanion.insert(
+            templateId: id,
+            exerciseId: rows[index].read<int>('exercise_id'),
+            position: index,
+            targetSets: Value(
+              ((rows[index].read<int>('set_count')) / 2).ceil().clamp(1, 999),
+            ),
+            prescriptionNotes: const Value(
+              'Deload: use an easy load and leave 3–4 reps in reserve.',
+            ),
+          ),
+      ]);
+    });
+    return (_database.select(
+      _database.templates,
+    )..where((row) => row.id.equals(id))).getSingle();
   });
 
   Future<void> reorder(List<int> orderedIds) => _database.transaction(() async {

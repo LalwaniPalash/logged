@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/domain/live_muscle_state.dart';
+import '../core/domain/deload.dart';
 import '../core/domain/muscle.dart';
 import '../core/domain/muscle_progress.dart'
     show BodyProgressSummary, MuscleProgress, buildBodyProgressSummary;
 import '../core/domain/volume_landmarks.dart';
+import '../core/domain/streak.dart';
 import '../core/domain/workout_settings.dart';
 import '../core/services/notification_service.dart';
 import 'database/app_database.dart';
@@ -84,6 +86,31 @@ final effectiveVolumeLandmarksProvider =
             ),
           );
     });
+
+String currentWeekKey([DateTime? now]) =>
+    startOfWeek(now ?? DateTime.now()).toIso8601String().substring(0, 10);
+
+final deloadSignalProvider = FutureProvider<DeloadSignal?>((ref) async {
+  // Keep the assessment live when a completed workout changes.
+  ref.watch(completedSetsProvider);
+  final coaching = await ref.watch(coachingPreferencesProvider.future);
+  final dismissed = await ref
+      .watch(settingsRepositoryProvider)
+      .readDeloadDismissedWeek();
+  if (dismissed == currentWeekKey()) return null;
+  final data = await ref.watch(analyticsRepositoryProvider).loadDeloadData();
+  final signal = assessDeload(
+    weeklyEffectiveSetsByMuscle: data.weeklyEffectiveSetsByMuscle,
+    oneRepMaxSeriesByExercise: data.oneRepMaxSeriesByExercise,
+    rpeAtLoadSeries: data.rpeAtLoadSeries,
+    landmarks: resolveLandmarks(
+      goal: coaching.trainingGoal,
+      overridesJson: coaching.volumeLandmarkOverrides,
+    ),
+    goal: coaching.trainingGoal,
+  );
+  return signal.triggered ? signal : null;
+});
 
 final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
   (ref) => AnalyticsRepository(ref.watch(databaseProvider)),

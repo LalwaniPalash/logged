@@ -6,6 +6,7 @@ import '../../core/domain/enums.dart';
 import '../../core/domain/live_muscle_state.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart' as progress;
+import '../../core/domain/streak.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../database/app_database.dart';
 
@@ -34,6 +35,18 @@ class WorkoutSetRecord {
 
   double get volumeKg => weightKg * weightEntry.implements * reps * sideCount;
   double get estimatedOneRepMaxKg => weightKg * (1 + reps / 30);
+}
+
+class DeloadData {
+  const DeloadData({
+    required this.weeklyEffectiveSetsByMuscle,
+    required this.oneRepMaxSeriesByExercise,
+    required this.rpeAtLoadSeries,
+  });
+
+  final Map<MuscleId, List<double>> weeklyEffectiveSetsByMuscle;
+  final Map<int, List<double>> oneRepMaxSeriesByExercise;
+  final Map<int, List<double>> rpeAtLoadSeries;
 }
 
 class AnalyticsRepository {
@@ -79,6 +92,19 @@ class AnalyticsRepository {
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
       'JOIN sessions s ON s.id = sx.session_id '
       'JOIN exercises e ON e.id = sx.exercise_id '
+      'ORDER BY s.started_at, se.id';
+
+  static const _deloadQuery =
+      'SELECT s.started_at AS started, e.id AS eid, '
+      'e.primary_muscles AS primary_muscles, '
+      'e.secondary_muscles AS secondary_muscles, '
+      'se.weight_value AS weight_value, se.unit AS unit, '
+      'se.reps AS reps, se.rpe AS rpe, se.is_warmup AS is_warmup '
+      'FROM set_entries se '
+      'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
+      'JOIN sessions s ON s.id = sx.session_id '
+      'JOIN exercises e ON e.id = sx.exercise_id '
+      'WHERE s.ended_at IS NOT NULL '
       'ORDER BY s.started_at, se.id';
 
   /// All completed, weighted sets in chronological order.
@@ -134,6 +160,87 @@ class AnalyticsRepository {
               bodyweights: await _loadBodyweights(),
             ),
           );
+
+  Future<DeloadData> loadDeloadData({DateTime? today, int weeks = 4}) async {
+    final rows = await _database.customSelect(_deloadQuery).get();
+    final now = today ?? DateTime.now();
+    final currentWeek = startOfWeek(now);
+    final weekStarts = [
+      for (var offset = weeks - 1; offset >= 0; offset--)
+        currentWeek.subtract(Duration(days: offset * 7)),
+    ];
+    final weekly = {
+      for (final muscle in MuscleId.values)
+        muscle: List<double>.filled(weeks, 0),
+    };
+    final maxByExerciseDay = <int, Map<DateTime, double>>{};
+    final rpeByExerciseLoad = <int, Map<String, List<double>>>{};
+
+    for (final row in rows) {
+      final isWarmup = switch (row.data['is_warmup']) {
+        final bool value => value,
+        final num value => value != 0,
+        _ => false,
+      };
+      if (isWarmup) continue;
+      final date = _dateFromColumn(row.data['started']);
+      final weekIndex = weekStarts.indexOf(startOfWeek(date));
+      if (weekIndex >= 0) {
+        final primary = _decodeMuscles(
+          row.data['primary_muscles'],
+          'deload assessment',
+        ).toSet();
+        final secondary = _decodeMuscles(
+          row.data['secondary_muscles'],
+          'deload assessment',
+        ).toSet().difference(primary);
+        for (final muscle in primary) {
+          weekly[muscle]![weekIndex] += 1;
+        }
+        for (final muscle in secondary) {
+          weekly[muscle]![weekIndex] += secondaryMuscleSetWeight;
+        }
+      }
+
+      final weight = (row.data['weight_value'] as num?)?.toDouble();
+      final reps = row.data['reps'] as int?;
+      if (weight == null || weight <= 0 || reps == null || reps <= 0) continue;
+      final exerciseId = row.data['eid'] as int;
+      final unit = WeightUnit.values.byName(
+        row.data['unit'] as String? ?? 'kg',
+      );
+      final loadKg = weightKg(weight, unit);
+      final estimate = loadKg * (1 + reps / 30);
+      final day = dateOnly(date);
+      final daily = maxByExerciseDay[exerciseId] ??= {};
+      if (estimate > (daily[day] ?? 0)) daily[day] = estimate;
+
+      final rpe = (row.data['rpe'] as num?)?.toDouble();
+      if (rpe != null) {
+        final byLoad = rpeByExerciseLoad[exerciseId] ??= {};
+        (byLoad[loadKg.toStringAsFixed(2)] ??= []).add(rpe);
+      }
+    }
+
+    final oneRepSeries = <int, List<double>>{};
+    for (final entry in maxByExerciseDay.entries) {
+      final days = entry.value.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+      oneRepSeries[entry.key] = days.map((item) => item.value).toList();
+    }
+
+    return DeloadData(
+      weeklyEffectiveSetsByMuscle: weekly,
+      oneRepMaxSeriesByExercise: oneRepSeries,
+      rpeAtLoadSeries: {
+        for (final entry in rpeByExerciseLoad.entries)
+          entry.key:
+              (entry.value.values.toList()
+                    ..sort((a, b) => b.length.compareTo(a.length)))
+                  .first,
+      },
+    );
+  }
 
   List<WorkoutSetRecord> _map(List<QueryRow> rows) => [
     for (final row in rows)
