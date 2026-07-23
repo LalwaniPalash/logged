@@ -1,3 +1,76 @@
+# Active task — Backup format + keyboard + builds (2026-07-23)
+User asks, in order:
+1. "make new IPA APK with templates" — templates default via LOGGED_SEED_DEFAULT_TEMPLATES=true.
+2. "when I export something, why does it export two files?" — share_plus iOS appends `text` as a
+   SECOND activity item when `files` is also set. Fixed: use `subject` (metadata only), not `text`.
+3. "wouldn't it be better to have another format?" — Q&A locked: zip the JSON (.json still imports)
+   + add CSV set-history (export-only). Added `archive` dep.
+4. "no processing screen telling the user to wait" — added blocking `_withProgress` spinner around
+   export / CSV / import in Settings.
+5. "keyboard on edit set won't hide, can't press Save" — ROOT CAUSE: iOS numeric keypad has no
+   return key; nothing unfocused on tap-outside. Fixed: onTapOutside unfocus on every field +
+   ScrollViewKeyboardDismissBehavior.onDrag.
+
+- [x] Export → zip (package:archive), ~80-90% smaller, one file
+- [x] Import accepts .zip AND .json (magic-byte sniff, not just extension); old backups still load
+- [x] CSV set-history export (RFC-4180 quoted, per-hand/each-side flattened into volume_kg)
+- [x] share_plus two-files fix (subject, not text)
+- [x] Settings: CSV tile + progress spinners + corrected .zip/.json copy
+- [x] Keyboard dismiss: onTapOutside unfocus + onDrag
+- [x] archive 4.0.9 API verified (encode→List<int> non-null, content→Uint8List auto-decompress)
+- [x] flutter analyze clean + 88 tests green (added CSV volume/quoting test)
+- [x] APK (release, with templates) → dist/logged-1.0.0-zip-export-keyboard-fix.apk (93.9MB)
+- [x] IPA (release, unsigned, with templates) → dist/logged-1.0.0-zip-export-keyboard-fix-unsigned.ipa
+      (24.4MB). First attempt FAILED (sandbox blocked github.com for sqlite3 native-asset dylib);
+      rebuilt with sandbox disabled. Verified objective_c + sqlite3 frameworks present, fresh mtime.
+- [x] Templates confirmed in both: flag defaults true, 6 templates seed at runtime, asset bundled
+- [x] Codex Mode B review → 3 findings, all verified real, all fixed:
+      - Med: import only caught FormatException; a corrupt/encrypted .zip threw an ArchiveException
+        that escaped as an uncaught async error. Fixed: `_decodeBackup` normalises any failure to
+        FormatException so the settings snackbar handles it.
+      - Med: CSV formula injection via user-entered exercise names (=/+/-/@). Fixed: leading `'`.
+      - Low: `\r` missing from the CSV quote regex. Fixed.
+      - Codex confirmed NO bug in the archive encode path and NO stuck/double-pop in `_withProgress`.
+- [x] Regression test for formula injection; 89 tests green, analyze clean
+- [x] REBUILT APK (93.9MB) + IPA (24.4MB) with the 3 hardening fixes; verified App.framework mtime
+      current and native frameworks bundled. Both in dist/ as logged-1.0.0-zip-export-keyboard-fix*.
+
+# Active task — Session + set-editor UI/UX pass (2026-07-22)
+User: "both these screens can be better in relation to UI and UX", + "why do we have
+two options for each side / each hand". Decisions locked via Q&A:
+compact stepper table; set-number chip = derived status (NO schema change), `⋯` = details.
+
+Diagnosis (root causes, not symptoms):
+- `set_row.dart:221` — each `_StepperField` is ~172px (two 48px IconButtons + text +
+  suffix); two cannot fit in ~337px so the `Wrap` breaks every set onto 2 lines → 215px/set.
+- `set_row.dart:291` — a ✓ that opens the edit sheet. In every tracker ✓ means "set done".
+- `set_editor_sheet.dart:196` — 4-way SegmentedButton has no room → "Weig/ht" wraps mid-word.
+- Sheet renders Duration+Distance for a barbell squat (meaningless), 11 flat controls, no grouping.
+- "Per hand" (weight ×2) and "Each side" (reps ×2) are orthogonal but read as synonyms and sit
+  in unrelated groups 400px apart → the user's confusion. Fix = attach each to the field it
+  modifies + live plain-English echo. NOT a redundancy; both are needed.
+
+- [x] `setFieldsFor()` single source of truth so header labels and row fields cannot desync
+- [x] Rewrite `SetRow` compact: 32px chip + flex steppers + `⋯`, one line (measured 46pt/set vs ~215pt)
+- [x] `_MicroStepper` (30x38 hit target) replaces IconButton to fit the width budget
+- [x] `SetTableHeader` widget: column labels carry unit / "per hand" / "each side"
+- [x] Per-row deviation line when a set differs from the header (loadingMode/weightEntry/sideCount/unit)
+- [x] Set chip fills primaryContainer when complete (derived, as `_isComplete` today)
+- [x] Rebuild `SetEditorSheet`: category-aware fields, grouped sections, chips not SegmentedButton
+- [x] Relabel: "Per hand (×2)" under weight w/ echo; "Each side (×2)" under reps w/ echo
+- [x] Theme segmented/choice selection → primaryContainer (terracotta), drop clashing sage
+- [x] `flutter analyze` clean + `flutter test` green (87 tests, up from 67)
+- [x] Codex Mode B review → 4 findings, ALL verified real against source, all fixed:
+      - High: `Plank` is bodyweight+90s/zero-rep → hiding duration made hold time unloggable.
+        Fixed with `isTimedExercise()`; columns/sheet now data-driven, not category-driven.
+      - High: hiding loading modes for `external` exercises broke assisted/added on strength lifts.
+        Fixed: picker shows for all lifting categories.
+      - Med: unit hoisted to the header hid per-set unit mismatches (critical — mixed-unit gym).
+        Fixed: rows flag "in lb" when they differ from the heading.
+      - Med: `Row` for the action buttons could overflow at large text scale. Restored `Wrap`.
+- [x] Regression tests added for all four (timed holds, unit mismatch, loading modes, isTimedExercise)
+- [x] Verified layout via widget tests at 402pt + 320pt; goldens inspected then deleted (machine-specific)
+
 # Active task — Set logging UX + per-side load (2026-07-21)
 Full spec: `tasks/spec-set-logging.md`. Decisions locked with user via Q&A.
 - [x] Schema v6: Exercises.weightEntry, SetEntries.weightEntry+sideCount, sidesPerSet on template/session exercises

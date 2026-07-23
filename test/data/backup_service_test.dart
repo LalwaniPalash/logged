@@ -134,4 +134,101 @@ void main() {
     expect(jsonDecode(exercise.primaryMuscles), ['side_delts']);
     expect(jsonDecode(exercise.secondaryMuscles), ['upper_traps']);
   });
+
+  test('CSV set history flattens per-hand and each-side into volume', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final exerciseId = await db
+        .into(db.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            // Comma in the name proves RFC-4180 quoting.
+            name: 'Row, Single-Arm',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'back',
+            defaultUnit: const Value(WeightUnit.kg),
+          ),
+        );
+    final sessionId = await db
+        .into(db.sessions)
+        .insert(
+          SessionsCompanion.insert(startedAt: DateTime.utc(2026, 7, 22, 9)),
+        );
+    final linkId = await db
+        .into(db.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+    await db
+        .into(db.setEntries)
+        .insert(
+          SetEntriesCompanion.insert(
+            sessionExerciseId: linkId,
+            setNumber: 1,
+            reps: const Value(8),
+            weightValue: const Value(20),
+            unit: const Value(WeightUnit.kg),
+            weightEntry: const Value(WeightEntry.perSide),
+            sideCount: const Value(2),
+          ),
+        );
+
+    final csv = await BackupService(db).setHistoryCsv();
+    final lines = csv.trim().split('\n');
+    expect(lines.first, startsWith('date,exercise,set,warmup,weight,unit'));
+    // 20 kg/hand × 2 hands × 8 reps × 2 sides = 640 kg.
+    expect(lines[1], contains('"Row, Single-Arm"'));
+    expect(lines[1], contains('kg,yes,8,yes'));
+    expect(lines[1], endsWith(',640'));
+  });
+
+  test('CSV neutralises a formula-injection exercise name', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final exerciseId = await db
+        .into(db.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            // A custom name a user could type to attack their own spreadsheet.
+            name: '=HYPERLINK("evil")',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'chest',
+            defaultUnit: const Value(WeightUnit.kg),
+          ),
+        );
+    final sessionId = await db
+        .into(db.sessions)
+        .insert(
+          SessionsCompanion.insert(startedAt: DateTime.utc(2026, 7, 22, 9)),
+        );
+    final linkId = await db
+        .into(db.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+    await db
+        .into(db.setEntries)
+        .insert(
+          SetEntriesCompanion.insert(
+            sessionExerciseId: linkId,
+            setNumber: 1,
+            reps: const Value(5),
+            weightValue: const Value(40),
+            unit: const Value(WeightUnit.kg),
+          ),
+        );
+
+    final csv = await BackupService(db).setHistoryCsv();
+    // Leading `'` defuses the formula; the `=` never starts the cell.
+    expect(csv, contains('"\'=HYPERLINK(""evil"")"'));
+    expect(csv, isNot(contains(',=HYPERLINK')));
+  });
 }

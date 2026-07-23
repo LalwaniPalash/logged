@@ -197,7 +197,15 @@ class AppTheme {
         shape: const StadiumBorder(),
         side: BorderSide(color: scheme.outlineVariant),
         backgroundColor: scheme.surfaceContainer,
+        // Selection reads in the terracotta accent used everywhere else; the
+        // sage secondary fought the primary colour wherever both appeared.
+        selectedColor: scheme.primaryContainer,
+        showCheckmark: false,
         labelStyle: text.labelLarge,
+        secondaryLabelStyle: text.labelLarge?.copyWith(
+          color: scheme.onPrimaryContainer,
+          fontWeight: FontWeight.w700,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -284,6 +292,16 @@ class AppTheme {
         style: ButtonStyle(
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? scheme.primaryContainer
+                : Colors.transparent,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? scheme.onPrimaryContainer
+                : scheme.onSurfaceVariant,
           ),
         ),
       ),

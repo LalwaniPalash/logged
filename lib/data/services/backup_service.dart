@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../database/app_database.dart';
+import '../../core/domain/enums.dart';
+import '../../core/domain/workout_metrics.dart';
 import 'exercise_anatomy_service.dart';
 
 class BackupService {
@@ -17,45 +20,179 @@ class BackupService {
   final AppDatabase _database;
   final ExerciseAnatomyService _anatomyService;
 
+  /// Schema versions this build can read. The current writer is [_schemaVersion].
+  static const Set<int> _supportedSchemaVersions = {1, 2, 3, 4, 5, 6};
+  static const int _schemaVersion = 6;
+
+  /// Name of the JSON document stored inside the exported `.zip`.
+  static const String _entryName = 'logged-backup.json';
+
   Future<void> exportAndShare() async {
     final payload = await exportPayload();
     final directory = await getTemporaryDirectory();
     final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
-    final file = File('${directory.path}/logged-backup-$stamp.json');
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(payload),
-    );
+
+    // The backup is JSON (repeated keys, very compressible) so it is zipped —
+    // typically 80-90% smaller. Still one file. `.json` backups remain readable
+    // on import for anyone holding an older export.
+    final json = utf8.encode(jsonEncode(payload));
+    final archive = Archive()
+      ..addFile(ArchiveFile(_entryName, json.length, json));
+    final zipBytes = ZipEncoder().encode(archive);
+    final file = File('${directory.path}/logged-backup-$stamp.zip');
+    await file.writeAsBytes(zipBytes);
+
+    // `text` must NOT be set alongside `files`: the iOS plugin appends the text
+    // as a SECOND activity item, so saving to Files produced two files — the
+    // backup plus a stray note. `subject` is metadata only (email subject), so
+    // exactly one file is shared.
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], text: 'Logged backup'),
+      ShareParams(files: [XFile(file.path)], subject: 'Logged backup'),
+    );
+  }
+
+  /// Exports a flat, one-row-per-logged-set CSV for spreadsheets. Export only —
+  /// it cannot be imported, because it does not carry the relational structure.
+  Future<void> exportSetHistoryCsv() async {
+    final csv = await setHistoryCsv();
+    final directory = await getTemporaryDirectory();
+    final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
+    final file = File('${directory.path}/logged-sets-$stamp.csv');
+    await file.writeAsString(csv);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], subject: 'Logged set history'),
     );
   }
 
   Future<bool> importFromPicker() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['json'],
+      allowedExtensions: ['zip', 'json'],
     );
     final path = result?.files.single.path;
     if (path == null) return false;
-    final raw = jsonDecode(await File(path).readAsString());
+    final raw = _decodeBackup(await File(path).readAsBytes(), path);
     if (raw is! Map<String, dynamic> ||
         raw['app'] != 'Logged' ||
-        (raw['schemaVersion'] != 1 &&
-            raw['schemaVersion'] != 2 &&
-            raw['schemaVersion'] != 3 &&
-            raw['schemaVersion'] != 4 &&
-            raw['schemaVersion'] != 5 &&
-            raw['schemaVersion'] != 6)) {
+        !_supportedSchemaVersions.contains(raw['schemaVersion'])) {
       throw const FormatException('This is not a valid Logged backup file.');
     }
     await replaceFromPayload(raw);
     return true;
   }
 
+  /// Reads either a raw `.json` backup or a `.zip` produced by [exportAndShare].
+  /// Sniffs the zip magic bytes rather than trusting the extension.
+  ///
+  /// Any decode/decompress/parse failure is normalised to a [FormatException] so
+  /// the caller's single "invalid backup" path handles it — otherwise a corrupt
+  /// or password-protected zip escapes as an uncaught async error.
+  Object? _decodeBackup(List<int> bytes, String path) {
+    final looksZip =
+        path.toLowerCase().endsWith('.zip') ||
+        (bytes.length >= 2 && bytes[0] == 0x50 && bytes[1] == 0x4B);
+    try {
+      if (looksZip) {
+        final archive = ZipDecoder().decodeBytes(bytes);
+        final entry = archive.files.firstWhere(
+          (file) => file.isFile && file.name.endsWith('.json'),
+          orElse: () =>
+              throw const FormatException('No backup found inside the zip.'),
+        );
+        return jsonDecode(utf8.decode(entry.content));
+      }
+      return jsonDecode(utf8.decode(bytes));
+    } on FormatException {
+      rethrow;
+    } catch (_) {
+      throw const FormatException('This file could not be read as a backup.');
+    }
+  }
+
+  Future<String> setHistoryCsv() async {
+    final db = _database;
+    final rows =
+        await (db.select(db.setEntries).join([
+          innerJoin(
+            db.sessionExercises,
+            db.sessionExercises.id.equalsExp(
+              db.setEntries.sessionExerciseId,
+            ),
+          ),
+          innerJoin(
+            db.sessions,
+            db.sessions.id.equalsExp(db.sessionExercises.sessionId),
+          ),
+          innerJoin(
+            db.exercises,
+            db.exercises.id.equalsExp(db.sessionExercises.exerciseId),
+          ),
+        ])..orderBy([
+          OrderingTerm.asc(db.sessions.startedAt),
+          OrderingTerm.asc(db.setEntries.setNumber),
+        ])).get();
+
+    final buffer = StringBuffer()
+      ..writeln(
+        'date,exercise,set,warmup,weight,unit,per_hand,reps,each_side,'
+        'duration_sec,distance_m,rpe,volume_kg',
+      );
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    for (final row in rows) {
+      final set = row.readTable(db.setEntries);
+      final session = row.readTable(db.sessions);
+      final exercise = row.readTable(db.exercises);
+      final volume = setVolumeKg(
+        weightValue: set.weightValue,
+        unit: set.unit,
+        reps: set.reps,
+        entry: set.weightEntry,
+        sideCount: set.sideCount,
+      );
+      buffer.writeln(
+        [
+          dateFormat.format(session.startedAt),
+          _csvField(exercise.name),
+          set.setNumber,
+          set.isWarmup ? 'yes' : 'no',
+          set.weightValue ?? '',
+          set.unit?.name ?? '',
+          set.weightEntry == WeightEntry.perSide ? 'yes' : 'no',
+          set.reps ?? '',
+          set.sideCount > 1 ? 'yes' : 'no',
+          set.durationSec ?? '',
+          set.distanceMeters ?? '',
+          set.rpe ?? '',
+          volume == 0 ? '' : _trimCsvDouble(volume),
+        ].join(','),
+      );
+    }
+    return buffer.toString();
+  }
+
+  /// Renders a CSV field safely. Two concerns:
+  ///  * RFC 4180 quoting when the value holds a comma, quote, CR, or LF.
+  ///  * Formula-injection: a spreadsheet treats a cell starting with `= + - @`
+  ///    (or a leading tab/CR) as a formula. Exercise names are user-entered, so
+  ///    a leading `'` neutralises that before quoting.
+  static String _csvField(String value) {
+    var field = value;
+    if (field.isNotEmpty && '=+-@\t\r'.contains(field[0])) {
+      field = "'$field";
+    }
+    if (field.contains(RegExp('[",\r\n]'))) {
+      return '"${field.replaceAll('"', '""')}"';
+    }
+    return field;
+  }
+
+  static String _trimCsvDouble(double value) =>
+      value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';
+
   Future<Map<String, dynamic>> exportPayload() async => {
     'app': 'Logged',
     'appVersion': '1.0.0',
-    'schemaVersion': 6,
+    'schemaVersion': _schemaVersion,
     'exportedAt': DateTime.now().toIso8601String(),
     'exercises': (await _database.select(_database.exercises).get())
         .map((row) => row.toJson())

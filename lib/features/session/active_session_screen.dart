@@ -94,6 +94,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       showDragHandle: true,
       builder: (context) => SetEditorSheet(
         exerciseName: detail.exercise.name,
+        category: detail.exercise.category,
+        timed: isTimedExercise(
+          sets: detail.sets,
+          targetDurationSec: detail.sessionExercise.targetDurationSec,
+          minReps: detail.sessionExercise.minReps,
+          maxReps: detail.sessionExercise.maxReps,
+        ),
         defaultUnit: detail.exercise.defaultUnit,
         defaultWeightEntry: detail.exercise.weightEntry,
         existing: existing,
@@ -336,7 +343,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                         detail: detail,
                         onAddSet: () => _addSet(detail),
                         onRepeatSet: () => _repeatSet(detail),
-                        onMore: () => _openSet(detail),
                         onInlineCommit: (set, draft) =>
                             _updateInlineSet(detail, set, draft),
                         onEditSet: (set) => _openSet(detail, existing: set),
@@ -383,7 +389,6 @@ class _ExerciseCard extends StatelessWidget {
     required this.detail,
     required this.onAddSet,
     required this.onRepeatSet,
-    required this.onMore,
     required this.onInlineCommit,
     required this.onEditSet,
     required this.onRemove,
@@ -392,7 +397,6 @@ class _ExerciseCard extends StatelessWidget {
   final SessionExerciseDetails detail;
   final VoidCallback onAddSet;
   final VoidCallback onRepeatSet;
-  final VoidCallback onMore;
   final Future<void> Function(SetEntry set, SetRowDraft draft) onInlineCommit;
   final ValueChanged<SetEntry> onEditSet;
   final VoidCallback onRemove;
@@ -419,6 +423,32 @@ class _ExerciseCard extends StatelessWidget {
       concentricSec: detail.sessionExercise.concentricSec,
       topPauseSec: detail.sessionExercise.topPauseSec,
     );
+
+    // Column headings describe the exercise's prevailing shape, taken from the
+    // first set (the sets of one exercise almost always agree). Any set that
+    // differs still renders in the same columns and labels its own deviation.
+    final firstSet = detail.sets.isEmpty ? null : detail.sets.first;
+    final headerUnit = firstSet?.unit ?? detail.exercise.defaultUnit;
+    final headerWeightEntry =
+        firstSet?.weightEntry ?? detail.exercise.weightEntry;
+    final headerSideCount =
+        firstSet?.sideCount ?? detail.sessionExercise.sidesPerSet ?? 1;
+    // A Plank is `bodyweight` category but prescribed in seconds; without this
+    // it would render a reps column and its hold time would be unloggable.
+    final timed = isTimedExercise(
+      sets: detail.sets,
+      targetDurationSec: detail.sessionExercise.targetDurationSec,
+      minReps: detail.sessionExercise.minReps,
+      maxReps: detail.sessionExercise.maxReps,
+    );
+    final columns = setColumnsFor(
+      category: detail.exercise.category,
+      loadingModes: detail.sets.isEmpty
+          ? [detail.exercise.preferredLoadingMode]
+          : detail.sets.map((set) => set.loadingMode),
+      timed: timed,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -449,7 +479,7 @@ class _ExerciseCard extends StatelessWidget {
                             targetText,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
+                              height: 1.4,
                             ),
                           ),
                         ],
@@ -486,7 +516,7 @@ class _ExerciseCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               if (detail.sets.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -500,36 +530,43 @@ class _ExerciseCard extends StatelessWidget {
                     ),
                   ),
                 )
-              else
+              else ...[
+                SetTableHeader(
+                  columns: columns,
+                  unit: headerUnit,
+                  weightEntry: headerWeightEntry,
+                  sideCount: headerSideCount,
+                ),
                 for (final set in detail.sets)
                   SetRow(
                     key: ValueKey(set.id),
                     set: set,
                     category: detail.exercise.category,
-                    fallbackUnit: detail.exercise.defaultUnit,
+                    headerUnit: headerUnit,
+                    columns: columns,
+                    headerWeightEntry: headerWeightEntry,
+                    headerSideCount: headerSideCount,
+                    timed: timed,
                     onCommit: (draft) => onInlineCommit(set, draft),
                     onOpenDetails: () => onEditSet(set),
                   ),
-              const SizedBox(height: 4),
+              ],
+              const SizedBox(height: 6),
+              // Wrap, not Row: these must fall onto a second line at large text
+              // scales rather than overflow.
               Wrap(
-                spacing: 8,
+                spacing: 4,
                 runSpacing: 4,
-                alignment: WrapAlignment.start,
                 children: [
                   TextButton.icon(
                     onPressed: detail.sets.isEmpty ? null : onRepeatSet,
                     icon: const Icon(AppIcons.refresh, size: 18),
-                    label: const Text('Repeat set'),
+                    label: const Text('Repeat'),
                   ),
                   TextButton.icon(
                     onPressed: onAddSet,
                     icon: const Icon(AppIcons.add, size: 18),
                     label: const Text('Add set'),
-                  ),
-                  TextButton.icon(
-                    onPressed: onMore,
-                    icon: const Icon(AppIcons.more, size: 18),
-                    label: const Text('More'),
                   ),
                 ],
               ),

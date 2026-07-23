@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
@@ -39,9 +41,13 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (confirm != true || !context.mounted) return;
     try {
-      final imported = await BackupService(
-        ref.read(databaseProvider),
-      ).importFromPicker();
+      final imported = await _withProgress<bool>(
+        context,
+        message: 'Importing backup…',
+        // The file picker opens its own UI, so the spinner only covers the
+        // wipe-and-reinsert that follows selection.
+        task: () => BackupService(ref.read(databaseProvider)).importFromPicker(),
+      );
       if (context.mounted && imported) {
         ScaffoldMessenger.of(
           context,
@@ -53,6 +59,62 @@ class SettingsScreen extends ConsumerWidget {
           context,
         ).showSnackBar(SnackBar(content: Text(error.message)));
       }
+    }
+  }
+
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    await _withProgress<void>(
+      context,
+      message: 'Preparing backup…',
+      task: () => BackupService(ref.read(databaseProvider)).exportAndShare(),
+    );
+  }
+
+  Future<void> _exportCsv(BuildContext context, WidgetRef ref) async {
+    await _withProgress<void>(
+      context,
+      message: 'Building spreadsheet…',
+      task: () =>
+          BackupService(ref.read(databaseProvider)).exportSetHistoryCsv(),
+    );
+  }
+
+  /// Runs [task] behind a blocking spinner so the user knows work is happening
+  /// during the DB read / zip / import, instead of a frozen-looking screen.
+  Future<T> _withProgress<T>(
+    BuildContext context, {
+    required String message,
+    required Future<T> Function() task,
+  }) async {
+    final navigator = Navigator.of(context, rootNavigator: true);
+    var dialogShown = false;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+                const SizedBox(width: 20),
+                Expanded(child: Text(message)),
+              ],
+            ),
+          ),
+        ),
+      ).then((_) => dialogShown = false),
+    );
+    dialogShown = true;
+    try {
+      return await task();
+    } finally {
+      if (dialogShown && navigator.canPop()) navigator.pop();
     }
   }
 
@@ -573,16 +635,22 @@ class SettingsScreen extends ConsumerWidget {
               _ActionTile(
                 icon: AppIcons.export,
                 title: 'Export backup',
-                subtitle: 'Share a JSON file to your other device',
-                onTap: () =>
-                    BackupService(ref.read(databaseProvider)).exportAndShare(),
+                subtitle: 'Share a compressed .zip to your other device',
+                onTap: () => _export(context, ref),
               ),
               const Divider(),
               _ActionTile(
                 icon: AppIcons.import,
                 title: 'Import backup',
-                subtitle: 'Replace this device with a JSON backup',
+                subtitle: 'Replace this device from a .zip or .json backup',
                 onTap: () => _import(context, ref),
+              ),
+              const Divider(),
+              _ActionTile(
+                icon: AppIcons.inventory,
+                title: 'Export set history (CSV)',
+                subtitle: 'A spreadsheet of every logged set · export only',
+                onTap: () => _exportCsv(context, ref),
               ),
             ],
           ),
