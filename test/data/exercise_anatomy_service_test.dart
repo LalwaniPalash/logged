@@ -152,4 +152,59 @@ void main() {
     expect(pullUps.single.category, ExerciseCategory.bodyweight);
     expect(pullUps.single.preferredLoadingMode, LoadingMode.bodyweightAdded);
   });
+
+  test('corrects a Pull-Up left on external by the older seed', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    // Simulate an install seeded before the loading-mode fix: Pull-Up exists
+    // but is stuck on the `external` default, so it demands a bogus weight.
+    await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Pull-Up',
+            category: ExerciseCategory.bodyweight,
+            muscleGroup: 'back',
+            preferredLoadingMode: const Value(LoadingMode.external),
+          ),
+        );
+    final service = ExerciseAnatomyService(database, loadAsset: () async => '[]');
+
+    expect(await service.backfillPullUpOnce(), isTrue);
+    final pullUp = await (database.select(
+      database.exercises,
+    )..where((exercise) => exercise.name.equals('Pull-Up'))).getSingle();
+    expect(pullUp.preferredLoadingMode, LoadingMode.bodyweightAdded);
+    // Still one Pull-Up (corrected in place, not duplicated) and runs once.
+    expect(await service.backfillPullUpOnce(), isFalse);
+    final all = await (database.select(
+      database.exercises,
+    )..where((exercise) => exercise.name.equals('Pull-Up'))).get();
+    expect(all, hasLength(1));
+  });
+
+  test('does not override a deliberately chosen strict-bodyweight Pull-Up', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    // The user made Pull-Up strict bodyweight on purpose (not the legacy
+    // `external` breakage) — the one-time heal must leave that alone.
+    await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Pull-Up',
+            category: ExerciseCategory.bodyweight,
+            muscleGroup: 'back',
+            preferredLoadingMode: const Value(LoadingMode.bodyweight),
+          ),
+        );
+    final service = ExerciseAnatomyService(database, loadAsset: () async => '[]');
+
+    // Ran (flag set) but changed nothing.
+    expect(await service.backfillPullUpOnce(), isFalse);
+    final pullUp = await (database.select(
+      database.exercises,
+    )..where((exercise) => exercise.name.equals('Pull-Up'))).getSingle();
+    expect(pullUp.preferredLoadingMode, LoadingMode.bodyweight);
+  });
 }

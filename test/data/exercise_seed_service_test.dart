@@ -38,4 +38,39 @@ void main() {
       'brachialis',
     ]);
   });
+
+  test('seeds the asset loading mode instead of defaulting to external', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final source = jsonEncode([
+      {
+        'name': 'Pull-Up',
+        'category': 'bodyweight',
+        'muscleGroup': 'back',
+        'primaryMuscles': ['lats'],
+        'secondaryMuscles': ['biceps'],
+        'defaultUnit': 'kg',
+        'preferredLoadingMode': 'bodyweightAdded',
+      },
+      {
+        'name': 'Barbell Bench Press',
+        'category': 'strength',
+        'muscleGroup': 'chest',
+        'primaryMuscles': ['chest'],
+        'secondaryMuscles': ['front_delts'],
+        'defaultUnit': 'kg',
+      },
+    ]);
+    await ExerciseSeedService(database, loadAsset: () async => source)
+        .seedIfEmpty();
+
+    final exercises = await database.select(database.exercises).get();
+    final pullUp = exercises.singleWhere((e) => e.name == 'Pull-Up');
+    final bench = exercises.singleWhere((e) => e.name == 'Barbell Bench Press');
+    // Regression: fresh installs must not force a bodyweight lift onto the
+    // `external` column default, which demanded a weight to log a rep.
+    expect(pullUp.preferredLoadingMode, LoadingMode.bodyweightAdded);
+    // Absent in the asset still means external.
+    expect(bench.preferredLoadingMode, LoadingMode.external);
+  });
 }

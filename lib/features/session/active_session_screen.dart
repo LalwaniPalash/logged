@@ -717,6 +717,8 @@ class _ExerciseCard extends StatelessWidget {
             targetRpe: _targetRpe(detail.sessionExercise.prescriptionNotes),
             weightEntry: headerWeightEntry,
             unit: headerUnit,
+            loadingMode:
+                firstSet?.loadingMode ?? detail.exercise.preferredLoadingMode,
             progressionAggressiveness: progressionAggressiveness,
           );
 

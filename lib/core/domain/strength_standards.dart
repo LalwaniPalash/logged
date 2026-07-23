@@ -1,3 +1,5 @@
+import 'enums.dart';
+
 enum UserSex { male, female, unset }
 
 enum StrengthLevel {
@@ -51,6 +53,32 @@ const _female = <String, List<double>>{
   'Barbell Bent-Over Row': [0.35, 0.55, 0.75, 0.95],
   'Pull-Up': [0.85, 1.00, 1.15, 1.35],
 };
+
+/// Whether a logged set may count toward a population strength standard.
+///
+/// Standards are load-per-bodyweight comparisons, so a set only counts when it
+/// was logged the canonical way for that lift:
+///  - the barbell lifts must be externally loaded with a real weight;
+///  - the Pull-Up counts strict (bodyweight, weight optional) or weighted
+///    (bodyweightAdded with an actual plate) — an ASSISTED pull-up is easier
+///    than the standard assumes and is excluded, as is any weighted-mode set
+///    saved with a blank load (an incomplete set must not become a PR).
+bool countsForStandard({
+  required String lift,
+  required LoadingMode mode,
+  required bool hasEnteredWeight,
+}) {
+  if (!benchmarkLiftNames.contains(lift)) return false;
+  if (lift == 'Pull-Up') {
+    return switch (mode) {
+      LoadingMode.bodyweight => true,
+      LoadingMode.bodyweightAdded => hasEnteredWeight,
+      LoadingMode.external || LoadingMode.bodyweightAssisted => false,
+    };
+  }
+  // Barbell benchmark lifts: externally loaded, real weight only.
+  return mode == LoadingMode.external && hasEnteredWeight;
+}
 
 StrengthStandardResult? standardFor({
   required String lift,

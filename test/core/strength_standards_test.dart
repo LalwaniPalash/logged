@@ -1,7 +1,87 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logged/core/domain/enums.dart';
 import 'package:logged/core/domain/strength_standards.dart';
 
 void main() {
+  group('countsForStandard gates which sets feed a benchmark', () {
+    test('barbell lifts only count when externally loaded with a weight', () {
+      expect(
+        countsForStandard(
+          lift: 'Barbell Bench Press',
+          mode: LoadingMode.external,
+          hasEnteredWeight: true,
+        ),
+        isTrue,
+      );
+      // A mis-tagged bodyweight/assisted bench, or one saved with no load, is out.
+      expect(
+        countsForStandard(
+          lift: 'Barbell Bench Press',
+          mode: LoadingMode.bodyweight,
+          hasEnteredWeight: false,
+        ),
+        isFalse,
+      );
+      expect(
+        countsForStandard(
+          lift: 'Barbell Bench Press',
+          mode: LoadingMode.external,
+          hasEnteredWeight: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('pull-up counts strict or weighted, never assisted', () {
+      expect(
+        countsForStandard(
+          lift: 'Pull-Up',
+          mode: LoadingMode.bodyweight,
+          hasEnteredWeight: false,
+        ),
+        isTrue,
+        reason: 'strict bodyweight pull-up needs no entered load',
+      );
+      expect(
+        countsForStandard(
+          lift: 'Pull-Up',
+          mode: LoadingMode.bodyweightAdded,
+          hasEnteredWeight: true,
+        ),
+        isTrue,
+      );
+      // Added mode with a blank plate would masquerade as a strict PR — out.
+      expect(
+        countsForStandard(
+          lift: 'Pull-Up',
+          mode: LoadingMode.bodyweightAdded,
+          hasEnteredWeight: false,
+        ),
+        isFalse,
+      );
+      // Assisted is easier than the standard assumes — out.
+      expect(
+        countsForStandard(
+          lift: 'Pull-Up',
+          mode: LoadingMode.bodyweightAssisted,
+          hasEnteredWeight: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('non-benchmark lifts never count', () {
+      expect(
+        countsForStandard(
+          lift: 'Cable Fly',
+          mode: LoadingMode.external,
+          hasEnteredWeight: true,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   for (final sex in [UserSex.male, UserSex.female]) {
     test('${sex.name} standards cross every level boundary', () {
       final results = [

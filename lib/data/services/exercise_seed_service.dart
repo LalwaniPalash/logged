@@ -46,6 +46,14 @@ class ExerciseSeedService {
                   raw['weightEntry'] as String? ?? 'total',
                 ),
               ),
+              // Without this, every seeded exercise fell back to the column
+              // default `external`, so a bodyweight lift like Pull-Up demanded a
+              // weight to log on fresh installs. Honour the asset's mode.
+              preferredLoadingMode: Value(
+                LoadingMode.values.byName(
+                  raw['preferredLoadingMode'] as String? ?? 'external',
+                ),
+              ),
               isCustom: const Value(false),
               isArchived: const Value(false),
             ),

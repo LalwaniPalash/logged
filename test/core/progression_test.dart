@@ -11,6 +11,7 @@ void main() {
     WeightEntry entry = WeightEntry.total,
     double? rpe = 8,
     bool warmup = false,
+    LoadingMode mode = LoadingMode.external,
   }) => SetEntry(
     id: 1,
     sessionExerciseId: 1,
@@ -20,7 +21,7 @@ void main() {
     unit: weight == null ? null : unit,
     weightEntry: entry,
     sideCount: 1,
-    loadingMode: LoadingMode.external,
+    loadingMode: mode,
     isWarmup: warmup,
     rpe: rpe,
   );
@@ -108,6 +109,76 @@ void main() {
       )!;
       expect(result.weightValue, closeTo(100, 0.001));
       expect(result.reps, 9);
+    });
+  });
+
+  group('assisted lifts progress by REMOVING assistance', () {
+    test('hitting the top of the range drops the assistance load', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [
+          set(reps: 10, weight: 20, mode: LoadingMode.bodyweightAssisted),
+        ],
+        minReps: 6,
+        maxReps: 10,
+        targetRpe: 8,
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+        loadingMode: LoadingMode.bodyweightAssisted,
+      )!;
+      // Less assistance, not more — the assisted lift got harder.
+      expect(result.weightValue, 17.5);
+      expect(result.reps, 6);
+      expect(result.rationale, contains('assistance'));
+    });
+
+    test('the least-assisted set is treated as the top set', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [
+          set(reps: 10, weight: 30, mode: LoadingMode.bodyweightAssisted),
+          set(reps: 10, weight: 15, mode: LoadingMode.bodyweightAssisted),
+        ],
+        minReps: 6,
+        maxReps: 10,
+        targetRpe: 8,
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+        loadingMode: LoadingMode.bodyweightAssisted,
+      )!;
+      // Progresses from the harder (15 kg assist) set, not the 30 kg one.
+      expect(result.weightValue, 12.5);
+    });
+
+    test('assistance never goes below zero', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [
+          set(reps: 10, weight: 1, mode: LoadingMode.bodyweightAssisted),
+        ],
+        minReps: 6,
+        maxReps: 10,
+        targetRpe: 8,
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+        loadingMode: LoadingMode.bodyweightAssisted,
+      )!;
+      expect(result.weightValue, 0);
+    });
+
+    test('history logged in a different mode is not reused', () {
+      // Last session was assisted (20 kg assistance); the user has since
+      // switched the lift to strict bodyweight. The old assistance kilos must
+      // NOT leak in as a load for the new mode.
+      final result = suggestNextSet(
+        lastExerciseSets: [
+          set(reps: 10, weight: 20, mode: LoadingMode.bodyweightAssisted),
+        ],
+        minReps: 6,
+        maxReps: 10,
+        targetRpe: 8,
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+        loadingMode: LoadingMode.bodyweight,
+      );
+      expect(result, isNull);
     });
   });
 }

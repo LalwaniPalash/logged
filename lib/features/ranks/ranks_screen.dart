@@ -223,14 +223,23 @@ class _StrengthStandards extends ConsumerWidget {
     final latestWeight = bodyweights.first;
     final bodyweightKg = weightKg(latestWeight.value, latestWeight.unit);
     final sets =
-        ref.watch(completedSetsProvider).asData?.value ??
-        const <WorkoutSetRecord>[];
+        ref.watch(benchmarkSetsProvider).asData?.value ??
+        const <BenchmarkSetRecord>[];
     final best = <String, double>{};
     for (final set in sets) {
-      if (!benchmarkLiftNames.contains(set.exerciseName)) continue;
-      final estimate = set.exerciseName == 'Pull-Up'
-          ? (bodyweightKg + set.weightKg) * (1 + set.reps / 30)
-          : set.estimatedOneRepMaxKg;
+      // Only sets logged the canonical way for the lift count — excludes
+      // assisted pull-ups, mis-tagged barbell lifts, and weighted-mode sets
+      // saved without a load (which would otherwise score as a strict PR).
+      if (!countsForStandard(
+        lift: set.exerciseName,
+        mode: set.loadingMode,
+        hasEnteredWeight: set.enteredWeightKg != null,
+      )) {
+        continue;
+      }
+      // Loading-mode aware: folds bodyweight in for pull-ups (strict or
+      // weighted), leaves barbell lifts on their entered load.
+      final estimate = set.resistedOneRepMaxKg(bodyweightKg);
       if (estimate > (best[set.exerciseName] ?? 0)) {
         best[set.exerciseName] = estimate;
       }

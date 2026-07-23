@@ -39,6 +39,44 @@ class WorkoutSetRecord {
   double get estimatedOneRepMaxKg => weightKg * (1 + reps / 30);
 }
 
+/// A completed set of a benchmark lift, kept separate from [WorkoutSetRecord]
+/// because strength standards must include strict-bodyweight reps (no entered
+/// weight) — the weighted-sets query drops those, which hid the Pull-Up
+/// benchmark for anyone training it unweighted.
+class BenchmarkSetRecord {
+  const BenchmarkSetRecord({
+    required this.exerciseName,
+    required this.loadingMode,
+    required this.reps,
+    required this.bodyweightFactor,
+    this.enteredWeightKg,
+  });
+
+  final String exerciseName;
+  final LoadingMode loadingMode;
+  final int reps;
+  final double bodyweightFactor;
+
+  /// The entered load in kg, or null for a strict-bodyweight rep.
+  final double? enteredWeightKg;
+
+  /// Total resisted mass for the set, folding bodyweight in for the loading
+  /// modes that need it, so a strict pull-up and a weighted pull-up compare on
+  /// the same axis.
+  double resistedOneRepMaxKg(double bodyweightKg) {
+    final entered = enteredWeightKg ?? 0;
+    final base = bodyweightKg * bodyweightFactor.clamp(0.0, 1.0);
+    final load = switch (loadingMode) {
+      LoadingMode.external => entered,
+      LoadingMode.bodyweightAdded => base + entered,
+      LoadingMode.bodyweight => base,
+      LoadingMode.bodyweightAssisted =>
+        (base - entered).clamp(0.0, double.infinity).toDouble(),
+    };
+    return load * (1 + reps / 30);
+  }
+}
+
 class DeloadData {
   const DeloadData({
     required this.weeklyEffectiveSetsByMuscle,
@@ -101,6 +139,7 @@ class AnalyticsRepository {
       'e.primary_muscles AS primary_muscles, '
       'e.secondary_muscles AS secondary_muscles, '
       'se.weight_value AS weight_value, se.unit AS unit, '
+      'se.loading_mode AS loading_mode, '
       'se.reps AS reps, se.rpe AS rpe, se.is_warmup AS is_warmup '
       'FROM set_entries se '
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
@@ -108,6 +147,55 @@ class AnalyticsRepository {
       'JOIN exercises e ON e.id = sx.exercise_id '
       'WHERE s.ended_at IS NOT NULL '
       'ORDER BY s.started_at, se.id';
+
+  // Benchmark lifts for strength standards. Unlike [_query] this keeps
+  // bodyweight sets (weight_value NULL) so strict pull-ups still count.
+  static const _benchmarkQuery =
+      'SELECT e.name AS ename, e.bodyweight_factor AS bodyweight_factor, '
+      'se.loading_mode AS loading_mode, se.weight_value AS weight_value, '
+      'se.unit AS unit, se.reps AS reps '
+      'FROM set_entries se '
+      'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
+      'JOIN sessions s ON s.id = sx.session_id '
+      'JOIN exercises e ON e.id = sx.exercise_id '
+      'WHERE s.ended_at IS NOT NULL '
+      'AND se.reps IS NOT NULL AND se.reps > 0 '
+      'AND se.is_warmup = 0 '
+      'ORDER BY s.started_at, se.id';
+
+  /// Completed benchmark-lift sets (including strict bodyweight), for standards.
+  Stream<List<BenchmarkSetRecord>> watchBenchmarkSets() => _database
+      .customSelect(
+        _benchmarkQuery,
+        readsFrom: {
+          _database.setEntries,
+          _database.sessionExercises,
+          _database.sessions,
+          _database.exercises,
+        },
+      )
+      .watch()
+      .map(_mapBenchmarkSets);
+
+  List<BenchmarkSetRecord> _mapBenchmarkSets(List<QueryRow> rows) => [
+    for (final row in rows)
+      BenchmarkSetRecord(
+        exerciseName: row.data['ename'] as String? ?? '',
+        loadingMode: LoadingMode.values.byName(
+          row.data['loading_mode'] as String? ?? 'external',
+        ),
+        reps: row.data['reps'] as int,
+        bodyweightFactor:
+            (row.data['bodyweight_factor'] as num?)?.toDouble() ?? 1,
+        enteredWeightKg: switch (row.data['weight_value']) {
+          final num value => weightKg(
+            value.toDouble(),
+            WeightUnit.values.byName(row.data['unit'] as String? ?? 'kg'),
+          ),
+          _ => null,
+        },
+      ),
+  ];
 
   /// All completed, weighted sets in chronological order.
   Future<List<WorkoutSetRecord>> loadCompletedSets() async =>
@@ -215,11 +303,20 @@ class AnalyticsRepository {
       final unit = WeightUnit.values.byName(
         row.data['unit'] as String? ?? 'kg',
       );
+      final loadingMode = LoadingMode.values.byName(
+        row.data['loading_mode'] as String? ?? 'external',
+      );
       final loadKg = weightKg(weight, unit);
       final estimate = loadKg * (1 + reps / 30);
       final day = dateOnly(date);
-      final daily = maxByExerciseDay[exerciseId] ??= {};
-      if (estimate > (daily[day] ?? 0)) daily[day] = estimate;
+      // Assisted lifts store assistance as the load, so a FALLING weight is
+      // progress, not a stall. Feeding them into the est-1RM decline detector
+      // manufactures false deload signals, so keep them out of it — the volume
+      // and rising-RPE-at-load signals still cover assisted work.
+      if (loadingMode != LoadingMode.bodyweightAssisted) {
+        final daily = maxByExerciseDay[exerciseId] ??= {};
+        if (estimate > (daily[day] ?? 0)) daily[day] = estimate;
+      }
 
       final rpe = (row.data['rpe'] as num?)?.toDouble();
       if (rpe != null) {

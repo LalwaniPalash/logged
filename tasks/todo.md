@@ -599,6 +599,37 @@ tests for near-miss names. Analyze/test green.
   phase above. The only unverified done criterion is the two-platform physical-device background
   notification check.
 
+# Post-T1–T3 Mode-B review fixes — loadingMode propagation (2026-07-23)
+Codex reviewed the full T1–T3 diff → 7 findings. Validated each against source: 5 real, 1
+by-design (import partial-commit is spec-allowed + errors shown), 1 false positive (Dart's
+`String.trim()` DOES strip the U+FEFF BOM — verified empirically). Root cause of all 5 reals: the
+new `LoadingMode` (external/bodyweight/bodyweightAdded/bodyweightAssisted) was not threaded through
+the systems that consume it. Fixed at the root:
+- [x] **F1 (High)** — `exercise_seed_service.dart` now writes `preferredLoadingMode` from the asset
+      (was silently defaulting every seeded row to `external`, so fresh-install Pull-Up demanded a
+      weight). `exercise_anatomy_service.backfillPullUpOnce` also corrects an existing Pull-Up left on
+      `external` by the older seed (one-time, flag-guarded).
+- [x] **F6 (High)** — Strength Standards rode `completedSetsProvider` whose SQL has
+      `weight_value IS NOT NULL`, dropping strict bodyweight pull-ups. Added `BenchmarkSetRecord` +
+      `_benchmarkQuery` + `benchmarkSetsProvider` (keeps bodyweight sets) and
+      `resistedOneRepMaxKg(bw)` that folds bodyweight in per loading mode; `ranks_screen` uses it.
+- [x] **F2 (Med)** — `set_row.dart` `setFieldsFor`/`isSetComplete` gated the weight requirement on
+      category; a strength-category bodyweight lift couldn't complete. Now keyed on `loadingMode`.
+- [x] **F3 (Med)** — `progression.dart` `suggestNextSet` gained a `loadingMode` param; for assisted
+      lifts it treats the least-assisted set as the top set and REMOVES assistance (floored at 0).
+      Call site in `active_session_screen.dart` passes the header loading mode.
+- [x] **F4 (Low-Med)** — `analytics_repository._deloadQuery` carries `loading_mode`; assisted lifts
+      are excluded from the est-1RM stall detector (a falling assistance load is progress, not decline).
+- [x] Regression tests: progression assisted matrix (3), seed-loading-mode, backfill-correction,
+      set-completion by mode (3), benchmark bodyweight inclusion + assisted-1RM exclusion (DB-backed).
+- [x] Codex Mode-B review of the fix diff → 4 real gaps, all fixed: (A) benchmark counted any mode for
+      a benchmark-named lift + (B) weighted-mode set with blank load scored as a strict PR → added pure
+      `countsForStandard()` gate (canonical mode + real weight required), applied in `ranks_screen`;
+      (C) Pull-Up backfill over-corrected a deliberate `bodyweight` choice → now only heals the exact
+      legacy `external` value; (D) progression reused cross-mode history → filters history to the same
+      `loadingMode`. Tests added for each.
+- [x] `flutter analyze` clean · **153 tests green** (was 138).
+
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 PR-celebration moment (reuse `recentPrs`), plate calculator, warm-up set generator, home-screen
 widget, Health/Health Connect one-way export.

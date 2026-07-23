@@ -26,7 +26,12 @@ List<SetField> setFieldsFor({
 }) => switch (category) {
   ExerciseCategory.cardio => const [SetField.duration, SetField.distance],
   ExerciseCategory.stretching => const [SetField.duration],
-  ExerciseCategory.bodyweight when loadingMode == LoadingMode.bodyweight =>
+  // Pure bodyweight is loggable by reps/hold alone, regardless of the category
+  // it is filed under. A `strength` exercise the user marks bodyweight (e.g. an
+  // Inverted Row) must NOT keep demanding a weight — drive this off the loading
+  // mode, not the category enum.
+  ExerciseCategory.bodyweight ||
+  ExerciseCategory.strength when loadingMode == LoadingMode.bodyweight =>
     timed ? const [SetField.duration] : const [SetField.reps],
   ExerciseCategory.bodyweight || ExerciseCategory.strength =>
     timed
@@ -63,7 +68,11 @@ bool isSetComplete({
   ExerciseCategory.cardio =>
     (durationSec ?? 0) > 0 && (distanceMeters ?? 0) > 0,
   ExerciseCategory.stretching => (durationSec ?? 0) > 0,
-  ExerciseCategory.bodyweight when loadingMode == LoadingMode.bodyweight =>
+  // Pure bodyweight completes on reps or hold time alone — a bodyweight set has
+  // no weight to enter, so requiring weight > 0 would strand it as incomplete
+  // (and never fire the rest timer). Gate on loading mode, not category.
+  ExerciseCategory.bodyweight ||
+  ExerciseCategory.strength when loadingMode == LoadingMode.bodyweight =>
     (reps ?? 0) > 0 || (durationSec ?? 0) > 0,
   ExerciseCategory.bodyweight ||
   ExerciseCategory.strength => (reps ?? 0) > 0 && (weightValue ?? 0) > 0,

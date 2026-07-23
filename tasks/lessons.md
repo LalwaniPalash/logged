@@ -95,6 +95,24 @@ Format: [date] | what went wrong | rule to prevent it
   (`FPPSharePlusPlugin.m`: after adding each file it does `if (text != nil) [items addObject:...]`).
   Rule: to attach a label to a file share without a second item, use `subject:` (metadata only),
   never `text:`.
+- 2026-07-23 | Adding an enum-typed column (`preferredLoadingMode`) is not enough — every WRITER and
+  every READER must be updated too. The seed service (`ExerciseSeedService.seedIfEmpty`) never wrote
+  the column, so all fresh-install rows silently took the schema default `external`; the reader side
+  (set completion, progression, deload est-1RM, strength-standards query) each independently ignored
+  loading mode. One missing field produced five distinct bugs (bodyweight Pull-Up demands a weight;
+  assisted progression suggests MORE assistance; assisted improvement reads as a 1RM decline →
+  false deload; strict-bodyweight pull-ups excluded from standards). Rule: when you add a column,
+  grep every seed/insert path AND every query/consumer for it before calling it done — a green build
+  proves nothing because defaults fill the gap. The backfill for existing installs must also CORRECT
+  a wrong value, not only insert-when-missing (a fresh install already had the row, so insert-if-absent
+  no-oped and marked itself done).
+- 2026-07-23 | Codex Mode-B review false positive worth remembering: it flagged the CSV parser for not
+  stripping a UTF-8 BOM, assuming `String.trim()` leaves U+FEFF. Dart's `trim()` SPECIFICALLY removes
+  the BOM (documented: "White_Space property … and the BOM character, 0xFEFF") — verified with a
+  one-line `dart run`. Rule: validate every codex finding against real behavior before acting; a
+  language-specific trim/normalize assumption is a common miss. (Also: a codex finding can be
+  "real but by-design" — the import partial-commit was flagged as silent truncation, but the spec
+  explicitly allows importing valid rows while showing row-numbered errors.)
 - 2026-07-21 | Heuristics over human-written prose need negative cases. `notes.contains('/side')`
   matched both "8/side" (reps per side → sideCount 2) and "7.5-10 kg/side" (load per hand → perSide,
   sideCount 1) — opposite meanings, same substring. Rule: when parsing free text into a semantic flag,

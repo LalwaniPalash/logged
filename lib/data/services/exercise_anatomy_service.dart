@@ -127,6 +127,7 @@ class ExerciseAnatomyService {
     final existing = await (_database.select(
       _database.exercises,
     )..where((exercise) => exercise.name.equals('Pull-Up'))).getSingleOrNull();
+    var changed = false;
     await _database.transaction(() async {
       if (existing == null) {
         await _database
@@ -145,6 +146,20 @@ class ExerciseAnatomyService {
               ),
               mode: InsertMode.insertOrIgnore,
             );
+        changed = true;
+      } else if (existing.preferredLoadingMode == LoadingMode.external) {
+        // Only heal the exact legacy-seed breakage: a Pull-Up left on the
+        // `external` column default, which demanded a bogus weight. A user who
+        // deliberately picked strict `bodyweight` (or anything else) is left
+        // alone — over-correcting would fight their choice.
+        await (_database.update(_database.exercises)
+              ..where((exercise) => exercise.id.equals(existing.id)))
+            .write(
+              const ExercisesCompanion(
+                preferredLoadingMode: Value(LoadingMode.bodyweightAdded),
+              ),
+            );
+        changed = true;
       }
       await _database
           .into(_database.appSettings)
@@ -152,6 +167,6 @@ class ExerciseAnatomyService {
             AppSettingsCompanion.insert(key: _pullUpBackfillKey, value: 'true'),
           );
     });
-    return existing == null;
+    return changed;
   }
 }

@@ -126,6 +126,12 @@ final completedSetsProvider = StreamProvider<List<WorkoutSetRecord>>(
   (ref) => ref.watch(analyticsRepositoryProvider).watchCompletedSets(),
 );
 
+/// Benchmark-lift sets for Strength Standards. Includes strict-bodyweight reps,
+/// which [completedSetsProvider] drops, so unweighted pull-ups still count.
+final benchmarkSetsProvider = StreamProvider<List<BenchmarkSetRecord>>(
+  (ref) => ref.watch(analyticsRepositoryProvider).watchBenchmarkSets(),
+);
+
 /// Current Monday-to-now muscle state. Unlike PR and volume analytics, this
 /// includes saved sets from the active workout and updates after every edit.
 final liveMuscleStateProvider = StreamProvider<LiveMuscleState>(
