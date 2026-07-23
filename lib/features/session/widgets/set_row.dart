@@ -48,6 +48,26 @@ bool isTimedExercise({
   return targetDurationSec != null && minReps == null && maxReps == null;
 }
 
+/// Completion is derived from the fields that make this kind of set useful.
+/// Kept pure so session orchestration can detect the incomplete → complete
+/// transition without introducing another persisted source of truth.
+bool isSetComplete({
+  required ExerciseCategory category,
+  required LoadingMode loadingMode,
+  int? reps,
+  double? weightValue,
+  int? durationSec,
+  double? distanceMeters,
+}) => switch (category) {
+  ExerciseCategory.cardio =>
+    (durationSec ?? 0) > 0 && (distanceMeters ?? 0) > 0,
+  ExerciseCategory.stretching => (durationSec ?? 0) > 0,
+  ExerciseCategory.bodyweight when loadingMode == LoadingMode.bodyweight =>
+    (reps ?? 0) > 0 || (durationSec ?? 0) > 0,
+  ExerciseCategory.bodyweight ||
+  ExerciseCategory.strength => (reps ?? 0) > 0 && (weightValue ?? 0) > 0,
+};
+
 /// Columns for a whole exercise: the union of what each of its sets needs, so
 /// every logged value stays editable inline even when sets mix loading modes
 /// (deriving columns from the first set alone would strand the others' fields).
@@ -332,19 +352,14 @@ class _SetRowState extends State<SetRow> {
     _scheduleCommit();
   }
 
-  bool get _isComplete => switch (widget.category) {
-    ExerciseCategory.cardio =>
-      (int.tryParse(_duration.text.trim()) ?? 0) > 0 &&
-          (_doubleOrNull(_distance.text) ?? 0) > 0,
-    ExerciseCategory.stretching =>
-      (int.tryParse(_duration.text.trim()) ?? 0) > 0,
-    ExerciseCategory.bodyweight
-        when widget.set.loadingMode == LoadingMode.bodyweight =>
-      (int.tryParse(_reps.text.trim()) ?? 0) > 0,
-    ExerciseCategory.bodyweight || ExerciseCategory.strength =>
-      (int.tryParse(_reps.text.trim()) ?? 0) > 0 &&
-          (_doubleOrNull(_weight.text) ?? 0) > 0,
-  };
+  bool get _isComplete => isSetComplete(
+    category: widget.category,
+    loadingMode: widget.set.loadingMode,
+    reps: int.tryParse(_reps.text.trim()),
+    weightValue: _doubleOrNull(_weight.text),
+    durationSec: int.tryParse(_duration.text.trim()),
+    distanceMeters: _doubleOrNull(_distance.text),
+  );
 
   /// Anything about this set the column headings do not already say. Silence
   /// here must mean "the heading is accurate for this row" — a lb set sitting

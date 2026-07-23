@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/services/notification_service.dart';
 import 'data/database/app_database.dart';
 import 'data/services/exercise_anatomy_service.dart';
 import 'data/services/exercise_seed_service.dart';
@@ -29,9 +30,14 @@ Future<void> main() async {
     // add custom exercises even if the bundled library fails to load.
     debugPrint('Exercise seeding failed: $error\n$stackTrace');
   }
+  final notificationService = NotificationService();
+  await notificationService.init();
   runApp(
     ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(appDatabase)],
+      overrides: [
+        databaseProvider.overrideWithValue(appDatabase),
+        notificationServiceProvider.overrideWithValue(notificationService),
+      ],
       child: const LoggedApp(),
     ),
   );

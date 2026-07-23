@@ -5,6 +5,7 @@ import '../core/domain/muscle.dart';
 import '../core/domain/muscle_progress.dart'
     show BodyProgressSummary, MuscleProgress, buildBodyProgressSummary;
 import '../core/domain/workout_settings.dart';
+import '../core/services/notification_service.dart';
 import 'database/app_database.dart';
 import 'repositories/analytics_repository.dart';
 import 'repositories/bodyweight_repository.dart';
@@ -17,6 +18,9 @@ import 'repositories/template_repository.dart';
 
 final databaseProvider = Provider<AppDatabase>(
   (ref) => throw UnimplementedError(),
+);
+final notificationServiceProvider = Provider<NotificationClient>(
+  (ref) => NotificationService(),
 );
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
@@ -58,6 +62,9 @@ final bodyweightEntriesProvider = StreamProvider<List<BodyweightEntry>>(
 /// Schedule preferences (rest weekdays + weekly goal).
 final workoutSettingsProvider = StreamProvider<WorkoutSettings>(
   (ref) => ref.watch(settingsRepositoryProvider).watch(),
+);
+final restTimerPreferencesProvider = StreamProvider<RestTimerPreferences>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchRestTimerPreferences(),
 );
 
 final analyticsRepositoryProvider = Provider<AnalyticsRepository>(

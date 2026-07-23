@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,6 +13,8 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../data/providers.dart';
 import 'widgets/set_editor_sheet.dart';
+import 'rest_timer_controller.dart';
+import 'widgets/rest_timer_bar.dart';
 import 'widgets/set_row.dart';
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
@@ -32,6 +36,16 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   }
 
   void _refresh() => _future = _loadView();
+
+  @override
+  void dispose() {
+    unawaited(
+      ref
+          .read(restTimerControllerProvider.notifier)
+          .cancel(sessionId: widget.sessionId),
+    );
+    super.dispose();
+  }
 
   Future<_SessionView> _loadView() async {
     final repo = ref.read(sessionRepositoryProvider);
@@ -111,6 +125,27 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     );
     if (result == null) return;
 
+    final wasComplete =
+        existing != null &&
+        isSetComplete(
+          category: detail.exercise.category,
+          loadingMode: existing.loadingMode,
+          reps: existing.reps,
+          weightValue: existing.weightValue,
+          durationSec: existing.durationSec,
+          distanceMeters: existing.distanceMeters,
+        );
+    final becomesComplete =
+        !result.delete &&
+        isSetComplete(
+          category: detail.exercise.category,
+          loadingMode: result.loadingMode,
+          reps: result.reps,
+          weightValue: result.weight,
+          durationSec: result.durationSec,
+          distanceMeters: result.distanceMeters,
+        );
+
     if (result.delete && existing != null) {
       await ref.read(setRepositoryProvider).delete(existing.id);
     } else if (existing != null) {
@@ -162,6 +197,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             loadingMode: result.loadingMode,
           );
     }
+    if (!wasComplete && becomesComplete) {
+      await _startRestTimer(detail);
+    }
+    if (!mounted) return;
     setState(_refresh);
   }
 
@@ -216,6 +255,22 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     SetEntry set,
     SetRowDraft draft,
   ) async {
+    final wasComplete = isSetComplete(
+      category: detail.exercise.category,
+      loadingMode: set.loadingMode,
+      reps: set.reps,
+      weightValue: set.weightValue,
+      durationSec: set.durationSec,
+      distanceMeters: set.distanceMeters,
+    );
+    final becomesComplete = isSetComplete(
+      category: detail.exercise.category,
+      loadingMode: set.loadingMode,
+      reps: draft.reps,
+      weightValue: draft.weightValue,
+      durationSec: draft.durationSec,
+      distanceMeters: draft.distanceMeters,
+    );
     await ref
         .read(setRepositoryProvider)
         .edit(
@@ -238,7 +293,30 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           isWarmup: set.isWarmup,
           notes: set.notes,
         );
+    if (!wasComplete && becomesComplete) {
+      await _startRestTimer(detail);
+    }
+    if (!mounted) return;
     setState(_refresh);
+  }
+
+  Future<void> _startRestTimer(SessionExerciseDetails detail) async {
+    final preferences = await ref
+        .read(settingsRepositoryProvider)
+        .readRestTimerPreferences();
+    final notificationsAllowed = await ref
+        .read(restTimerControllerProvider.notifier)
+        .start(
+          sessionId: widget.sessionId,
+          seconds:
+              detail.sessionExercise.restSeconds ?? preferences.defaultSeconds,
+          notificationsEnabled: preferences.notificationsEnabled,
+        );
+    if (preferences.notificationsEnabled && !notificationsAllowed) {
+      await ref
+          .read(settingsRepositoryProvider)
+          .setRestTimerNotificationsEnabled(false);
+    }
   }
 
   Future<void> _finish() async {
@@ -324,44 +402,53 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             icon: const Icon(AppIcons.add),
             label: const Text('Add exercise'),
           ),
-          body: details.isEmpty
-              ? EmptyState(
-                  icon: AppIcons.strength,
-                  title: 'No exercises yet',
-                  message: 'Add your first exercise to start logging sets.',
-                  action: FilledButton.icon(
-                    onPressed: _addExercise,
-                    icon: const Icon(AppIcons.add),
-                    label: const Text('Add exercise'),
-                  ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                  children: [
-                    for (final detail in details)
-                      _ExerciseCard(
-                        detail: detail,
-                        onAddSet: () => _addSet(detail),
-                        onRepeatSet: () => _repeatSet(detail),
-                        onInlineCommit: (set, draft) =>
-                            _updateInlineSet(detail, set, draft),
-                        onEditSet: (set) => _openSet(detail, existing: set),
-                        onRemove: () =>
-                            _removeExercise(detail.sessionExercise.id),
-                      ),
-                    const SizedBox(height: 8),
-                    if (!completed)
-                      FilledButton.icon(
-                        onPressed: _finish,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.secondary,
-                          foregroundColor: theme.colorScheme.onSecondary,
+          body: Column(
+            children: [
+              Expanded(
+                child: details.isEmpty
+                    ? EmptyState(
+                        icon: AppIcons.strength,
+                        title: 'No exercises yet',
+                        message:
+                            'Add your first exercise to start logging sets.',
+                        action: FilledButton.icon(
+                          onPressed: _addExercise,
+                          icon: const Icon(AppIcons.add),
+                          label: const Text('Add exercise'),
                         ),
-                        icon: const Icon(AppIcons.check),
-                        label: const Text('Finish workout'),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                        children: [
+                          for (final detail in details)
+                            _ExerciseCard(
+                              detail: detail,
+                              onAddSet: () => _addSet(detail),
+                              onRepeatSet: () => _repeatSet(detail),
+                              onInlineCommit: (set, draft) =>
+                                  _updateInlineSet(detail, set, draft),
+                              onEditSet: (set) =>
+                                  _openSet(detail, existing: set),
+                              onRemove: () =>
+                                  _removeExercise(detail.sessionExercise.id),
+                            ),
+                          const SizedBox(height: 8),
+                          if (!completed)
+                            FilledButton.icon(
+                              onPressed: _finish,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: theme.colorScheme.secondary,
+                                foregroundColor: theme.colorScheme.onSecondary,
+                              ),
+                              icon: const Icon(AppIcons.check),
+                              label: const Text('Finish workout'),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
+              ),
+              RestTimerBar(sessionId: widget.sessionId),
+            ],
+          ),
         );
       },
     );

@@ -14,6 +14,7 @@ import '../../core/widgets/app_widgets.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/rest_day_repository.dart';
+import '../../data/repositories/settings_repository.dart';
 import '../../data/services/backup_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -46,7 +47,8 @@ class SettingsScreen extends ConsumerWidget {
         message: 'Importing backup…',
         // The file picker opens its own UI, so the spinner only covers the
         // wipe-and-reinsert that follows selection.
-        task: () => BackupService(ref.read(databaseProvider)).importFromPicker(),
+        task: () =>
+            BackupService(ref.read(databaseProvider)).importFromPicker(),
       );
       if (context.mounted && imported) {
         ScaffoldMessenger.of(
@@ -578,12 +580,81 @@ class SettingsScreen extends ConsumerWidget {
         .upsert(date: date, value: double.parse(value.text), unit: unit);
   }
 
+  Future<void> _pickCustomRest(
+    BuildContext context,
+    WidgetRef ref,
+    int currentSeconds,
+  ) async {
+    final controller = TextEditingController(text: '$currentSeconds');
+    final seconds = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Custom rest timer'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          decoration: const InputDecoration(
+            labelText: 'Seconds',
+            helperText: 'Between 15 seconds and 60 minutes',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = int.tryParse(controller.text.trim());
+              Navigator.pop(context, value?.clamp(15, 3600));
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (seconds != null) {
+      await ref.read(settingsRepositoryProvider).setDefaultRestSeconds(seconds);
+    }
+  }
+
+  Future<void> _setRestNotifications(
+    BuildContext context,
+    WidgetRef ref,
+    bool enabled,
+  ) async {
+    var resolved = enabled;
+    if (enabled) {
+      resolved = await ref
+          .read(notificationServiceProvider)
+          .requestPermission();
+    }
+    await ref
+        .read(settingsRepositoryProvider)
+        .setRestTimerNotificationsEnabled(resolved);
+    if (enabled && !resolved && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Notifications are off. The in-app rest timer still works.',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(workoutSettingsProvider).asData?.value ??
         WorkoutSettings.defaults;
     final repo = ref.read(settingsRepositoryProvider);
+    final restTimer =
+        ref.watch(restTimerPreferencesProvider).asData?.value ??
+        const RestTimerPreferences();
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -594,6 +665,16 @@ class SettingsScreen extends ConsumerWidget {
             settings: settings,
             onGoalChanged: repo.setWeeklyGoal,
             onRestDaysChanged: repo.setRestWeekdays,
+          ),
+          const SizedBox(height: 24),
+          const SectionHeader('Rest timer'),
+          _RestTimerSettingsCard(
+            preferences: restTimer,
+            onSecondsChanged: repo.setDefaultRestSeconds,
+            onCustom: () =>
+                _pickCustomRest(context, ref, restTimer.defaultSeconds),
+            onNotificationsChanged: (enabled) =>
+                _setRestNotifications(context, ref, enabled),
           ),
           const SizedBox(height: 24),
           const SectionHeader('Rest day'),
@@ -679,6 +760,83 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _RestTimerSettingsCard extends StatelessWidget {
+  const _RestTimerSettingsCard({
+    required this.preferences,
+    required this.onSecondsChanged,
+    required this.onCustom,
+    required this.onNotificationsChanged,
+  });
+
+  static const _presets = [60, 90, 120, 180];
+
+  final RestTimerPreferences preferences;
+  final ValueChanged<int> onSecondsChanged;
+  final VoidCallback onCustom;
+  final ValueChanged<bool> onNotificationsChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final custom = !_presets.contains(preferences.defaultSeconds);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Default rest', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'A completed set starts this automatically. Exercise prescriptions override it.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final seconds in _presets)
+                  ChoiceChip(
+                    label: Text(_formatRestPreset(seconds)),
+                    selected: preferences.defaultSeconds == seconds,
+                    onSelected: (_) => onSecondsChanged(seconds),
+                  ),
+                ChoiceChip(
+                  label: Text(
+                    custom
+                        ? _formatRestPreset(preferences.defaultSeconds)
+                        : 'Custom',
+                  ),
+                  selected: custom,
+                  onSelected: (_) => onCustom(),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Rest-finished notifications'),
+              subtitle: const Text('Alerts while Logged is backgrounded'),
+              value: preferences.notificationsEnabled,
+              onChanged: onNotificationsChanged,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatRestPreset(int seconds) {
+  if (seconds < 60) return '${seconds}s';
+  final minutes = seconds ~/ 60;
+  final remainder = seconds % 60;
+  return remainder == 0 ? '${minutes}m' : '${minutes}m ${remainder}s';
 }
 
 Future<Set<MuscleId>?> _showMusclePicker(
