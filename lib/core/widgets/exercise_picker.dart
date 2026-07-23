@@ -10,9 +10,14 @@ Future<Exercise?> showExercisePicker(
   BuildContext context,
   List<Exercise> exercises, {
   String title = 'Choose an exercise',
+  bool preserveOrder = false,
 }) {
-  final available = exercises.where((e) => !e.isArchived).toList()
-    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  final available = exercises.where((e) => !e.isArchived).toList();
+  if (!preserveOrder) {
+    available.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+  }
   return showModalBottomSheet<Exercise>(
     context: context,
     showDragHandle: true,

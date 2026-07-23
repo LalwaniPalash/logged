@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/progression.dart';
+import '../../core/domain/muscle.dart';
 import '../../core/domain/training_goal.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../../core/widgets/app_widgets.dart';
@@ -83,6 +84,97 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     await ref
         .read(sessionRepositoryProvider)
         .addExercise(sessionId: widget.sessionId, exerciseId: exercise.id);
+    setState(_refresh);
+  }
+
+  Future<MuscleId?> _pickMuscle() => showDialog<MuscleId>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: const Text('Build from a muscle'),
+      children: [
+        SizedBox(
+          width: 360,
+          height: 440,
+          child: ListView(
+            children: [
+              for (final muscle in MuscleId.values)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, muscle),
+                  child: Text(muscle.label),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _addForMuscle() async {
+    final muscle = await _pickMuscle();
+    if (muscle == null) return;
+    final index = await ref.read(muscleExerciseIndexProvider).build();
+    if (!mounted) return;
+    final exercise = await showExercisePicker(
+      context,
+      (index[muscle] ?? const []).map((match) => match.exercise).toList(),
+      title: 'Exercises for ${muscle.label}',
+      preserveOrder: true,
+    );
+    if (exercise == null) return;
+    await ref
+        .read(sessionRepositoryProvider)
+        .addExercise(sessionId: widget.sessionId, exerciseId: exercise.id);
+    setState(_refresh);
+  }
+
+  Future<void> _swapExercise(SessionExerciseDetails detail) async {
+    final primary = decodeMuscleIds(detail.exercise.primaryMuscles);
+    final index = await ref.read(muscleExerciseIndexProvider).build();
+    final matches = primary.isEmpty
+        ? const <Exercise>[]
+        : (index[primary.first] ?? const [])
+              .map((match) => match.exercise)
+              .where((exercise) => exercise.id != detail.exercise.id)
+              .toList();
+    if (!mounted) return;
+    final exercise = await showExercisePicker(
+      context,
+      matches,
+      title: primary.isEmpty
+          ? 'Swap ${detail.exercise.name}'
+          : 'Swap for ${primary.first.label}',
+      preserveOrder: true,
+    );
+    if (exercise == null) return;
+    if (!mounted) return;
+    if (detail.sets.isNotEmpty) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Replace exercise?'),
+          content: const Text(
+            'The prescription slot will stay, but sets already logged for this exercise will be removed.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Replace'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    await ref
+        .read(sessionRepositoryProvider)
+        .swapExercise(
+          sessionExerciseId: detail.sessionExercise.id,
+          exerciseId: exercise.id,
+        );
     setState(_refresh);
   }
 
@@ -405,6 +497,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           appBar: AppBar(
             title: Text(completed ? 'Workout' : 'Active workout'),
             actions: [
+              IconButton(
+                onPressed: completed ? null : _addForMuscle,
+                tooltip: 'Build from a muscle',
+                icon: const Icon(AppIcons.progress),
+              ),
               PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'delete') _deleteWorkout();
@@ -457,6 +554,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                   _updateInlineSet(detail, set, draft),
                               onEditSet: (set) =>
                                   _openSet(detail, existing: set),
+                              onSwap: () => _swapExercise(detail),
                               onRemove: () =>
                                   _removeExercise(detail.sessionExercise.id),
                             ),
@@ -513,6 +611,7 @@ class _ExerciseCard extends StatelessWidget {
     required this.onInlineCommit,
     required this.onEditSet,
     required this.onRemove,
+    required this.onSwap,
     required this.progressionAggressiveness,
   });
 
@@ -523,6 +622,7 @@ class _ExerciseCard extends StatelessWidget {
   final Future<void> Function(SetEntry set, SetRowDraft draft) onInlineCommit;
   final ValueChanged<SetEntry> onEditSet;
   final VoidCallback onRemove;
+  final VoidCallback onSwap;
   final double progressionAggressiveness;
 
   Future<void> _openForm(String url) async {
@@ -702,6 +802,11 @@ class _ExerciseCard extends StatelessWidget {
                     onPressed: detail.sets.isEmpty ? null : onRepeatSet,
                     icon: const Icon(AppIcons.refresh, size: 18),
                     label: const Text('Repeat'),
+                  ),
+                  TextButton.icon(
+                    onPressed: onSwap,
+                    icon: const Icon(AppIcons.swap, size: 18),
+                    label: const Text('Swap'),
                   ),
                   TextButton.icon(
                     onPressed: onAddSet,

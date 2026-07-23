@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_icons.dart';
+import '../../core/domain/muscle.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/exercise_picker.dart';
 import '../../data/database/app_database.dart';
@@ -76,6 +77,70 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
         _dirty = true;
       });
     }
+  }
+
+  Future<MuscleId?> _pickMuscle() => showDialog<MuscleId>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: const Text('Build from a muscle'),
+      children: [
+        SizedBox(
+          width: 360,
+          height: 440,
+          child: ListView(
+            children: [
+              for (final muscle in MuscleId.values)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, muscle),
+                  child: Text(muscle.label),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _addForMuscle() async {
+    final muscle = await _pickMuscle();
+    if (muscle == null) return;
+    final index = await ref.read(muscleExerciseIndexProvider).build();
+    if (!mounted) return;
+    final exercise = await showExercisePicker(
+      context,
+      (index[muscle] ?? const []).map((match) => match.exercise).toList(),
+      title: 'Exercises for ${muscle.label}',
+      preserveOrder: true,
+    );
+    if (exercise == null) return;
+    setState(() {
+      _selected.add(_TemplateExerciseDraft(exercise: exercise));
+      _dirty = true;
+    });
+  }
+
+  Future<void> _swap(_TemplateExerciseDraft draft) async {
+    final primary = decodeMuscleIds(draft.exercise.primaryMuscles);
+    if (primary.isEmpty) return;
+    final index = await ref.read(muscleExerciseIndexProvider).build();
+    if (!mounted) return;
+    final exercise = await showExercisePicker(
+      context,
+      (index[primary.first] ?? const [])
+          .map((match) => match.exercise)
+          .where((exercise) => exercise.id != draft.exercise.id)
+          .toList(),
+      title: 'Swap for ${primary.first.label}',
+      preserveOrder: true,
+    );
+    if (exercise == null) return;
+    setState(() {
+      final index = _selected.indexOf(draft);
+      if (index != -1) {
+        _selected[index] = draft.copyWith(exercise: exercise);
+        _dirty = true;
+      }
+    });
   }
 
   Future<void> _rename() async {
@@ -157,6 +222,11 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            onPressed: _addForMuscle,
+            tooltip: 'Build from a muscle',
+            icon: const Icon(AppIcons.progress),
+          ),
           if (_dirty)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -259,6 +329,12 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                             tooltip: 'Open form video',
                             onPressed: () => _openForm(item.formUrl!),
                           ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(AppIcons.swap),
+                          tooltip: 'Swap exercise',
+                          onPressed: () => _swap(item),
+                        ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
                           icon: const Icon(AppIcons.edit),
@@ -546,6 +622,7 @@ class _TemplateExerciseDraft {
   );
 
   _TemplateExerciseDraft copyWith({
+    Exercise? exercise,
     int? targetSets,
     int? sidesPerSet,
     int? minReps,
@@ -560,7 +637,7 @@ class _TemplateExerciseDraft {
     String? prescriptionNotes,
     String? formUrl,
   }) => _TemplateExerciseDraft(
-    exercise: exercise,
+    exercise: exercise ?? this.exercise,
     targetSets: targetSets,
     sidesPerSet: sidesPerSet,
     minReps: minReps,

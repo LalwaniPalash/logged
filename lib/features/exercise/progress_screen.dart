@@ -103,6 +103,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 landmarks: landmarks,
                 onOpenMuscle: (muscle) => _openMuscleProgress(muscle),
                 onOpenAllMuscles: _openAllMuscleProgress,
+                onBuildFromMuscle: _buildFromMuscle,
                 emptyAction: FilledButton.icon(
                   onPressed: () => showStartWorkoutFlow(context, ref),
                   icon: const Icon(AppIcons.play),
@@ -144,6 +145,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               child: _WeeklyMuscleBalance(
                 state: state.value,
                 landmarks: landmarks,
+                onMuscleTap: _buildFromMuscle,
               ),
             ),
           const SizedBox(height: 26),
@@ -257,6 +259,20 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
     }
+  }
+
+  Future<void> _buildFromMuscle(MuscleId muscle) async {
+    final index = await ref.read(muscleExerciseIndexProvider).build();
+    final matches = index[muscle] ?? const [];
+    if (!mounted) return;
+    final exercise = await showExercisePicker(
+      context,
+      matches.map((match) => match.exercise).toList(),
+      title: 'Exercises for ${muscle.label}',
+      preserveOrder: true,
+    );
+    if (exercise == null || !mounted) return;
+    await startWorkoutWithExercise(context, ref, exerciseId: exercise.id);
   }
 }
 
@@ -1098,10 +1114,15 @@ class _BreakdownLine extends StatelessWidget {
 }
 
 class _WeeklyMuscleBalance extends StatelessWidget {
-  const _WeeklyMuscleBalance({required this.state, required this.landmarks});
+  const _WeeklyMuscleBalance({
+    required this.state,
+    required this.landmarks,
+    required this.onMuscleTap,
+  });
 
   final LiveMuscleState state;
   final Map<MuscleId, VolumeLandmarks> landmarks;
+  final ValueChanged<MuscleId> onMuscleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1144,9 +1165,10 @@ class _WeeklyMuscleBalance extends StatelessWidget {
               runSpacing: 6,
               children: [
                 for (final muscle in muscles)
-                  Chip(
+                  ActionChip(
                     visualDensity: VisualDensity.compact,
                     label: Text(muscle.label),
+                    onPressed: () => onMuscleTap(muscle),
                   ),
               ],
             ),

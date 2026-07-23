@@ -13,6 +13,7 @@ import 'database/app_database.dart';
 import 'repositories/analytics_repository.dart';
 import 'repositories/bodyweight_repository.dart';
 import 'repositories/exercise_repository.dart';
+import 'repositories/muscle_exercise_index.dart';
 import 'repositories/rest_day_repository.dart';
 import 'repositories/session_repository.dart';
 import 'repositories/set_repository.dart';
@@ -27,6 +28,9 @@ final notificationServiceProvider = Provider<NotificationClient>(
 );
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
+);
+final muscleExerciseIndexProvider = Provider<MuscleExerciseIndex>(
+  (ref) => MuscleExerciseIndex(ref.watch(databaseProvider)),
 );
 final templateRepositoryProvider = Provider<TemplateRepository>(
   (ref) => TemplateRepository(ref.watch(databaseProvider)),

@@ -21,6 +21,7 @@ class MuscleAnatomyView extends StatefulWidget {
     this.onOpenAllMuscles,
     this.emptyAction,
     this.landmarks = defaultLandmarks,
+    this.onBuildFromMuscle,
   });
 
   final LiveMuscleState state;
@@ -31,6 +32,7 @@ class MuscleAnatomyView extends StatefulWidget {
   final VoidCallback? onOpenAllMuscles;
   final Widget? emptyAction;
   final Map<MuscleId, VolumeLandmarks> landmarks;
+  final ValueChanged<MuscleId>? onBuildFromMuscle;
 
   @override
   State<MuscleAnatomyView> createState() => _MuscleAnatomyViewState();
@@ -238,6 +240,7 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
             landmarks: _selectedMuscle == null
                 ? null
                 : widget.landmarks[_selectedMuscle!],
+            onBuildFromMuscle: widget.onBuildFromMuscle,
           ),
         ),
       ],
@@ -417,6 +420,7 @@ class _MuscleDetails extends StatelessWidget {
     required this.onOpenMuscle,
     required this.emptyAction,
     required this.landmarks,
+    required this.onBuildFromMuscle,
   });
 
   final MuscleId? muscle;
@@ -425,6 +429,7 @@ class _MuscleDetails extends StatelessWidget {
   final ValueChanged<MuscleId>? onOpenMuscle;
   final Widget? emptyAction;
   final VolumeLandmarks? landmarks;
+  final ValueChanged<MuscleId>? onBuildFromMuscle;
 
   @override
   Widget build(BuildContext context) {
@@ -487,6 +492,15 @@ class _MuscleDetails extends StatelessWidget {
                 ),
               ),
             ],
+            if (onBuildFromMuscle != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => onBuildFromMuscle!(muscle!),
+                  icon: const Icon(AppIcons.add, size: 16),
+                  label: Text('Add exercise for ${muscle!.label}'),
+                ),
+              ),
           ],
         ),
       );
@@ -561,6 +575,15 @@ class _MuscleDetails extends StatelessWidget {
               ),
             ),
           ],
+          if (onBuildFromMuscle != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => onBuildFromMuscle!(muscle!),
+                icon: const Icon(AppIcons.add, size: 16),
+                label: Text('Build from ${muscle!.label}'),
+              ),
+            ),
         ],
       ),
     );

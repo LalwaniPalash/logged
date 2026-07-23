@@ -60,6 +60,22 @@ Future<void> showStartWorkoutFlow(BuildContext context, WidgetRef ref) async {
   }
 }
 
+Future<void> startWorkoutWithExercise(
+  BuildContext context,
+  WidgetRef ref, {
+  required int exerciseId,
+}) async {
+  final repository = ref.read(sessionRepositoryProvider);
+  final sessionId = await repository.start();
+  await repository.addExercise(sessionId: sessionId, exerciseId: exerciseId);
+  if (!context.mounted) return;
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => ActiveSessionScreen(sessionId: sessionId),
+    ),
+  );
+}
+
 class _StartTile extends StatelessWidget {
   const _StartTile({
     required this.icon,

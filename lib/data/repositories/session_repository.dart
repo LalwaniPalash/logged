@@ -173,6 +173,18 @@ class SessionRepository {
         );
   }
 
+  Future<void> swapExercise({
+    required int sessionExerciseId,
+    required int exerciseId,
+  }) => _database.transaction(() async {
+    await (_database.delete(
+      _database.setEntries,
+    )..where((set) => set.sessionExerciseId.equals(sessionExerciseId))).go();
+    await (_database.update(_database.sessionExercises)
+          ..where((row) => row.id.equals(sessionExerciseId)))
+        .write(SessionExercisesCompanion(exerciseId: Value(exerciseId)));
+  });
+
   Future<void> startFromTemplate({
     required int sessionId,
     required int templateId,
