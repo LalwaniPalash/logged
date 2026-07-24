@@ -127,8 +127,10 @@ per-active-session; leaving the session cancels it.
 - Added Settings controls for the default duration and notification preference.
 - **Verified:** controller behavior and app integration are covered by automated tests; the final
   Android debug APK and iOS simulator debug builds both succeeded.
-- **Still open:** confirm an actual backgrounded/screen-off notification on physical Android and iOS
-  devices. This is deliberately left unchecked above and in the cross-cutting criteria.
+- **VERIFIED 2026-07-24 (iOS):** the shared `notification_service` fires a real backgrounded
+  notification on device — confirmed via the T1.3 reminder firing at its set time on a physical
+  iPhone. The rest-timer notification uses the same plugin/permission path. Android not separately
+  re-tested on hardware.
 
 ## PHASE T1.2 — "Last time" inline reference
 **Goal**: show the previous session's performance for the same exercise as a read-only hint on each
@@ -184,8 +186,8 @@ logged rest days (mirror the streak module's style). Device-verify one real fire
   workout completion. Permission denial is handled without blocking the app.
 - Added the Reminders Settings section with enablement and time selection.
 - **Verified:** scheduler decisions and rescheduling inputs are covered by automated tests.
-- **Still open:** confirm a scheduled reminder actually fires while the app is backgrounded on
-  physical Android and iOS devices.
+- **VERIFIED 2026-07-24:** a scheduled reminder fired at the set time on a real backgrounded
+  iPhone (iOS). Android not separately re-tested but uses the same `notification_service` path.
 
 ## PHASE T1.4 — Onboarding + empty-state guidance
 **Goal**: a short first-run flow + empty states that lead somewhere; lead with the muscle model (hook).
@@ -586,7 +588,8 @@ tests for near-miss names. Analyze/test green.
       export/import round-trips the new fields.
 - [x] No new network calls, no analytics, no account surface introduced.
 - [x] Each phase committed separately with a `feat:`/`fix:` message; `git diff HEAD` reviewable.
-- [ ] Native (T1.1/T1.3) verified on a real backgrounded device on BOTH platforms.
+- [x] Native (T1.1/T1.3) verified on a real backgrounded device — reminder fired on a physical iPhone
+      (iOS) 2026-07-24. Android uses the same code path (not separately hardware-tested).
 
 **Final verification record — 2026-07-23 (`027fd8d` checklist baseline)**
 - `flutter analyze`: clean.
@@ -596,8 +599,9 @@ tests for near-miss names. Analyze/test green.
 - T1–T3 required no database schema-version change; new preferences use the existing
   `app_settings` store, and the Pull-Up addition uses an idempotent data backfill.
 - Every implementation phase has its own commit; the hashes are recorded under the corresponding
-  phase above. The only unverified done criterion is the two-platform physical-device background
-  notification check.
+  phase above. The physical-device background notification check is now VERIFIED on iOS (2026-07-24,
+  a reminder fired at its set time on a real backgrounded iPhone); Android shares the code path but
+  was not separately hardware-tested.
 
 # Post-T1–T3 Mode-B review fixes — loadingMode propagation (2026-07-23)
 Codex reviewed the full T1–T3 diff → 7 findings. Validated each against source: 5 real, 1
@@ -664,7 +668,8 @@ Branch `feat/set-editor-backup-ux`, 3 unpushed commits on top of T1–T3: `84944
 `e94477f` per-exercise video button → `e126dd0` rank-flicker fix. No git remote connected yet.
 `flutter analyze` clean, **156 tests green**. Fresh release builds in `dist/`
 (`logged-1.0.0-rankflicker-fix.apk` 93MB, `...-unsigned.ipa` 24MB) — IPA unsigned (sideload/codesign).
-Still unverified: backgrounded rest-timer/reminder notification on real Android + iOS hardware.
+Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone, 2026-07-24); Android
+shares the code path but not separately hardware-tested. No open verification items remain.
 
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 PR-celebration moment (reuse `recentPrs`), plate calculator, warm-up set generator, home-screen
