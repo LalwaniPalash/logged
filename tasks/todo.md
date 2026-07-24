@@ -645,6 +645,27 @@ exercise's YouTube/demo video, opening in the browser / YouTube app. Implemented
 - [x] Custom-exercise dialog: optional "Video link" field.
 - [x] `flutter analyze` clean · **154 tests green**.
 
+# Fix — Dashboard rank hero + Ranks page infinite refresh (2026-07-24, `e126dd0`)
+User: the home-screen Body Rank widget flickered foundation<->bronze endlessly; the Ranks page also
+refreshed constantly. Same root cause (one self-triggering loop, not two):
+- `ref.listen(muscleProgressProvider)` → `_handleRankUpdates` wrote `lastSeenRanks` into `app_settings`
+  on EVERY emission; `watchCoachingPreferences()` watches that whole table → re-emitted coaching prefs
+  → recomputed `muscleProgress` → fired the listener again. `bodyProgressSummary` cycled
+  null('Foundation') <-> data('Bronze'). The Ranks page churned because the Dashboard listener stays
+  mounted under the pushed route and the page consumes the same providers.
+- [x] Guard the write: only persist `lastSeenRanks` when `!mapEquals(previous, current)` — breaks the loop.
+- [x] Harden: value equality on `CoachingPreferences` + `.distinct()` on its watch stream, so writes to
+      UNRELATED `app_settings` keys never recompute the coaching/rank chain.
+- [x] Regression tests (coaching prefs ignore unrelated writes, emit on real change) · analyze clean · 156 green.
+- Note: `mapEquals` needed an explicit `import 'package:flutter/foundation.dart'`.
+
+# Current state (2026-07-24)
+Branch `feat/set-editor-backup-ux`, 3 unpushed commits on top of T1–T3: `849441a` loadingMode fixes →
+`e94477f` per-exercise video button → `e126dd0` rank-flicker fix. No git remote connected yet.
+`flutter analyze` clean, **156 tests green**. Fresh release builds in `dist/`
+(`logged-1.0.0-rankflicker-fix.apk` 93MB, `...-unsigned.ipa` 24MB) — IPA unsigned (sideload/codesign).
+Still unverified: backgrounded rest-timer/reminder notification on real Android + iOS hardware.
+
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 PR-celebration moment (reuse `recentPrs`), plate calculator, warm-up set generator, home-screen
 widget, Health/Health Connect one-way export.
