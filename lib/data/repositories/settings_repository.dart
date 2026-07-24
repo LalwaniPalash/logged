@@ -42,6 +42,21 @@ class CoachingPreferences {
   final TrainingGoal trainingGoal;
   final String? volumeLandmarkOverrides;
   final UserSex userSex;
+
+  // Value equality so watchCoachingPreferences().distinct() can drop re-emits
+  // caused by writes to UNRELATED app_settings keys (the whole table is
+  // watched). Without this, saving lastSeenRanks recomputed the entire muscle
+  // progress + rank chain on every emission.
+  @override
+  bool operator ==(Object other) =>
+      other is CoachingPreferences &&
+      other.trainingGoal == trainingGoal &&
+      other.volumeLandmarkOverrides == volumeLandmarkOverrides &&
+      other.userSex == userSex;
+
+  @override
+  int get hashCode =>
+      Object.hash(trainingGoal, volumeLandmarkOverrides, userSex);
 }
 
 class SettingsRepository {
@@ -113,7 +128,8 @@ class SettingsRepository {
   Stream<CoachingPreferences> watchCoachingPreferences() => _database
       .select(_database.appSettings)
       .watch()
-      .map(_coachingPreferencesFromRows);
+      .map(_coachingPreferencesFromRows)
+      .distinct();
 
   Future<CoachingPreferences> readCoachingPreferences() async =>
       _coachingPreferencesFromRows(

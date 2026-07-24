@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -33,6 +34,12 @@ class DashboardScreen extends ConsumerWidget {
     final current = {
       for (final entry in progress.entries) entry.key: entry.value.rank,
     };
+    // Only persist when the ranks actually changed. Writing on every emission
+    // fed an infinite loop: this listener writes lastSeenRanks into app_settings,
+    // watchCoachingPreferences() watches that whole table and re-emits, which
+    // recomputes muscleProgress, which fires this listener again — the Dashboard
+    // rank hero flickered foundation<->bronze forever. The guard breaks it.
+    if (mapEquals(previous, current)) return;
     await repository.setLastSeenRanks(current);
     if (previous.isEmpty || !context.mounted) return;
     final events = detectRankUps(previous: previous, current: current);

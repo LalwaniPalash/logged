@@ -106,6 +106,18 @@ Format: [date] | what went wrong | rule to prevent it
   proves nothing because defaults fill the gap. The backfill for existing installs must also CORRECT
   a wrong value, not only insert-when-missing (a fresh install already had the row, so insert-if-absent
   no-oped and marked itself done).
+- 2026-07-24 | Dashboard rank hero flickered foundation<->bronze forever. Root cause: a
+  `ref.listen(muscleProgressProvider)` callback (`_handleRankUpdates`) wrote `lastSeenRanks` into
+  `app_settings` on EVERY emission, and `watchCoachingPreferences()` watches the whole `app_settings`
+  table → that write re-emitted coaching prefs → recomputed muscleProgress → fired the listener again →
+  infinite loop; `bodyProgressSummary` cycled null('Foundation') <-> data('Bronze'). Two-part fix:
+  (1) guard the write — only persist when `mapEquals(previous, current)` is false; (2) `.distinct()` the
+  coaching-prefs stream (+ value equality on `CoachingPreferences`) so writes to UNRELATED settings keys
+  don't cascade. Rule: never write to a table inside a listener/effect that (transitively) reads a
+  `.watch()` on that same table without a change-guard — it self-triggers. And a provider that
+  `.watch()`es an entire k/v settings table should be `.distinct()` on a value-equal type, or every
+  unrelated key write recomputes it. NOTE: `mapEquals` needs `import 'package:flutter/foundation.dart'`
+  explicitly here — it was not resolved via material.dart.
 - 2026-07-23 | Codex Mode-B review false positive worth remembering: it flagged the CSV parser for not
   stripping a UTF-8 BOM, assuming `String.trim()` leaves U+FEFF. Dart's `trim()` SPECIFICALLY removes
   the BOM (documented: "White_Space property … and the BOM character, 0xFEFF") — verified with a
