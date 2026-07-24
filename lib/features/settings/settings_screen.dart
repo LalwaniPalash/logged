@@ -750,6 +750,7 @@ class SettingsScreen extends ConsumerWidget {
           const SectionHeader('Rest timer'),
           _RestTimerSettingsCard(
             preferences: restTimer,
+            onAutoStartChanged: repo.setRestTimerAutoStartEnabled,
             onSecondsChanged: repo.setDefaultRestSeconds,
             onCustom: () =>
                 _pickCustomRest(context, ref, restTimer.defaultSeconds),
@@ -895,6 +896,7 @@ class _ReminderSettingsCard extends StatelessWidget {
 class _RestTimerSettingsCard extends StatelessWidget {
   const _RestTimerSettingsCard({
     required this.preferences,
+    required this.onAutoStartChanged,
     required this.onSecondsChanged,
     required this.onCustom,
     required this.onNotificationsChanged,
@@ -903,6 +905,7 @@ class _RestTimerSettingsCard extends StatelessWidget {
   static const _presets = [60, 90, 120, 180];
 
   final RestTimerPreferences preferences;
+  final ValueChanged<bool> onAutoStartChanged;
   final ValueChanged<int> onSecondsChanged;
   final VoidCallback onCustom;
   final ValueChanged<bool> onNotificationsChanged;
@@ -911,50 +914,65 @@ class _RestTimerSettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final custom = !_presets.contains(preferences.defaultSeconds);
+    final autoStart = preferences.autoStartEnabled;
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Default rest', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              'A completed set starts this automatically. Exercise prescriptions override it.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final seconds in _presets)
-                  ChoiceChip(
-                    label: Text(_formatRestPreset(seconds)),
-                    selected: preferences.defaultSeconds == seconds,
-                    onSelected: (_) => onSecondsChanged(seconds),
-                  ),
-                ChoiceChip(
-                  label: Text(
-                    custom
-                        ? _formatRestPreset(preferences.defaultSeconds)
-                        : 'Custom',
-                  ),
-                  selected: custom,
-                  onSelected: (_) => onCustom(),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Rest-finished notifications'),
-              subtitle: const Text('Alerts while Logged is backgrounded'),
-              value: preferences.notificationsEnabled,
-              onChanged: onNotificationsChanged,
+              title: const Text('Auto-start rest timer'),
+              subtitle: const Text(
+                'Start a countdown when you complete a set. Turn off if you log '
+                'sets after training.',
+              ),
+              value: autoStart,
+              onChanged: onAutoStartChanged,
             ),
+            // The rest of the card only matters when the timer can start.
+            if (autoStart) ...[
+              const Divider(height: 24),
+              Text('Default rest', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                'A completed set starts this automatically. Exercise prescriptions override it.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final seconds in _presets)
+                    ChoiceChip(
+                      label: Text(_formatRestPreset(seconds)),
+                      selected: preferences.defaultSeconds == seconds,
+                      onSelected: (_) => onSecondsChanged(seconds),
+                    ),
+                  ChoiceChip(
+                    label: Text(
+                      custom
+                          ? _formatRestPreset(preferences.defaultSeconds)
+                          : 'Custom',
+                    ),
+                    selected: custom,
+                    onSelected: (_) => onCustom(),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Rest-finished notifications'),
+                subtitle: const Text('Alerts while Logged is backgrounded'),
+                value: preferences.notificationsEnabled,
+                onChanged: onNotificationsChanged,
+              ),
+            ],
           ],
         ),
       ),

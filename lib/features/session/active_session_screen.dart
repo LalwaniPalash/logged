@@ -458,6 +458,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     final preferences = await ref
         .read(settingsRepositoryProvider)
         .readRestTimerPreferences();
+    // Opt-out for people who log sets after training instead of resting in-app:
+    // with auto-start off the countdown bar never appears.
+    if (!preferences.autoStartEnabled) return;
     final notificationsAllowed = await ref
         .read(restTimerControllerProvider.notifier)
         .start(

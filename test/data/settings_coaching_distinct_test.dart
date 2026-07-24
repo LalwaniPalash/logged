@@ -7,6 +7,26 @@ import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/repositories/settings_repository.dart';
 
 void main() {
+  test('rest timer auto-start defaults on and persists when toggled off', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SettingsRepository(database);
+
+    expect(
+      (await repository.readRestTimerPreferences()).autoStartEnabled,
+      isTrue,
+      reason: 'auto-start is the standard default',
+    );
+
+    await repository.setRestTimerAutoStartEnabled(false);
+    expect(
+      (await repository.readRestTimerPreferences()).autoStartEnabled,
+      isFalse,
+    );
+    // Other rest-timer prefs are untouched by the toggle.
+    expect((await repository.readRestTimerPreferences()).defaultSeconds, 90);
+  });
+
   test('CoachingPreferences has value equality', () {
     expect(
       const CoachingPreferences(trainingGoal: TrainingGoal.build),

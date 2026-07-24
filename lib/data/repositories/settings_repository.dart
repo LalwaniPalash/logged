@@ -9,10 +9,14 @@ import '../database/app_database.dart';
 
 class RestTimerPreferences {
   const RestTimerPreferences({
+    this.autoStartEnabled = true,
     this.defaultSeconds = 90,
     this.notificationsEnabled = true,
   });
 
+  /// When false, completing a set does NOT start the countdown bar at all —
+  /// for people who log sets after training rather than resting in-app.
+  final bool autoStartEnabled;
   final int defaultSeconds;
   final bool notificationsEnabled;
 }
@@ -67,6 +71,7 @@ class SettingsRepository {
   static const _kRestWeekdays = 'restWeekdays';
   static const _kWeeklyGoal = 'weeklyGoal';
   static const _kDefaultRestSeconds = 'defaultRestSeconds';
+  static const _kRestTimerAutoStartEnabled = 'restTimerAutoStartEnabled';
   static const _kRestTimerNotificationsEnabled =
       'restTimerNotificationsEnabled';
   static const _kReminderEnabled = 'reminderEnabled';
@@ -101,6 +106,9 @@ class SettingsRepository {
 
   Future<void> setDefaultRestSeconds(int seconds) =>
       _put(_kDefaultRestSeconds, '${seconds.clamp(15, 3600)}');
+
+  Future<void> setRestTimerAutoStartEnabled(bool enabled) =>
+      _put(_kRestTimerAutoStartEnabled, '$enabled');
 
   Future<void> setRestTimerNotificationsEnabled(bool enabled) =>
       _put(_kRestTimerNotificationsEnabled, '$enabled');
@@ -212,7 +220,11 @@ class SettingsRepository {
     final notificationsEnabled =
         bool.tryParse(map[_kRestTimerNotificationsEnabled] ?? '') ??
         const RestTimerPreferences().notificationsEnabled;
+    final autoStartEnabled =
+        bool.tryParse(map[_kRestTimerAutoStartEnabled] ?? '') ??
+        const RestTimerPreferences().autoStartEnabled;
     return RestTimerPreferences(
+      autoStartEnabled: autoStartEnabled,
       defaultSeconds: seconds.clamp(15, 3600),
       notificationsEnabled: notificationsEnabled,
     );
