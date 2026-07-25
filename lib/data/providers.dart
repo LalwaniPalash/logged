@@ -5,6 +5,7 @@ import '../core/domain/deload.dart';
 import '../core/domain/muscle.dart';
 import '../core/domain/muscle_progress.dart'
     show BodyProgressSummary, MuscleProgress, buildBodyProgressSummary;
+import '../core/domain/plate_math.dart';
 import '../core/domain/volume_landmarks.dart';
 import '../core/domain/streak.dart';
 import '../core/domain/training_goal.dart';
@@ -79,6 +80,9 @@ final reminderPreferencesProvider = StreamProvider<ReminderPreferences>(
 );
 final coachingPreferencesProvider = StreamProvider<CoachingPreferences>(
   (ref) => ref.watch(settingsRepositoryProvider).watchCoachingPreferences(),
+);
+final plateInventoryProvider = StreamProvider<PlateInventory>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchPlateInventory(),
 );
 final effectiveVolumeLandmarksProvider =
     Provider<AsyncValue<Map<MuscleId, VolumeLandmarks>>>((ref) {

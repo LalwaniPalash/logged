@@ -110,7 +110,9 @@ haptic (`HapticFeedback.heavyImpact`) + local notification if app backgrounded. 
 per-active-session; leaving the session cancels it.
 **Acceptance**:
 - [x] Completing a set auto-starts the countdown with the exercise's prescribed rest.
-- [ ] Notification fires with the app backgrounded on a real device (both platforms).
+- [x] Notification fires with the app backgrounded on a real device — VERIFIED on a physical iPhone
+      2026-07-24 (see the implementation record below). Android shares the identical
+      `notification_service` plugin/permission path but was not separately hardware-tested.
 - [x] Switching tabs and returning keeps the countdown accurate (provider-held, not rebuilt).
 - [x] Permission denial degrades gracefully (in-app timer still works; no crash).
 **Tests**: unit-test the controller's tick/skip/adjust math (inject a clock; no real timer);
@@ -663,17 +665,104 @@ refreshed constantly. Same root cause (one self-triggering loop, not two):
 - [x] Regression tests (coaching prefs ignore unrelated writes, emit on real change) · analyze clean · 156 green.
 - Note: `mapEquals` needed an explicit `import 'package:flutter/foundation.dart'`.
 
-# Current state (2026-07-24)
-Branch `feat/set-editor-backup-ux`, 3 unpushed commits on top of T1–T3: `849441a` loadingMode fixes →
-`e94477f` per-exercise video button → `e126dd0` rank-flicker fix. No git remote connected yet.
-`flutter analyze` clean, **156 tests green**. Fresh release builds in `dist/`
-(`logged-1.0.0-rankflicker-fix.apk` 93MB, `...-unsigned.ipa` 24MB) — IPA unsigned (sideload/codesign).
-Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone, 2026-07-24); Android
-shares the code path but not separately hardware-tested. No open verification items remain.
+# Feature — Rest timer auto-start toggle (2026-07-24, `95dbd38`)
+User: some people log their sets after training rather than resting in-app, so an auto-starting
+countdown on every completed set is noise for them.
+- [x] Settings "Auto-start rest timer" toggle, default ON (the previous, standard behavior).
+- [x] When off, completing a set no longer starts the countdown bar, and the default-rest +
+      notification controls collapse since they no longer apply.
+- [x] Stored as a new `app_settings` key — no schema change; the existing `app_settings` export
+      carries it through backup automatically.
+- [x] `flutter analyze` clean · **157 tests green**.
+- [x] Release builds: `dist/logged-1.0.0-rest-timer-toggle.apk` (97MB) +
+      `...-rest-timer-toggle-unsigned.ipa` (24MB).
+
+# Current state (2026-07-25)
+Branch `feat/set-editor-backup-ux`, 4 unpushed commits on top of T1–T3: `849441a` loadingMode fixes →
+`e94477f` per-exercise video button → `e126dd0` rank-flicker fix → `95dbd38` rest-timer auto-start
+toggle. No git remote connected yet. `flutter analyze` clean, **157 tests green**. Latest release
+builds in `dist/` (`logged-1.0.0-rest-timer-toggle.apk` 97MB, `...-unsigned.ipa` 24MB) — IPA unsigned
+(sideload/codesign). Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone,
+2026-07-24); Android shares the code path but not separately hardware-tested. No open verification
+items remain.
 
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
-PR-celebration moment (reuse `recentPrs`), plate calculator, warm-up set generator, home-screen
-widget, Health/Health Connect one-way export.
+- [x] PR-celebration moment — already shipped in T2.5-E (`46fef11`): session-finish PR dialog reusing
+      `recentPrs`, plus one-time rank-up toasts. This backlog line was stale.
+- [ ] Plate calculator
+- [ ] Warm-up set generator
+- [ ] Home-screen widget
+- [ ] Health / Health Connect one-way export
+
+═══════════════════════════════════════════════════════════════════════════════════════════════
+# Active task — Finish the smaller wins (2026-07-25)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+User: "update todo.md and tick the notification box, then complete the smaller wins."
+Scope decided by Q&A (asked once, upfront — the two native items are far bigger than the label):
+- Home-screen widget → **Android now, iOS staged**. Ship a real Android AppWidget; write the iOS
+  SwiftUI source + step list but do NOT touch `project.pbxproj` (a malformed pbxproj breaks every
+  iOS build and the target can't be verified without opening Xcode).
+- Health export → **manual, opt-in, workouts only**. Settings toggle + explicit action; no background
+  sync, no silent writes.
+
+## SW.0 — Docs (done first)
+- [x] Tick the T1.1 backgrounded-notification box with the iOS-verified / Android-not-hardware-tested
+      caveat spelled out inline (it was already verified; the box just never got ticked).
+- [x] Record `95dbd38` (rest-timer auto-start toggle) as its own section.
+- [x] Refresh "Current state" to 2026-07-25 / 4 unpushed commits / 157 tests / rest-timer-toggle builds.
+- [x] Correct the stale "PR-celebration moment" backlog line — it shipped in `46fef11`.
+
+## SW.1 — Plate calculator
+**Domain** `lib/core/domain/plate_math.dart` (pure, no Flutter imports):
+- `PlateInventory` — bar weight + available plate sizes (kg and lb lists) + optional pair counts.
+  Defaults: kg bar 20, plates 25/20/15/10/5/2.5/1.25; lb bar 45, plates 45/35/25/10/5/2.5.
+- `PlateSolution` — per-side stack, achieved total, residual (what could NOT be loaded).
+- Greedy largest-first per side, respecting pair counts; exact-match preferred, otherwise the closest
+  achievable UNDER target with the shortfall reported. Never silently round up.
+- `roundToLoadable(target, inventory)` — snap an arbitrary weight down to the nearest loadable total.
+**Persistence**: `plateInventory` JSON in `app_settings` (no schema change; rides the existing
+`app_settings` backup export). `SettingsRepository.watch/readPlateInventory` + setter.
+**UI**: "Plates" action on the active-session exercise card → bottom sheet with the resolved stack for
+the current/target load, an editable target field, and a plain "can't make this exactly, short by X"
+line. Settings card for bar weight + which plates you own.
+- Only offered for `external` / `bodyweightAdded` loading modes with a real load — a strict
+  bodyweight or assisted lift has no plates to compute. Per-hand (`perSide`) entry means dumbbells,
+  so the sheet computes a single implement, not a barbell.
+
+## SW.2 — Warm-up set generator
+**Domain** `lib/core/domain/warmup.dart` (pure):
+- Ramp off the working weight: ~40%×5, ~60%×3, ~80%×2 (empty-bar first when the working load is far
+  above the bar). Each rung snapped through `roundToLoadable` so every warm-up is actually loadable —
+  this is why SW.1 lands first.
+- Returns empty for `bodyweight`/`bodyweightAssisted`, for timed exercises, and when the working load
+  is at/below the bar (nothing to ramp).
+**Insertion**: warm-ups must precede working sets, so `SetRepository.shiftSetNumbers(...)` renumbers
+existing sets up by N before inserting the warm-ups as 1..N with `isWarmup: true`.
+(`SetEntries.setNumber` has no unique constraint — verified — so the shift is safe.)
+**UI**: "Warm-up" action on the exercise card → preview dialog of the generated rungs → "Add" inserts.
+
+## SW.3 — Home-screen widget (Android now, iOS staged)
+- `home_widget` package. `lib/core/services/home_widget_service.dart` pushes streak, sets logged this
+  week, and last workout name/date; refreshed on app start and after a session finishes.
+- Android: `LoggedWidgetProvider.kt` + `res/layout/logged_widget.xml` + `res/xml/logged_widget_info.xml`
+  + manifest receiver. Tapping the widget opens the app.
+- iOS: SwiftUI widget source staged under `ios/LoggedWidget/` + a step list in this file. NOT added to
+  `project.pbxproj` — that's a manual Xcode step, called out explicitly so it isn't mistaken for done.
+
+## SW.4 — Health / Health Connect export (manual, opt-in, workouts only)
+- `health` package. `lib/core/services/health_export_service.dart`: request permission, write each
+  completed session as a strength-training workout (type + start/end + duration), and record exported
+  session ids in `app_settings` so re-running never double-writes.
+- Settings: opt-in toggle + "Export to Health" action tile reusing the existing `_withProgress` spinner.
+- Android: Health Connect permissions + rationale activity in the manifest. iOS: HealthKit entitlement
+  + `NSHealthShareUsageDescription`/`NSHealthUpdateUsageDescription` strings.
+- Still no network and no account — these are on-device stores. The local-first promise holds.
+
+## Verification gate (per Ground Rules — do not report done without these)
+- [ ] `flutter analyze` clean; `flutter test` green with new unit tests for plate math (exact, closest,
+      pair-count exhaustion, lb path) and the warm-up ramp (skips by mode, snapping, no-op near bar).
+- [ ] `flutter build apk --debug` and `flutter build ios --simulator --debug` both succeed.
+- [ ] Codex Mode-B review of the full diff; every finding validated against source before acting.
 
 ## Deferred (Tier 5, NOT in this spec)
 Optional privacy-preserving sync (encrypted file / self-host / P2P) — opt-in only, never breaks the

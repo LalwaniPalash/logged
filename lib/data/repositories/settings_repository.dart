@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart';
+import '../../core/domain/plate_math.dart';
 import '../../core/domain/training_goal.dart';
 import '../../core/domain/strength_standards.dart';
 import '../../core/domain/workout_settings.dart';
@@ -82,6 +83,7 @@ class SettingsRepository {
   static const _kDeloadDismissedWeek = 'deloadDismissedWeek';
   static const _kUserSex = 'userSex';
   static const _kLastSeenRanks = 'lastSeenRanks';
+  static const _kPlateInventory = 'plateInventory';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -139,10 +141,19 @@ class SettingsRepository {
       .map(_coachingPreferencesFromRows)
       .distinct();
 
+  Stream<PlateInventory> watchPlateInventory() => _database
+      .select(_database.appSettings)
+      .watch()
+      .map(_plateInventoryFromRows)
+      .distinct();
+
   Future<CoachingPreferences> readCoachingPreferences() async =>
       _coachingPreferencesFromRows(
         await _database.select(_database.appSettings).get(),
       );
+
+  Future<PlateInventory> readPlateInventory() async =>
+      _plateInventoryFromRows(await _database.select(_database.appSettings).get());
 
   Future<void> setTrainingGoal(TrainingGoal goal) =>
       _put(_kTrainingGoal, goal.name);
@@ -151,6 +162,9 @@ class SettingsRepository {
 
   Future<void> setVolumeLandmarkOverrides(String? overridesJson) =>
       _put(_kVolumeLandmarkOverrides, overridesJson?.trim() ?? '');
+
+  Future<void> setPlateInventory(PlateInventory inventory) =>
+      _put(_kPlateInventory, jsonEncode(inventory.toJson()));
 
   Future<String?> readDeloadDismissedWeek() async {
     final row =
@@ -267,6 +281,17 @@ class SettingsRepository {
           : overrides,
       userSex: userSex,
     );
+  }
+
+  PlateInventory _plateInventoryFromRows(List<AppSetting> rows) {
+    final map = {for (final row in rows) row.key: row.value};
+    final raw = map[_kPlateInventory];
+    if (raw == null || raw.trim().isEmpty) return PlateInventory();
+    try {
+      return PlateInventory.fromJson(jsonDecode(raw));
+    } on Object {
+      return PlateInventory();
+    }
   }
 
   Future<void> _put(String key, String value) => _database

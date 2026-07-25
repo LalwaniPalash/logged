@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/enums.dart';
+import '../../core/domain/warmup.dart';
 import '../database/app_database.dart';
 
 class SetRepository {
@@ -79,6 +80,59 @@ class SetRepository {
       (_database.update(
         _database.setEntries,
       )..where((row) => row.id.equals(setId))).write(entry);
+
+  Future<void> shiftSetNumbers({
+    required int sessionExerciseId,
+    required int by,
+    int fromNumber = 1,
+  }) async {
+    if (by == 0) return;
+    await _database.customUpdate(
+      'UPDATE set_entries '
+      'SET set_number = set_number + ? '
+      'WHERE session_exercise_id = ? AND set_number >= ?',
+      variables: [
+        Variable<int>(by),
+        Variable<int>(sessionExerciseId),
+        Variable<int>(fromNumber),
+      ],
+      updates: {_database.setEntries},
+      updateKind: UpdateKind.update,
+    );
+  }
+
+  Future<void> insertWarmupSets({
+    required int sessionExerciseId,
+    required List<WarmupSet> warmups,
+    required WeightUnit unit,
+    required WeightEntry weightEntry,
+    required int sideCount,
+    required LoadingMode loadingMode,
+  }) async {
+    if (warmups.isEmpty) return;
+    await _database.transaction(() async {
+      await shiftSetNumbers(
+        sessionExerciseId: sessionExerciseId,
+        by: warmups.length,
+      );
+      await _database.batch((batch) {
+        batch.insertAll(_database.setEntries, [
+          for (var index = 0; index < warmups.length; index++)
+            SetEntriesCompanion.insert(
+              sessionExerciseId: sessionExerciseId,
+              setNumber: index + 1,
+              reps: Value(warmups[index].reps),
+              weightValue: Value(warmups[index].weight),
+              unit: Value(unit),
+              weightEntry: Value(weightEntry),
+              sideCount: Value(sideCount),
+              loadingMode: Value(loadingMode),
+              isWarmup: const Value(true),
+            ),
+        ]);
+      });
+    });
+  }
 
   Future<void> delete(int setId) => (_database.delete(
     _database.setEntries,

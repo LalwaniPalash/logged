@@ -6,11 +6,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
+import '../../core/domain/plate_math.dart';
 import '../../core/domain/progression.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/progress_analytics.dart';
 import '../../core/domain/streak.dart';
 import '../../core/domain/training_goal.dart';
+import '../../core/domain/warmup.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/exercise_picker.dart';
@@ -18,6 +20,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../data/providers.dart';
 import '../settings/reminder_scheduler.dart';
+import 'widgets/plate_calculator_sheet.dart';
 import 'widgets/set_editor_sheet.dart';
 import 'rest_timer_controller.dart';
 import 'widgets/rest_timer_bar.dart';
@@ -190,7 +193,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   /// Add / edit / clear the exercise's own demo video link. Stored on the
   /// exercise so it shows in every workout it appears in, not just this one.
   Future<void> _editVideoUrl(SessionExerciseDetails detail) async {
-    final controller = TextEditingController(text: detail.exercise.videoUrl ?? '');
+    final controller = TextEditingController(
+      text: detail.exercise.videoUrl ?? '',
+    );
     final result = await showDialog<String?>(
       context: context,
       builder: (context) => AlertDialog(
@@ -534,6 +539,70 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  Future<void> _openPlateCalculator(_PlateCalculatorRequest request) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => PlateCalculatorSheet(
+        exerciseName: request.exerciseName,
+        initialTarget: request.targetWeight,
+        unit: request.unit,
+        inventory: request.inventory,
+        perImplement: request.perImplement,
+      ),
+    );
+  }
+
+  Future<void> _previewWarmup(_WarmupRequest request) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add warm-up sets?'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(request.exerciseName),
+              const SizedBox(height: 12),
+              for (final warmup in request.warmups) ...[
+                Text(
+                  '${warmup.label} · '
+                  '${_formatWarmupWeight(warmup.weight, request.unit, request.weightEntry)}',
+                ),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Add sets'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref
+        .read(setRepositoryProvider)
+        .insertWarmupSets(
+          sessionExerciseId: request.sessionExerciseId,
+          warmups: request.warmups,
+          unit: request.unit,
+          weightEntry: request.weightEntry,
+          sideCount: request.sideCount,
+          loadingMode: request.loadingMode,
+        );
+    if (!mounted) return;
+    setState(_refresh);
+  }
+
   Future<void> _deleteWorkout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -568,6 +637,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     final trainingGoal =
         ref.watch(coachingPreferencesProvider).asData?.value.trainingGoal ??
         TrainingGoal.build;
+    final plateInventory =
+        ref.watch(plateInventoryProvider).asData?.value ?? PlateInventory();
     return FutureBuilder<_SessionView>(
       future: _future,
       builder: (context, snapshot) {
@@ -630,12 +701,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                   const [],
                               progressionAggressiveness:
                                   trainingGoal.progressionAggressiveness,
+                              inventory: plateInventory,
                               onAddSet: () => _addSet(detail),
                               onRepeatSet: () => _repeatSet(detail),
                               onInlineCommit: (set, draft) =>
                                   _updateInlineSet(detail, set, draft),
                               onEditSet: (set) =>
                                   _openSet(detail, existing: set),
+                              onOpenPlates: _openPlateCalculator,
+                              onOpenWarmup: _previewWarmup,
                               onSwap: () => _swapExercise(detail),
                               onRemove: () =>
                                   _removeExercise(detail.sessionExercise.id),
@@ -685,6 +759,42 @@ class _SessionView {
   final Map<int, List<SetEntry>> previousSets;
 }
 
+class _PlateCalculatorRequest {
+  const _PlateCalculatorRequest({
+    required this.exerciseName,
+    required this.targetWeight,
+    required this.unit,
+    required this.inventory,
+    required this.perImplement,
+  });
+
+  final String exerciseName;
+  final double targetWeight;
+  final WeightUnit unit;
+  final PlateInventory inventory;
+  final bool perImplement;
+}
+
+class _WarmupRequest {
+  const _WarmupRequest({
+    required this.sessionExerciseId,
+    required this.exerciseName,
+    required this.warmups,
+    required this.unit,
+    required this.weightEntry,
+    required this.sideCount,
+    required this.loadingMode,
+  });
+
+  final int sessionExerciseId;
+  final String exerciseName;
+  final List<WarmupSet> warmups;
+  final WeightUnit unit;
+  final WeightEntry weightEntry;
+  final int sideCount;
+  final LoadingMode loadingMode;
+}
+
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({
     required this.detail,
@@ -693,10 +803,13 @@ class _ExerciseCard extends StatelessWidget {
     required this.onRepeatSet,
     required this.onInlineCommit,
     required this.onEditSet,
+    required this.onOpenPlates,
+    required this.onOpenWarmup,
     required this.onRemove,
     required this.onSwap,
     required this.onEditVideoUrl,
     required this.progressionAggressiveness,
+    required this.inventory,
   });
 
   final SessionExerciseDetails detail;
@@ -705,10 +818,13 @@ class _ExerciseCard extends StatelessWidget {
   final VoidCallback onRepeatSet;
   final Future<void> Function(SetEntry set, SetRowDraft draft) onInlineCommit;
   final ValueChanged<SetEntry> onEditSet;
+  final ValueChanged<_PlateCalculatorRequest> onOpenPlates;
+  final ValueChanged<_WarmupRequest> onOpenWarmup;
   final VoidCallback onRemove;
   final VoidCallback onSwap;
   final VoidCallback onEditVideoUrl;
   final double progressionAggressiveness;
+  final PlateInventory inventory;
 
   Future<void> _openForm(String url) async {
     final uri = Uri.tryParse(url);
@@ -769,6 +885,32 @@ class _ExerciseCard extends StatelessWidget {
             loadingMode:
                 firstSet?.loadingMode ?? detail.exercise.preferredLoadingMode,
             progressionAggressiveness: progressionAggressiveness,
+          );
+    final loadingMode =
+        firstSet?.loadingMode ?? detail.exercise.preferredLoadingMode;
+    final plateSupported =
+        loadingMode == LoadingMode.external ||
+        loadingMode == LoadingMode.bodyweightAdded;
+    final perImplement = headerWeightEntry == WeightEntry.perSide;
+    final workingWeight =
+        _latestWorkingWeight(detail.sets, loadingMode: loadingMode) ??
+        suggestion?.weightValue;
+    final plateTarget = workingWeight ?? inventory.barWeightFor(headerUnit);
+    // Once this exercise has warm-ups the offer is done: the generator works off
+    // the working set, so it would happily produce the same rungs a second time
+    // and a stray tap would double-log the whole ramp.
+    final alreadyWarmedUp = detail.sets.any((set) => set.isWarmup);
+    final warmups = workingWeight == null || alreadyWarmedUp
+        ? const <WarmupSet>[]
+        : generateWarmup(
+            workingWeight: workingWeight,
+            unit: headerUnit,
+            inventory: inventory,
+            workingReps:
+                detail.sessionExercise.maxReps ??
+                detail.sessionExercise.minReps,
+            loadingMode: loadingMode,
+            perImplement: perImplement,
           );
 
     return Padding(
@@ -918,6 +1060,36 @@ class _ExerciseCard extends StatelessWidget {
                 spacing: 4,
                 runSpacing: 4,
                 children: [
+                  if (plateSupported)
+                    TextButton.icon(
+                      onPressed: () => onOpenPlates(
+                        _PlateCalculatorRequest(
+                          exerciseName: detail.exercise.name,
+                          targetWeight: plateTarget,
+                          unit: headerUnit,
+                          inventory: inventory,
+                          perImplement: perImplement,
+                        ),
+                      ),
+                      icon: const Icon(AppIcons.plates, size: 18),
+                      label: const Text('Plates'),
+                    ),
+                  if (warmups.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: () => onOpenWarmup(
+                        _WarmupRequest(
+                          sessionExerciseId: detail.sessionExercise.id,
+                          exerciseName: detail.exercise.name,
+                          warmups: warmups,
+                          unit: headerUnit,
+                          weightEntry: headerWeightEntry,
+                          sideCount: headerSideCount,
+                          loadingMode: loadingMode,
+                        ),
+                      ),
+                      icon: const Icon(AppIcons.warmup, size: 18),
+                      label: const Text('Warm-up'),
+                    ),
                   TextButton.icon(
                     onPressed: detail.sets.isEmpty ? null : onRepeatSet,
                     icon: const Icon(AppIcons.refresh, size: 18),
@@ -999,6 +1171,34 @@ String _formatPrescription({
     parts.add('${_formatPrescriptionDuration(restSeconds)} rest');
   }
   return parts.join(' · ');
+}
+
+double? _latestWorkingWeight(
+  List<SetEntry> sets, {
+  required LoadingMode loadingMode,
+}) {
+  for (final set in sets.reversed) {
+    if (!set.isWarmup &&
+        set.loadingMode == loadingMode &&
+        set.weightValue != null) {
+      return set.weightValue;
+    }
+  }
+  for (final set in sets.reversed) {
+    if (set.loadingMode == loadingMode && set.weightValue != null) {
+      return set.weightValue;
+    }
+  }
+  return null;
+}
+
+String _formatWarmupWeight(
+  double value,
+  WeightUnit unit,
+  WeightEntry weightEntry,
+) {
+  final label = weightEntry == WeightEntry.perSide ? '/hand' : '';
+  return '${_trimPrescription(value)} ${unit.label}$label';
 }
 
 String _formatPrescriptionDuration(int seconds) {

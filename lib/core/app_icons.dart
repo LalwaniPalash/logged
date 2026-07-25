@@ -32,6 +32,8 @@ class AppIcons {
   static const refresh = PhosphorIconsRegular.arrowClockwise;
   static const cube = PhosphorIconsRegular.cube;
   static const body = PhosphorIconsRegular.personArmsSpread;
+  static const plates = PhosphorIconsRegular.barbell;
+  static const warmup = PhosphorIconsFill.fire;
 
   // Concepts
   static const fire = PhosphorIconsFill.fire;

@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/muscle.dart';
+import '../../core/domain/plate_math.dart';
 import '../../core/domain/streak.dart';
 import '../../core/domain/training_goal.dart';
 import '../../core/domain/strength_standards.dart';
@@ -720,6 +721,8 @@ class SettingsScreen extends ConsumerWidget {
     final coaching =
         ref.watch(coachingPreferencesProvider).asData?.value ??
         const CoachingPreferences();
+    final plateInventory =
+        ref.watch(plateInventoryProvider).asData?.value ?? PlateInventory();
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -767,6 +770,12 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Per-exercise units',
             body:
                 'Each exercise remembers whether you log it in kg or lb — switch it right on the set. All progress is normalized to kg.',
+          ),
+          const SizedBox(height: 24),
+          const SectionHeader('Equipment'),
+          _PlateSettingsCard(
+            inventory: plateInventory,
+            onChanged: repo.setPlateInventory,
           ),
           const SizedBox(height: 24),
           const SectionHeader('Bodyweight history'),
@@ -1161,6 +1170,202 @@ class _MuscleSelectionField extends StatelessWidget {
     );
   }
 }
+
+class _PlateSettingsCard extends StatefulWidget {
+  const _PlateSettingsCard({required this.inventory, required this.onChanged});
+
+  final PlateInventory inventory;
+  final Future<void> Function(PlateInventory inventory) onChanged;
+
+  @override
+  State<_PlateSettingsCard> createState() => _PlateSettingsCardState();
+}
+
+class _PlateSettingsCardState extends State<_PlateSettingsCard> {
+  late final TextEditingController _kgBar = TextEditingController(
+    text: _trimPlateValue(widget.inventory.kgBarWeight),
+  );
+  late final TextEditingController _lbBar = TextEditingController(
+    text: _trimPlateValue(widget.inventory.lbBarWeight),
+  );
+  late final FocusNode _kgBarFocus = FocusNode()
+    ..addListener(() {
+      if (!_kgBarFocus.hasFocus) {
+        unawaited(_saveBarWeight(WeightUnit.kg));
+      }
+    });
+  late final FocusNode _lbBarFocus = FocusNode()
+    ..addListener(() {
+      if (!_lbBarFocus.hasFocus) {
+        unawaited(_saveBarWeight(WeightUnit.lb));
+      }
+    });
+
+  @override
+  void didUpdateWidget(covariant _PlateSettingsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_kgBarFocus.hasFocus &&
+        oldWidget.inventory.kgBarWeight != widget.inventory.kgBarWeight) {
+      _kgBar.text = _trimPlateValue(widget.inventory.kgBarWeight);
+    }
+    if (!_lbBarFocus.hasFocus &&
+        oldWidget.inventory.lbBarWeight != widget.inventory.lbBarWeight) {
+      _lbBar.text = _trimPlateValue(widget.inventory.lbBarWeight);
+    }
+  }
+
+  @override
+  void dispose() {
+    _kgBar.dispose();
+    _lbBar.dispose();
+    _kgBarFocus.dispose();
+    _lbBarFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveBarWeight(WeightUnit unit) async {
+    final controller = unit == WeightUnit.kg ? _kgBar : _lbBar;
+    final current = widget.inventory.barWeightFor(unit);
+    final parsed = double.tryParse(controller.text.trim());
+    if (parsed == null || parsed <= 0) {
+      controller.text = _trimPlateValue(current);
+      return;
+    }
+    final updated = widget.inventory.copyWithUnit(
+      unit: unit,
+      barWeight: parsed,
+    );
+    controller.text = _trimPlateValue(updated.barWeightFor(unit));
+    await widget.onChanged(updated);
+  }
+
+  Future<void> _togglePlate(WeightUnit unit, double size, bool selected) async {
+    final selectedSizes = widget.inventory.plateSizesFor(unit).toSet();
+    if (selected) {
+      selectedSizes.add(size);
+    } else {
+      selectedSizes.remove(size);
+    }
+    final ordered = [
+      for (final plate in standardPlateSizesFor(unit))
+        if (selectedSizes.contains(plate)) plate,
+    ];
+    await widget.onChanged(
+      widget.inventory.copyWithUnit(unit: unit, plateSizes: ordered),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Plate calculator', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Set the bars and plates you actually have.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Divider(height: 24),
+            _PlateUnitSection(
+              unit: WeightUnit.kg,
+              barController: _kgBar,
+              barFocusNode: _kgBarFocus,
+              barWeight: widget.inventory.kgBarWeight,
+              selectedPlates: widget.inventory.kgPlateSizes.toSet(),
+              onBarSubmitted: () => _saveBarWeight(WeightUnit.kg),
+              onPlateSelected: (size, selected) =>
+                  _togglePlate(WeightUnit.kg, size, selected),
+            ),
+            const Divider(height: 24),
+            _PlateUnitSection(
+              unit: WeightUnit.lb,
+              barController: _lbBar,
+              barFocusNode: _lbBarFocus,
+              barWeight: widget.inventory.lbBarWeight,
+              selectedPlates: widget.inventory.lbPlateSizes.toSet(),
+              onBarSubmitted: () => _saveBarWeight(WeightUnit.lb),
+              onPlateSelected: (size, selected) =>
+                  _togglePlate(WeightUnit.lb, size, selected),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlateUnitSection extends StatelessWidget {
+  const _PlateUnitSection({
+    required this.unit,
+    required this.barController,
+    required this.barFocusNode,
+    required this.barWeight,
+    required this.selectedPlates,
+    required this.onBarSubmitted,
+    required this.onPlateSelected,
+  });
+
+  final WeightUnit unit;
+  final TextEditingController barController;
+  final FocusNode barFocusNode;
+  final double barWeight;
+  final Set<double> selectedPlates;
+  final VoidCallback onBarSubmitted;
+  final Future<void> Function(double size, bool selected) onPlateSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(unit.label.toUpperCase(), style: theme.textTheme.titleSmall),
+        const SizedBox(height: 12),
+        TextField(
+          controller: barController,
+          focusNode: barFocusNode,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: 'Bar weight',
+            suffixText: unit.label,
+          ),
+          onSubmitted: (_) => onBarSubmitted(),
+          onTapOutside: (_) => barFocusNode.unfocus(),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final size in standardPlateSizesFor(unit))
+              FilterChip(
+                label: Text(_trimPlateValue(size)),
+                selected: selectedPlates.contains(size),
+                onSelected: (selected) => onPlateSelected(size, selected),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Bar: ${_trimPlateValue(barWeight)} ${unit.label}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _trimPlateValue(double value) =>
+    value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';
 
 class _BodyweightSection extends ConsumerWidget {
   const _BodyweightSection({required this.onAdd});
