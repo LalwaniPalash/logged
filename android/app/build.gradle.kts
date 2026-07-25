@@ -25,8 +25,9 @@ android {
         applicationId = "com.palash.logged"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // interactive_3d uses native Filament and requires Android API 24.
-        minSdk = 24
+        // interactive_3d already requires 24, and the health plugin's
+        // Health Connect integration raises the floor to 26.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

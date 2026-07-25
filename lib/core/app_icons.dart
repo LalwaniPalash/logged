@@ -60,6 +60,8 @@ class AppIcons {
   static const import = PhosphorIconsRegular.folderOpen;
   static const inventory = PhosphorIconsRegular.squaresFour;
   static const dumbbell = PhosphorIconsRegular.barbell;
+  static const health = PhosphorIconsRegular.heartbeat;
+  static const widget = PhosphorIconsRegular.appWindow;
 
   static PhosphorIconData forCategoryName(String category) {
     switch (category) {

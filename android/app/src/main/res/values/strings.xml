@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_name">Logged widget</string>
+    <string name="widget_description">Training streak, weekly sets, and your latest workout.</string>
+    <string name="widget_streak_label">Streak</string>
+    <string name="widget_sets_label">This week</string>
+    <string name="widget_last_workout_label">Last workout</string>
+    <string name="widget_streak_placeholder">0 days</string>
+    <string name="widget_sets_placeholder">0 sets</string>
+    <string name="widget_last_workout_placeholder">No workouts yet</string>
+    <string name="widget_last_workout_date_placeholder">Open Logged to refresh</string>
+</resources>

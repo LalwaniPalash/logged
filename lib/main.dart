@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/services/notification_service.dart';
@@ -66,8 +66,19 @@ Future<void> _syncStartupReminders(
   }
 }
 
-class LoggedApp extends StatelessWidget {
+class LoggedApp extends ConsumerStatefulWidget {
   const LoggedApp({super.key});
+
+  @override
+  ConsumerState<LoggedApp> createState() => _LoggedAppState();
+}
+
+class _LoggedAppState extends ConsumerState<LoggedApp> {
+  @override
+  void initState() {
+    super.initState();
+    unawaited(ref.read(homeWidgetServiceProvider).refresh());
+  }
 
   @override
   Widget build(BuildContext context) {

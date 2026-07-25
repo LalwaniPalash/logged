@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/domain/enums.dart';
 import '../../core/domain/streak.dart';
+import '../../core/domain/workout_session_summary.dart';
 import '../database/app_database.dart';
 
 class SessionExerciseDetails {
@@ -101,6 +102,33 @@ class SessionRepository {
       _database.sessions,
     )..where((row) => row.endedAt.isNotNull())).get();
     return [for (final row in rows) dateOnly(row.startedAt)];
+  }
+
+  Future<WorkoutSessionSummary?> loadLatestCompletedSummary() async {
+    final row =
+        await (_database.select(_database.sessions).join([
+                leftOuterJoin(
+                  _database.templates,
+                  _database.templates.id.equalsExp(
+                    _database.sessions.templateId,
+                  ),
+                ),
+              ])
+              ..where(_database.sessions.endedAt.isNotNull())
+              ..orderBy([OrderingTerm.desc(_database.sessions.startedAt)])
+              ..limit(1))
+            .getSingleOrNull();
+    return row == null ? null : _workoutSummaryFromRow(row);
+  }
+
+  Future<List<WorkoutSessionSummary>> loadWorkoutSummaries() async {
+    final rows = await (_database.select(_database.sessions).join([
+      leftOuterJoin(
+        _database.templates,
+        _database.templates.id.equalsExp(_database.sessions.templateId),
+      ),
+    ])..orderBy([OrderingTerm.asc(_database.sessions.startedAt)])).get();
+    return [for (final row in rows) _workoutSummaryFromRow(row)];
   }
 
   Future<int> start({int? templateId, DateTime? startedAt}) => _database
@@ -356,5 +384,16 @@ class SessionRepository {
           ..limit(limit);
     final rows = await query.get();
     return [for (final row in rows) row.readTable(_database.setEntries)];
+  }
+
+  WorkoutSessionSummary _workoutSummaryFromRow(TypedResult row) {
+    final session = row.readTable(_database.sessions);
+    final template = row.readTableOrNull(_database.templates);
+    return WorkoutSessionSummary(
+      id: session.id,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      templateName: template?.name,
+    );
   }
 }

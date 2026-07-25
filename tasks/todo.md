@@ -689,10 +689,14 @@ items remain.
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 - [x] PR-celebration moment — already shipped in T2.5-E (`46fef11`): session-finish PR dialog reusing
       `recentPrs`, plus one-time rank-up toasts. This backlog line was stale.
-- [ ] Plate calculator
-- [ ] Warm-up set generator
-- [ ] Home-screen widget
-- [ ] Health / Health Connect one-way export
+- [x] Plate calculator (`297027a`)
+- [x] Warm-up set generator (`297027a`)
+- [x] Home-screen widget — Android AppWidget + iOS WidgetKit extension (iOS target wired in Xcode
+      by the user 2026-07-26)
+- [x] Health / Health Connect one-way export — manual, opt-in, workouts only
+
+**The smaller-wins backlog is now empty.** Remaining open items are not features: no git remote is
+connected, and the IPA is still unsigned (sideload/codesign).
 
 ═══════════════════════════════════════════════════════════════════════════════════════════════
 # Active task — Finish the smaller wins (2026-07-25)
@@ -759,10 +763,50 @@ existing sets up by N before inserting the warm-ups as 1..N with `isWarmup: true
 - Still no network and no account — these are on-device stores. The local-first promise holds.
 
 ## Verification gate (per Ground Rules — do not report done without these)
-- [ ] `flutter analyze` clean; `flutter test` green with new unit tests for plate math (exact, closest,
-      pair-count exhaustion, lb path) and the warm-up ramp (skips by mode, snapping, no-op near bar).
-- [ ] `flutter build apk --debug` and `flutter build ios --simulator --debug` both succeed.
-- [ ] Codex Mode-B review of the full diff; every finding validated against source before acting.
+- [x] `flutter analyze` clean; `flutter test` green — **186 tests** (baseline was 157).
+- [x] `flutter build apk --debug` and `flutter build ios --simulator --debug` both succeed.
+- [x] Codex Mode-B review of the full diff; every finding validated against source before acting.
+
+## What I found reviewing the delegated work (Codex reported all of this as done and green)
+1. **Plate solver froze the UI.** Exhaustive search with no early exit on an UNLOADABLE target:
+   501.3 kg = **4.9s**, 301.9 kg = 147ms — and the sheet re-solves per keystroke. Replaced with a
+   reachability DP over hundredths (4929ms → **1ms**, identical answers) + a latency regression test.
+   The DP only answers *how much* is loadable; a separate heaviest-first pass lays the stack out,
+   because 40 kg a side is both 20+20 and 25+15 and a lifter expects the latter.
+2. **Warm-up button could double-log the ramp** — it stayed visible after warm-ups existed. Now hidden
+   once the exercise has any warm-up set.
+3. **Health export was not idempotent (Mode-B finding, and worse than reported).** The exported-id
+   marker was batched to the end of the loop. Proven by temporarily reverting the fix: when a write
+   THROWS, the service unwinds into its catch-all and **every** marker for the run is lost
+   (`Actual: []`), so a retry re-writes them all as duplicates in Apple Health. Now persisted after
+   each write — two stores can't be written atomically, so the order is chosen for the least-bad
+   failure (write then mark = risk a duplicate, never a lost workout), and marking per write caps the
+   exposure at the single workout in flight. Test added that fails against the old batching.
+4. **`skippedCount` was wrong** whenever history was already exported — it counted already-exported
+   sessions as skipped and, on the failure path, conflated them with never-attempted ones. Now
+   derived from `pending`, so it means "already in the health store".
+5. **False alarm, checked and cleared:** the diff *looked* like it overwrote the rank-flicker
+   regression test. It was dartfmt rewrapping plus a new analogous test — coverage intact.
+
+## SW.3 / SW.4 iOS wiring — DONE 2026-07-26 (was staged; user completed the Xcode steps)
+- Widget Extension target `LoggedWidgetExtension` added in Xcode; App Group
+  `group.com.palash.logged` on BOTH Runner and the extension; HealthKit capability on Runner
+  (`Runner.entitlements` now actually referenced by `CODE_SIGN_ENTITLEMENTS` — it was inert before).
+- `HomeWidget.setAppGroupId` now called in `refresh()`; it was deliberately omitted while the
+  entitlement did not exist, because calling it first throws.
+- **Two traps hit during that wiring, both worth remembering:**
+  - Xcode's Widget Extension template **overwrote the staged `ios/LoggedWidget/LoggedWidget.swift`**
+    (5114 → 2596 bytes, losing the app-group read). Restored from the git index. Staging Swift under
+    the same filename the template generates is the mistake.
+  - `flutter build` then died with `Cycle inside Runner`. Cause: Xcode appends **Embed Foundation
+    Extensions** LAST, after Flutter's **Thin Binary** script, which declares no outputs — so Xcode
+    assumes it may touch anything in `Runner.app` including `PlugIns/`, and the appex copy both
+    depends on and invalidates it. Fix: move Embed Foundation Extensions BEFORE Thin Binary.
+  - Xcode also defaulted the extension to **iOS 26.4** minimum deployment (would have silently never
+    installed); lowered to 14.0, which is all the widget's APIs need.
+- Platform floors raised, confirmed acceptable by the user (all their phones are Android 8+/iOS 14+):
+  Android `minSdk` 24 → **26** (forced by `health` 13.3.1 Health Connect), iOS `platform` 13.0 →
+  **14.0** (WidgetKit needs 14+ regardless).
 
 ## Deferred (Tier 5, NOT in this spec)
 Optional privacy-preserving sync (encrypted file / self-host / P2P) — opt-in only, never breaks the

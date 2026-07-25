@@ -505,6 +505,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         .getSession(widget.sessionId);
     await ref.read(sessionRepositoryProvider).finish(widget.sessionId);
     await ref.read(reminderSchedulerProvider).sync();
+    await ref.read(homeWidgetServiceProvider).refresh();
     final prs = recentPrs(
       await ref.read(analyticsRepositoryProvider).loadCompletedSets(),
       limit: 20,

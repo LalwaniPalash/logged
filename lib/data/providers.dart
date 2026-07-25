@@ -10,6 +10,8 @@ import '../core/domain/volume_landmarks.dart';
 import '../core/domain/streak.dart';
 import '../core/domain/training_goal.dart';
 import '../core/domain/workout_settings.dart';
+import '../core/services/health_export_service.dart';
+import '../core/services/home_widget_service.dart';
 import '../core/services/notification_service.dart';
 import 'database/app_database.dart';
 import 'repositories/analytics_repository.dart';
@@ -27,6 +29,20 @@ final databaseProvider = Provider<AppDatabase>(
 );
 final notificationServiceProvider = Provider<NotificationClient>(
   (ref) => NotificationService(),
+);
+final homeWidgetServiceProvider = Provider<HomeWidgetClient>(
+  (ref) => HomeWidgetService(
+    sessions: ref.watch(sessionRepositoryProvider),
+    analytics: ref.watch(analyticsRepositoryProvider),
+    restDays: ref.watch(restDayRepositoryProvider),
+    settings: ref.watch(settingsRepositoryProvider),
+  ),
+);
+final healthExportServiceProvider = Provider<HealthExportClient>(
+  (ref) => HealthExportService(
+    sessions: ref.watch(sessionRepositoryProvider),
+    settings: ref.watch(settingsRepositoryProvider),
+  ),
 );
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
@@ -83,6 +99,9 @@ final coachingPreferencesProvider = StreamProvider<CoachingPreferences>(
 );
 final plateInventoryProvider = StreamProvider<PlateInventory>(
   (ref) => ref.watch(settingsRepositoryProvider).watchPlateInventory(),
+);
+final healthExportPreferencesProvider = StreamProvider<HealthExportPreferences>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchHealthExportPreferences(),
 );
 final effectiveVolumeLandmarksProvider =
     Provider<AsyncValue<Map<MuscleId, VolumeLandmarks>>>((ref) {

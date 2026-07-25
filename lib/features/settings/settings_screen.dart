@@ -85,6 +85,25 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _exportHealth(BuildContext context, WidgetRef ref) async {
+    final result = await _withProgress(
+      context,
+      message: 'Exporting workouts…',
+      task: () => ref.read(healthExportServiceProvider).export(),
+    );
+    if (!context.mounted) return;
+    final message =
+        result.failureReason ??
+        switch (result.exportedCount) {
+          0 => 'No new workouts to export.',
+          1 => '1 workout exported.',
+          final count => '$count workouts exported.',
+        };
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   /// Runs [task] behind a blocking spinner so the user knows work is happening
   /// during the DB read / zip / import, instead of a frozen-looking screen.
   Future<T> _withProgress<T>(
@@ -723,6 +742,9 @@ class SettingsScreen extends ConsumerWidget {
         const CoachingPreferences();
     final plateInventory =
         ref.watch(plateInventoryProvider).asData?.value ?? PlateInventory();
+    final healthExport =
+        ref.watch(healthExportPreferencesProvider).asData?.value ??
+        const HealthExportPreferences();
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -803,6 +825,13 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => _manageExercises(context, ref),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+          const SectionHeader('Health'),
+          _HealthExportCard(
+            preferences: healthExport,
+            onEnabledChanged: repo.setHealthExportEnabled,
+            onExportTap: () => _exportHealth(context, ref),
           ),
           const SizedBox(height: 24),
           const SectionHeader('Backup'),
@@ -984,6 +1013,55 @@ class _RestTimerSettingsCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _HealthExportCard extends StatelessWidget {
+  const _HealthExportCard({
+    required this.preferences,
+    required this.onEnabledChanged,
+    required this.onExportTap,
+  });
+
+  final HealthExportPreferences preferences;
+  final ValueChanged<bool> onEnabledChanged;
+  final VoidCallback onExportTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Column(
+        children: [
+          SwitchListTile(
+            contentPadding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+            title: const Text('Manual Health export'),
+            subtitle: const Text(
+              'Writes completed workouts to this device’s health store. Nothing leaves your phone.',
+            ),
+            value: preferences.enabled,
+            onChanged: onEnabledChanged,
+          ),
+          if (preferences.enabled) ...[
+            const Divider(height: 1),
+            ListTile(
+              onTap: onExportTap,
+              leading: CircleAvatar(
+                backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                foregroundColor: theme.colorScheme.primary,
+                child: const Icon(AppIcons.health),
+              ),
+              title: const Text('Export to Health'),
+              subtitle: const Text('Completed workouts not exported yet'),
+              trailing: Icon(
+                AppIcons.chevronRight,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

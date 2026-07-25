@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Logged does not read your health data. HealthKit requires this description alongside manual workout export permission.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Logged writes completed workouts to Apple Health only when you manually export them.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

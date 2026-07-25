@@ -2,6 +2,49 @@
 
 Format: [date] | what went wrong | rule to prevent it
 
+- 2026-07-26 | A combinatorial solver was fine on solvable inputs and pathological on unsolvable ones.
+  The plate calculator's exhaustive search early-exits when it hits the target exactly, so every test
+  (all solvable) passed in ~0ms — but an UNLOADABLE target has nothing to exit on and it degraded
+  exponentially: 501.3 kg took 4.9s on the UI thread, and the sheet re-solves on every keystroke.
+  Rule: when a search's termination depends on finding an exact answer, the benchmark that matters is
+  the input with NO exact answer. Test the unsatisfiable case for latency, not just correctness.
+  Corollary: a reachability DP over a quantized grid (integer hundredths) is linear where subset-sum
+  search is exponential — and float weights like 2.5/1.25 stop being a hazard once quantized.
+- 2026-07-26 | Fixing that solver made it return mathematically-correct but humanly-wrong answers:
+  40 kg a side came back as 20+20 instead of 25+15. Two existing tests caught it. Rule: when several
+  outputs are equally optimal by the metric you optimized, the choice among them is a PRODUCT
+  decision, not a tie-break. Compute the value with the fast algorithm, then lay out the presentation
+  with the conventional one (heaviest plate first).
+- 2026-07-26 | Writing to two stores that cannot be transactional (SQLite + Apple Health) had its
+  progress marker batched to the end of the loop. On a thrown write the service unwound into its
+  catch-all and lost EVERY marker for the run, so the retry re-wrote all of them as duplicate health
+  records. The `success == false` branch did persist, which is why it looked safe. Rule: with two
+  non-atomic stores, (a) order the writes so the failure mode is a duplicate rather than a loss —
+  write the external record, THEN mark it — and (b) commit the marker per item, not per batch, so a
+  crash costs one item instead of the whole run. And test the THROW path separately from the
+  returns-false path; they unwind through different code.
+- 2026-07-26 | Staging iOS widget source at `ios/LoggedWidget/LoggedWidget.swift` was a trap: Xcode's
+  Widget Extension template generates that exact filename and silently overwrote it (5114 → 2596
+  bytes, dropping the app-group read). Recovered from the git index. Rule: never stage hand-written
+  Swift under a filename an Xcode template generates — use a distinct name, or stage outside the
+  folder the template will target.
+- 2026-07-26 | Adding a Widget Extension to a Flutter app fails with `Cycle inside Runner`. Xcode
+  appends "Embed Foundation Extensions" LAST, after Flutter's "Thin Binary" script phase, which
+  declares no outputs — so Xcode assumes it can touch anything in `Runner.app` including `PlugIns/`,
+  and the appex copy both depends on and appears to invalidate it. Fix: move "Embed Foundation
+  Extensions" BEFORE "Thin Binary" in Runner → Build Phases. Also check the new extension's Minimum
+  Deployment — Xcode defaults it to the newest SDK (26.4 here), which would silently never install on
+  the target phones.
+- 2026-07-26 | An entitlements plist can exist and be completely inert. `Runner.entitlements` declared
+  HealthKit, `flutter build ios` passed, and it would have been refused at runtime — because nothing
+  referenced it (`CODE_SIGN_ENTITLEMENTS` was absent from project.pbxproj). Rule: a capability is only
+  real when the plist is referenced by the target; grep `CODE_SIGN_ENTITLEMENTS` before believing a
+  build that "passes" proves an entitlement works. A green build does not verify capabilities.
+- 2026-07-26 | `codex exec` on a large spec at xhigh spends 10+ min reading before it writes, which
+  exceeds a 10-minute foreground tool timeout — it got SIGTERM'd mid-write and left the tree
+  half-implemented. Rule: always run codex backgrounded, and write the spec so a resumed run reads
+  the partial work first instead of duplicating it.
+
 - 2026-07-20 | (init) | Units are per-exercise and remembered; NEVER force user into a settings
   screen to switch kg/lb. Log row must have a one-tap kg/lb toggle; store entered value + unit,
   normalize to kg for all progress math.

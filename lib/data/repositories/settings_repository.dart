@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
+
+import '../../core/domain/health_export.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart';
 import '../../core/domain/plate_math.dart';
@@ -64,6 +67,28 @@ class CoachingPreferences {
       Object.hash(trainingGoal, volumeLandmarkOverrides, userSex);
 }
 
+class HealthExportPreferences {
+  const HealthExportPreferences({
+    this.enabled = false,
+    this.exportedSessionIds = const [],
+  });
+
+  final bool enabled;
+  final List<int> exportedSessionIds;
+
+  static const _idsEquality = ListEquality<int>();
+
+  @override
+  bool operator ==(Object other) =>
+      other is HealthExportPreferences &&
+      other.enabled == enabled &&
+      _idsEquality.equals(other.exportedSessionIds, exportedSessionIds);
+
+  @override
+  int get hashCode =>
+      Object.hash(enabled, _idsEquality.hash(exportedSessionIds));
+}
+
 class SettingsRepository {
   const SettingsRepository(this._database);
 
@@ -84,6 +109,8 @@ class SettingsRepository {
   static const _kUserSex = 'userSex';
   static const _kLastSeenRanks = 'lastSeenRanks';
   static const _kPlateInventory = 'plateInventory';
+  static const _kHealthExportEnabled = 'healthExportEnabled';
+  static const _kHealthExportedSessionIds = 'healthExportedSessionIds';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -147,13 +174,25 @@ class SettingsRepository {
       .map(_plateInventoryFromRows)
       .distinct();
 
+  Stream<HealthExportPreferences> watchHealthExportPreferences() => _database
+      .select(_database.appSettings)
+      .watch()
+      .map(_healthExportPreferencesFromRows)
+      .distinct();
+
   Future<CoachingPreferences> readCoachingPreferences() async =>
       _coachingPreferencesFromRows(
         await _database.select(_database.appSettings).get(),
       );
 
-  Future<PlateInventory> readPlateInventory() async =>
-      _plateInventoryFromRows(await _database.select(_database.appSettings).get());
+  Future<PlateInventory> readPlateInventory() async => _plateInventoryFromRows(
+    await _database.select(_database.appSettings).get(),
+  );
+
+  Future<HealthExportPreferences> readHealthExportPreferences() async =>
+      _healthExportPreferencesFromRows(
+        await _database.select(_database.appSettings).get(),
+      );
 
   Future<void> setTrainingGoal(TrainingGoal goal) =>
       _put(_kTrainingGoal, goal.name);
@@ -165,6 +204,12 @@ class SettingsRepository {
 
   Future<void> setPlateInventory(PlateInventory inventory) =>
       _put(_kPlateInventory, jsonEncode(inventory.toJson()));
+
+  Future<void> setHealthExportEnabled(bool enabled) =>
+      _put(_kHealthExportEnabled, '$enabled');
+
+  Future<void> setHealthExportedSessionIds(Iterable<int> sessionIds) =>
+      _put(_kHealthExportedSessionIds, encodeExportedSessionIds(sessionIds));
 
   Future<String?> readDeloadDismissedWeek() async {
     final row =
@@ -292,6 +337,21 @@ class SettingsRepository {
     } on Object {
       return PlateInventory();
     }
+  }
+
+  HealthExportPreferences _healthExportPreferencesFromRows(
+    List<AppSetting> rows,
+  ) {
+    final map = {for (final row in rows) row.key: row.value};
+    final exportedIds = decodeExportedSessionIds(
+      map[_kHealthExportedSessionIds],
+    ).toList()..sort();
+    return HealthExportPreferences(
+      enabled:
+          bool.tryParse(map[_kHealthExportEnabled] ?? '') ??
+          const HealthExportPreferences().enabled,
+      exportedSessionIds: exportedIds,
+    );
   }
 
   Future<void> _put(String key, String value) => _database

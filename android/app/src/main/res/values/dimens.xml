@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="widget_corner_radius">22dp</dimen>
+    <dimen name="widget_outer_margin">8dp</dimen>
+    <dimen name="widget_padding">14dp</dimen>
+</resources>
