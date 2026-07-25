@@ -677,14 +677,21 @@ countdown on every completed set is noise for them.
 - [x] Release builds: `dist/logged-1.0.0-rest-timer-toggle.apk` (97MB) +
       `...-rest-timer-toggle-unsigned.ipa` (24MB).
 
-# Current state (2026-07-25)
-Branch `feat/set-editor-backup-ux`, 4 unpushed commits on top of T1–T3: `849441a` loadingMode fixes →
+# Current state (2026-07-26)
+Branch `feat/set-editor-backup-ux`, 6 unpushed commits on top of T1–T3: `849441a` loadingMode fixes →
 `e94477f` per-exercise video button → `e126dd0` rank-flicker fix → `95dbd38` rest-timer auto-start
-toggle. No git remote connected yet. `flutter analyze` clean, **157 tests green**. Latest release
-builds in `dist/` (`logged-1.0.0-rest-timer-toggle.apk` 97MB, `...-unsigned.ipa` 24MB) — IPA unsigned
-(sideload/codesign). Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone,
-2026-07-24); Android shares the code path but not separately hardware-tested. No open verification
-items remain.
+toggle → `297027a` plate calculator + warm-up generator → `1b09784` home-screen widget + Health
+export. No git remote connected yet. `flutter analyze` clean, **186 tests green**. Debug APK + iOS
+simulator builds both succeed (`LoggedWidgetExtension.appex` embedded, MinimumOSVersion 14; widget
+resources packaged in the APK). Platform floors are now Android `minSdk` 26 / iOS 14.0.
+Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone, 2026-07-24); Android
+shares the code path but not separately hardware-tested.
+
+**Not yet done / next time:** no RELEASE builds cut since `95dbd38` — `dist/` still holds the
+rest-timer-toggle APK/IPA, so the last two commits are not in any distributable artifact yet. The IPA
+remains unsigned (sideload/codesign). The widget and Health export have NOT been exercised on real
+hardware: the widget has never been placed on a home screen, and no workout has actually been written
+to Apple Health or Health Connect. Both are build-verified only.
 
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 - [x] PR-celebration moment — already shipped in T2.5-E (`46fef11`): session-finish PR dialog reusing
