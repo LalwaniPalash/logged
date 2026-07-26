@@ -713,6 +713,27 @@ work.
   launch-image warning.
 - Still open here: `ios/LoggedWidget/README.md` remains in the extension's Copy Bundle Resources.
   Removing it needs a `project.pbxproj` edit, deliberately not attempted from the CLI.
+- `dist/logged-1.0.0-notification-icon-nowidget-unsigned.ipa` — same build with `PlugIns/` removed.
+
+### Sideloading rejects the widget extension (2026-07-26)
+Installing the normal IPA fails with `AppexBundleMissingClassOrStoryboard`: installd says the appex
+defines neither `NSExtensionMainStoryboard` nor `NSExtensionPrincipalClass`. **This is not a defect
+in our build.** Apple's own Xcode 26 Widget Extension template
+(`…/Templates/Project Templates/MultiPlatform/Application Extension/Widget Extension.xctemplate/
+TemplateInfo.plist`) generates an `NSExtension` dict containing ONLY
+`NSExtensionPointIdentifier = com.apple.widgetkit-extension`, which is byte-for-key what the shipped
+appex contains — a SwiftUI `@main` WidgetBundle has no ObjC principal class to name, so adding one
+would be a fabrication, not a fix.
+
+The rejection comes from the sideload/re-sign path, which rewrites bundle IDs (the error shows
+`com.palash.logged.KDZBF8D2X2.LoggedWidget`, not our `com.palash.logged.LoggedWidget`). Options:
+- **Install from Xcode** (device selected, signed with the Apple ID) — the only path that installs
+  the extension properly, so it is the one that keeps iOS widgets.
+- **Use the `-nowidget-` IPA** to get the app on the phone now, without iOS widgets.
+
+Note also that even a successfully installed extension needs the App Group entitlement to show real
+data; personal-team provisioning may not grant it, in which case the widget renders its placeholders
+forever — the symptom already documented in `ios/LoggedWidget/README.md`.
 
 ## Release artifacts — 2026-07-26 (`cbd0296`, widget fix + three variants)
 - `dist/logged-1.0.0-widget-variants.apk` (94 MB, release)
