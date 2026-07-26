@@ -699,6 +699,21 @@ ORIGINAL implementation brief (scaffold → data layer → logging → dashboard
 polish). All of it shipped long ago; the boxes were simply never ticked. Do not read them as open
 work.
 
+## Release artifacts — 2026-07-26 (`11da0e7`, notification icon + launch screen)
+- `dist/logged-1.0.0-notification-icon.apk` (94 MB, release)
+- `dist/logged-1.0.0-notification-icon-unsigned.ipa` (27 MB, release, UNSIGNED)
+- Fixes the blank grey square in the Android notification shade, which had TWO causes: an opaque
+  launcher icon used as a small icon (alpha-only rendering), and the replacement vector then being
+  stripped from the release APK by the resource shrinker because it is named only at runtime. See
+  `tasks/lessons.md` — the second one is the dangerous class, since debug builds do not shrink.
+- Verified in the shipped APK: `aapt2 dump resources` finds `drawable/ic_stat_logged`, and
+  `aapt2 dump xmltree` shows all six paths intact.
+- Verified in the shipped IPA: `assetutil --info` reports LaunchImage renditions at 120/240/360 px
+  (they were 1x1 placeholders), and the archive build no longer emits Flutter's placeholder
+  launch-image warning.
+- Still open here: `ios/LoggedWidget/README.md` remains in the extension's Copy Bundle Resources.
+  Removing it needs a `project.pbxproj` edit, deliberately not attempted from the CLI.
+
 ## Release artifacts — 2026-07-26 (`cbd0296`, widget fix + three variants)
 - `dist/logged-1.0.0-widget-variants.apk` (94 MB, release)
 - `dist/logged-1.0.0-widget-variants-unsigned.ipa` (27 MB, release, UNSIGNED)
