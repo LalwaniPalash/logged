@@ -51,6 +51,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- One receiver per widget variant: each is its own entry in the
+             launcher's widget picker. They all read the same shared data. -->
+        <receiver
+            android:name=".LoggedStreakWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_streak_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/logged_streak_widget_info"/>
+        </receiver>
         <receiver
             android:name=".LoggedWidgetProvider"
             android:exported="true"
@@ -61,6 +74,17 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/logged_widget_info"/>
+        </receiver>
+        <receiver
+            android:name=".LoggedSummaryWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_summary_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/logged_summary_widget_info"/>
         </receiver>
         <receiver
             android:exported="false"

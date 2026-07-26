@@ -8,6 +8,7 @@ import '../../data/repositories/session_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../domain/home_widget_snapshot.dart';
 import '../domain/streak.dart';
+import '../domain/workout_session_summary.dart';
 
 abstract interface class HomeWidgetClient {
   Future<void> refresh();
@@ -24,8 +25,15 @@ class HomeWidgetService implements HomeWidgetClient {
        _restDays = restDays,
        _settings = settings;
 
-  static const _androidProviderName = 'LoggedWidgetProvider';
-  static const _iosWidgetName = 'LoggedWidget';
+  /// Every variant the user can pick from the launcher / widget gallery, as
+  /// (Android provider class, iOS widget kind) pairs. Each one reads the same
+  /// shared key/value data and renders the slice it cares about, so adding a
+  /// variant never changes what this service writes — only what it notifies.
+  static const _widgetVariants = <(String, String)>[
+    ('LoggedStreakWidgetProvider', 'LoggedStreakWidget'),
+    ('LoggedWidgetProvider', 'LoggedWidget'),
+    ('LoggedSummaryWidgetProvider', 'LoggedSummaryWidget'),
+  ];
 
   /// Must match the App Group on BOTH the Runner and LoggedWidgetExtension
   /// targets, and `LoggedWidgetKeys.appGroupId` in `ios/LoggedWidget`. On iOS the
@@ -48,6 +56,7 @@ class HomeWidgetService implements HomeWidgetClient {
       final workoutSettings = await _settings.read();
       final completedSets = await _analytics.loadCompletedSets();
       final lastWorkout = await _sessions.loadLatestCompletedSummary();
+      final lastWorkoutTotals = await _lastWorkoutTotals(lastWorkout);
       final snapshot = HomeWidgetSnapshot(
         streakDays: computeStreak(
           trainingDays: trainingDays,
@@ -55,15 +64,17 @@ class HomeWidgetService implements HomeWidgetClient {
           loggedRestDays: restDays,
         ),
         setsThisWeek: completedSetsThisWeek(completedSets),
+        weeklyVolumeKg: weeklyVolumeKg(completedSets),
         lastWorkout: lastWorkout,
+        lastWorkoutSets: lastWorkoutTotals.sets,
+        lastWorkoutExercises: lastWorkoutTotals.exercises,
       );
       for (final entry in snapshot.toWidgetData().entries) {
         await HomeWidget.saveWidgetData<String>(entry.key, entry.value);
       }
-      await HomeWidget.updateWidget(
-        name: _androidProviderName,
-        iOSName: _iosWidgetName,
-      );
+      for (final (androidProvider, iosKind) in _widgetVariants) {
+        await HomeWidget.updateWidget(name: androidProvider, iOSName: iosKind);
+      }
     } on MissingPluginException catch (error) {
       debugPrint('Home widget plugin unavailable: $error');
     } on PlatformException catch (error) {
@@ -73,5 +84,24 @@ class HomeWidgetService implements HomeWidgetClient {
     } on Object catch (error) {
       debugPrint('Home widget refresh failed: $error');
     }
+  }
+
+  /// Working-set and exercise counts for the summary widget. Warm-ups are
+  /// excluded so the number matches what the session screen calls a set, and an
+  /// exercise only counts once it has a working set logged against it.
+  Future<({int sets, int exercises})> _lastWorkoutTotals(
+    WorkoutSessionSummary? lastWorkout,
+  ) async {
+    if (lastWorkout == null) return (sets: 0, exercises: 0);
+    final details = await _sessions.details(lastWorkout.id);
+    var sets = 0;
+    var exercises = 0;
+    for (final detail in details) {
+      final workingSets = detail.sets.where((set) => !set.isWarmup).length;
+      if (workingSets == 0) continue;
+      sets += workingSets;
+      exercises++;
+    }
+    return (sets: sets, exercises: exercises);
   }
 }

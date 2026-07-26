@@ -27,9 +27,10 @@ and a consistency heatmap.
 **Data** — zipped JSON backup (import accepts `.zip` and `.json`), CSV set-history
 export, and program import from pasted text or a file.
 
-**Extras** — a home-screen widget (streak, sets this week, last workout), per-exercise
-demo video links, and an opt-in manual export of completed workouts to Apple Health
-or Health Connect.
+**Extras** — three home-screen widgets to pick from (small: streak and weekly sets;
+medium: those plus your last workout; large: those plus weekly volume and the shape of
+that workout), per-exercise demo video links, and an opt-in manual export of completed
+workouts to Apple Health or Health Connect.
 
 ## Live muscle visualization
 
@@ -98,6 +99,20 @@ Two non-obvious constraints:
 - **App Group `group.com.palash.logged` must be on both targets**, and match
   `LoggedWidgetKeys.appGroupId` and `HomeWidgetService`. Otherwise the app writes
   to its own sandbox and the widget shows placeholders forever.
+
+### Home-screen widgets
+
+`HomeWidgetService` writes one flat set of strings; each variant renders the slice it
+cares about. Adding a variant means registering it in `_widgetVariants` **and** on the
+platform: a `Widget` struct listed in `LoggedWidgetBundle` on iOS, a provider class
+plus a `<receiver>` on Android.
+
+Android layouts may only use views annotated `@RemoteView` — notably **not** a bare
+`<View>`, which makes the launcher fail to inflate and show "couldn't add widget"
+instead of the widget. `./gradlew :app:lintDebug` catches this as `RemoteViewLayout`
+and is worth running on any widget-layout change; it needs
+`JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`, since the
+default JDK 26 makes AGP fail with a bare `26.0.1` error.
 
 ## Model license
 
