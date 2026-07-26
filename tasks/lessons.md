@@ -248,3 +248,27 @@ Format: [date] | what went wrong | rule to prevent it
   container, so "is there even a database file?" is answerable without any logging. Note a sideloaded
   bundle ID is rewritten (Sideloadly appended the team ID: `com.palash.logged.KDZBF8D2X2`) — use the ID
   from `devicectl device info apps`, not the one in the project.
+- 2026-07-26 | The iOS widget's real blocker was NEVER the principal class — it is the App Group
+  entitlement colliding with a FREE Apple account, and I diagnosed two wrong causes before reading the
+  crash logs. `--domain-type systemCrashLogs` showed **24 `LoggedWidgetExtension-*.ips` reports and
+  zero for the main app**, starting with the very first install that contained the appex: the extension
+  has never once launched. Every report is
+  `termination {namespace: CODESIGNING, indicator: "Invalid Page"}` / `EXC_BAD_ACCESS` `SIGKILL`
+  `KERN_PROTECTION_FAILURE` with `codeSigningTrustLevel: 0`, and it dies ~23ms in, before dyld
+  initialises (`dyld_process_snapshot_get_shared_cache failed`, empty `usedImages`) — so no line of our
+  Swift ever executes. Cause: `ios/LoggedWidgetExtension.entitlements` (wired via
+  `CODE_SIGN_ENTITLEMENTS`, so it is live) requests
+  `com.apple.security.application-groups = group.com.palash.logged`, and a free personal team CANNOT
+  provision App Groups. The re-signed appex therefore carries an entitlement its profile cannot back and
+  the kernel refuses to map its pages. The host app survives the same pass because the tool strips what
+  it cannot provision there; its handling of a NESTED appex is not equivalent.
+  Rules: (1) when an app extension "does not appear", pull `systemCrashLogs` FIRST — an appex that is
+  killed at launch is indistinguishable from one that was never installed, and I burned two hypotheses
+  (Sideloadly stripping plugins, unresolvable principal class) on symptoms a 5KB crash report settled
+  outright; (2) a `CODESIGNING` / `Invalid Page` termination is an entitlement-vs-profile problem, never
+  a code bug — do not go read the source; (3) grep the whole `ios/` dir for `*.entitlements`, not just
+  the target's own folder — this one sits at `ios/LoggedWidgetExtension.entitlements` while the sources
+  are in `ios/LoggedWidget/`, and I wrongly concluded "the appex has no entitlements" from listing only
+  the latter. Corollary on account tier: App Groups AND HealthKit both require a paid membership, so on
+  a free account the widget cannot be validly signed, and even if it could it could not read the shared
+  container it exists to read. Verify the ceiling before writing code against it.

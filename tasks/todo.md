@@ -799,8 +799,48 @@ was wrong. Now points at a real `@objc(LoggedWidgetPrincipal) final class … : 
 
 **Still blocked by account tier, not code:** the user's Apple ID is a free personal team, which cannot
 provision App Groups, so `group.com.palash.logged` is not granted and the widget cannot read workout
-data even once visible. Expect it to appear in the gallery and render placeholders. Real widget data
-needs a paid Apple Developer account. Android widgets are unaffected and already work.
+data even once visible. Real widget data needs a paid Apple Developer account. Android widgets are
+unaffected and already work.
+
+### CONFIRMED on hardware — the widget is killed at launch by code signing (2026-07-26)
+The native-assets fix is **verified working on device**: `Documents/logged.sqlite` now exists (132 KB)
+in the app container, and the user confirms the app works. The widget still does not appear, and the
+crash logs settle why — the principal-class theory above was NOT the operative cause.
+
+`xcrun devicectl device info files --device <id> --domain-type systemCrashLogs` shows **24
+`LoggedWidgetExtension-*.ips` reports and zero for the main app**, beginning at 12:45 PM with the very
+first install that contained the appex and continuing after the rebuild (new container UUID). So the
+extension has never once launched. Every report:
+
+```
+termination : { "namespace" : "CODESIGNING", "indicator" : "Invalid Page" }
+exception   : EXC_BAD_ACCESS / SIGKILL / KERN_PROTECTION_FAILURE
+codeSigningTrustLevel : 0
+reportNotes : dyld_process_snapshot_get_shared_cache failed   (empty usedImages)
+```
+
+It dies ~23 ms after launch, before dyld initialises, so no line of our Swift runs — the principal
+class is never reached. `bundleInfo.CFBundleIdentifier` is
+`com.palash.logged.KDZBF8D2X2.LoggedWidget`, confirming Sideloadly rewrites the nested appex ID
+correctly and that "Remove app extensions" is off, so the appex IS installed.
+
+Cause: `ios/LoggedWidgetExtension.entitlements` (live — wired through `CODE_SIGN_ENTITLEMENTS` at three
+places in `project.pbxproj`) requests `com.apple.security.application-groups`, which a free personal
+team cannot provision. The re-signed appex carries an entitlement its profile cannot back, so the
+kernel refuses to map its pages. The host app survives the same signing pass because the tool strips
+what it cannot provision there; nested-appex handling is not equivalent.
+
+**Not fixable in this codebase on a free account.** Options, in order of honesty:
+1. Accept Android-only widgets (Android's three widgets already work on hardware).
+2. Paid Apple Developer account ($99/yr) — provisions App Groups, so the appex signs validly AND can
+   read the shared container. The only route to a working iOS widget with real data.
+3. Drop the App Group from both entitlements files so the appex can be signed. It would then appear in
+   the gallery, but `loadEntry()` has no shared container to read, so it renders
+   `LoggedWidgetEntry.placeholder` ("No workouts yet", 0 days / 0 sets / 0 kg) permanently. Cosmetic
+   only; not recommended.
+
+Note the same tier limit applies to `com.apple.developer.healthkit` in `Runner.entitlements`, which is
+consistent with Apple Health export never having been verified on this device.
 
 ## Release artifacts — 2026-07-26 (`cbd0296`, widget fix + three variants)
 - `dist/logged-1.0.0-widget-variants.apk` (94 MB, release)
