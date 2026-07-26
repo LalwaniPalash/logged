@@ -842,6 +842,48 @@ what it cannot provision there; nested-appex handling is not equivalent.
 Note the same tier limit applies to `com.apple.developer.healthkit` in `Runner.entitlements`, which is
 consistent with Apple Health export never having been verified on this device.
 
+### CHECKLIST — when a paid Apple Developer account arrives (decided 2026-07-26: defer, option 1)
+Chosen for now: leave iOS widgets broken, keep using Android widgets. This is the list for future-you,
+because none of it is obvious months later.
+
+**No code changes are required.** Verified 2026-07-26 that the project is already wired correctly:
+`group.com.palash.logged` is byte-identical in all four places that matter
+(`ios/Runner/Runner.entitlements`, `ios/LoggedWidgetExtension.entitlements`,
+`LoggedWidgetKeys.appGroupId` in `ios/LoggedWidget/LoggedWidget.swift`, and
+`HomeWidgetService._iosAppGroupId` in `lib/core/services/home_widget_service.dart`); the appex ID
+`com.palash.logged.LoggedWidget` is a correct child of `com.palash.logged`; and
+`CODE_SIGN_ENTITLEMENTS` is set for both targets in all six build configs. Do not "fix" any of this.
+
+1. [ ] **Export a backup from Settings BEFORE reinstalling.** This is the step that loses data if
+       skipped. The app is currently installed as `com.palash.logged.KDZBF8D2X2` — Sideloadly rewrites
+       the bundle ID by appending the team ID — while the project's real ID is `com.palash.logged`.
+       Installing from Xcode is therefore a DIFFERENT app with a different container, and the existing
+       `Documents/logged.sqlite` will not carry over. Import the backup after installing.
+2. [ ] **Register the App Group** `group.com.palash.logged` on the developer portal and enable it for
+       BOTH App IDs (`com.palash.logged` and `com.palash.logged.LoggedWidget`). With a paid team and
+       automatic signing, ticking the App Groups capability in Xcode does this — but it is a step, not
+       zero-touch. This is the entitlement whose absence gets the appex SIGKILLed today.
+3. [ ] **Verify the Team ID.** The project hardcodes `DEVELOPMENT_TEAM = KDZBF8D2X2` in six places. If
+       enrolling the same Apple ID keeps that Team ID, nothing to do; if it differs, update it (once,
+       via Xcode). Note the only signing identity in this Mac's keychain belongs to a DIFFERENT team
+       (`ZF8Y28Y8P4`, palashlalwani00@gmail.com), so do not assume the keychain reflects the project.
+4. [ ] **`flutter clean` before building.** Non-negotiable — see the simulator-dylib entry in
+       `tasks/lessons.md`. Never run a simulator build between the clean and shipping a device build,
+       and gate on `vtool -show-build` reporting `platform IOS` for `objective_c` and `sqlite3`.
+5. [ ] **Open the app once after installing.** The widget renders from the shared container, which
+       `HomeWidgetService.refresh()` populates on launch (called from `main.dart`). Before that first
+       run the widget legitimately shows `LoggedWidgetEntry.placeholder`.
+6. [ ] **Then finally verify the two things that have never run on real hardware:** place all three iOS
+       widgets on a home screen (small/streak, medium, large/summary — none has ever been rendered), and
+       write a real workout to Apple Health, which `com.apple.developer.healthkit` also makes
+       provisionable for the first time.
+7. [ ] **Only if submitting to the App Store / TestFlight:** remove `NSExtensionPrincipalClass` from
+       `ios/LoggedWidget/Info.plist`. App Store Connect rejects it as an unexpected key. The reason is
+       written beside the key; read that comment before touching it. Not needed for device installs.
+
+Side benefit of going paid: provisioning lasts a year instead of 7 days, so the app stops needing to be
+re-sideloaded weekly.
+
 ## Release artifacts — 2026-07-26 (`cbd0296`, widget fix + three variants)
 - `dist/logged-1.0.0-widget-variants.apk` (94 MB, release)
 - `dist/logged-1.0.0-widget-variants-unsigned.ipa` (27 MB, release, UNSIGNED)
