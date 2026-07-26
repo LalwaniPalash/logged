@@ -13,8 +13,17 @@
 
 	Logged is local-only and is never submitted to the App Store, so that trade
 	costs nothing here. WidgetKit launches the extension through its own entry
-	point (the @main attribute), not by instantiating this class, so the value
-	only has to exist for installd's benefit.
+	point (the @main attribute), not by instantiating this class.
+
+	BUT the value must still be RESOLVABLE by NSClassFromString. It first pointed
+	at LoggedWidgetBundle, which is a SwiftUI *struct* and therefore has no
+	Objective-C class metadata: installd was satisfied (it only checks that the
+	key is present) so the app installed, yet the widget never appeared in the
+	gallery, because resolving the principal class yielded nil and the extension
+	could not be launched when WidgetKit probed it. It now points at a real
+	NSObject subclass declared purely for this purpose in
+	LoggedWidgetBundle.swift, named via @objc so this string does not depend on
+	the module name.
 
 	If this app is ever submitted to the App Store, this key must be removed.
 -->
@@ -25,7 +34,7 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 		<key>NSExtensionPrincipalClass</key>
-		<string>$(PRODUCT_MODULE_NAME).LoggedWidgetBundle</string>
+		<string>LoggedWidgetPrincipal</string>
 	</dict>
 </dict>
 </plist>

@@ -756,6 +756,52 @@ Note also that even a successfully installed extension needs the App Group entit
 data; personal-team provisioning may not grant it, in which case the widget renders its placeholders
 forever — the symptom already documented in `ios/LoggedWidget/README.md`.
 
+## The sideloaded build was entirely data-dead — simulator dylibs (2026-07-26, second session)
+User report after sideloading `widget-sideload-fix`: backup import did nothing, the muscle sculpture
+span forever, and the iOS widget was absent from the gallery. The first two were ONE fault, and it had
+nothing to do with either feature.
+
+**Root cause: the IPA shipped `IOSSIMULATOR` native-asset dylibs.**
+`vtool -show-build` on the shipped frameworks:
+
+| dylib | last known-good IPA (24 Jul) | shipped 26 Jul |
+|---|---|---|
+| `objective_c` | `platform IOS`, arm64, 198 KB | `platform IOSSIMULATOR`, x86_64+arm64, 394 KB |
+| `sqlite3` | `platform IOS`, arm64, 1.7 MB | `platform IOSSIMULATOR`, x86_64+arm64, 3.5 MB |
+
+A simulator dylib cannot `dlopen` on a device, so `path_provider_foundation` died,
+`getApplicationDocumentsDirectory()` threw, and drift never got a path — **`logged.sqlite` was never
+created**. Confirmed on hardware: the app's `Documents/` container is empty. Hence no seeded exercise
+library, no templates, workouts un-startable, `replaceFromPayload` never completing (so import looked
+like a no-op rather than an error), and every Drift `.watch()` stuck in `loading` — which is the
+`liveMuscleStateProvider` spinner that reads as "the sculpture won't load". The 3D model and the
+backup code were never at fault.
+
+Poison source: `build/native_assets/ios/` is a SINGLE directory with no per-platform separation.
+`flutter build ios --simulator --debug`, run as a verification step at 11:14, wrote simulator dylibs
+there and the release archive copied them in verbatim. `build/ios/iphoneos/` still held correct `IOS`
+dylibs from an earlier device build, which is why this worked until now.
+
+Fixed by a full `flutter clean` rebuild with NO simulator build afterwards, plus a hard verification
+gate before packaging (`vtool -show-build` must report `IOS`; `lipo -archs` must not list x86_64).
+Earlier release checks only asserted the frameworks were *bundled*, never which platform they were
+built for — see `tasks/lessons.md`.
+
+### Why the widget was invisible (separate, real bug)
+Extensions were NOT being stripped (Sideloadly's "Remove app extensions" is unchecked, confirmed with
+the user), so the appex was installed. The cause was the install fix itself:
+`NSExtensionPrincipalClass` named `LoggedWidgetBundle`, a SwiftUI **struct**, which has no
+Objective-C class metadata, so `NSClassFromString` returns nil. installd only checks the key is
+PRESENT (install succeeded); WidgetKit resolves it when probing the appex to enumerate kinds for the
+gallery, got nil, and offered no widgets. The claim recorded above — "the value only has to exist" —
+was wrong. Now points at a real `@objc(LoggedWidgetPrincipal) final class … : NSObject` declared in
+`ios/LoggedWidget/LoggedWidgetBundle.swift` solely to be named; `@main` still drives WidgetKit.
+
+**Still blocked by account tier, not code:** the user's Apple ID is a free personal team, which cannot
+provision App Groups, so `group.com.palash.logged` is not granted and the widget cannot read workout
+data even once visible. Expect it to appear in the gallery and render placeholders. Real widget data
+needs a paid Apple Developer account. Android widgets are unaffected and already work.
+
 ## Release artifacts — 2026-07-26 (`cbd0296`, widget fix + three variants)
 - `dist/logged-1.0.0-widget-variants.apk` (94 MB, release)
 - `dist/logged-1.0.0-widget-variants-unsigned.ipa` (27 MB, release, UNSIGNED)

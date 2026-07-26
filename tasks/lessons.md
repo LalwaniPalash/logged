@@ -212,3 +212,39 @@ Format: [date] | what went wrong | rule to prevent it
   so the value only has to exist. Rule: when a plist key is required by one tool and rejected by
   another, decide by which pipeline the project actually uses — and write the reason next to the key,
   because the next person will "fix" it by deleting it.
+  **CORRECTION (same day, see the next entry): "the value only has to exist" was WRONG.** It must also
+  be RESOLVABLE by `NSClassFromString`, and it pointed at `LoggedWidgetBundle`, a SwiftUI *struct*.
+- 2026-07-26 | The widget installed but never appeared in the iOS widget gallery, and the fix that made
+  it install is what made it invisible. `NSExtensionPrincipalClass` was set to
+  `$(PRODUCT_MODULE_NAME).LoggedWidgetBundle`, but a Swift **struct** has no Objective-C class
+  metadata, so `NSClassFromString` returns nil. installd only checks that the key is PRESENT (install
+  succeeded), while WidgetKit resolves it when it probes the appex to enumerate kinds for the gallery —
+  nil principal class, extension cannot launch, zero widgets offered. Fix: declare a real
+  `@objc(LoggedWidgetPrincipal) final class ...: NSObject {}` purely to be named, and point the key at
+  it; `@main` still drives WidgetKit. Rule: a plist key naming a class needs a CLASS, and "it satisfied
+  the installer" is not evidence the runtime can resolve it — the two checks are different code.
+  Corollary: satisfying a validator with a placeholder value is a smell; make the value real.
+- 2026-07-26 | **The whole app was data-dead on a sideloaded iPhone — no exercises, no templates,
+  workouts un-startable, backup import silently doing nothing, muscle sculpture spinning forever — and
+  all of it was ONE fault: the IPA shipped `IOSSIMULATOR` builds of the native-asset dylibs.**
+  `vtool -show-build` on the shipped `objective_c` and `sqlite3` frameworks read `platform
+  IOSSIMULATOR` with an x86_64+arm64 fat binary (394KB/3.4MB), against `platform IOS` arm64-only
+  (198KB/1.7MB) in the last known-good IPA. A simulator dylib cannot `dlopen` on a device, so
+  `path_provider_foundation` died → `getApplicationDocumentsDirectory()` threw → drift never got a path
+  → **`logged.sqlite` was never created at all** (proved by an empty `Documents/` in the on-device
+  container). Cause: `flutter build ios --simulator --debug`, run as a verification step, writes into
+  `build/native_assets/ios/` — a SINGLE directory with no per-platform separation — and the later
+  release archive copied those simulator dylibs in verbatim without rebuilding them.
+  Rules: (1) never run a simulator build between `flutter clean` and shipping a device IPA — the
+  simulator build silently poisons `build/native_assets/ios/` for the device build; (2) the
+  ship-blocking check on any iOS release artifact is
+  `vtool -show-build Runner.app/Frameworks/<pkg>.framework/<pkg> | grep platform` — it must say `IOS`,
+  never `IOSSIMULATOR`, and `lipo -archs` must not list x86_64. Size alone is a tell (a fat simulator
+  binary is ~2x). (3) This is the THIRD distinct native-assets failure in this project (2026-07-21
+  missing dylib, 2026-07-23 no-network fetch failure, now wrong-platform dylib): treat
+  `build/native_assets/` as hostile state and verify the artifact, never the build log.
+  Diagnostic that made this fast, worth reusing: `xcrun devicectl device info files --device <id>
+  --domain-type appDataContainer --domain-identifier <installed.bundle.id>` lists the app's real
+  container, so "is there even a database file?" is answerable without any logging. Note a sideloaded
+  bundle ID is rewritten (Sideloadly appended the team ID: `com.palash.logged.KDZBF8D2X2`) — use the ID
+  from `devicectl device info apps`, not the one in the project.
