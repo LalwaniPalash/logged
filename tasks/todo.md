@@ -733,12 +733,19 @@ The rejection comes from the sideload/re-sign path, which rewrites bundle IDs (t
 - **Install from Xcode** (device selected, signed with the Apple ID) — the only path that installs
   the extension properly, so it is the one that keeps iOS widgets.
 
-Apple Developer Forums thread 734428 documents a catch-22 for `@main WidgetBundle` extensions on
-iOS 14: the OS refuses to install without `NSExtensionPrincipalClass`, while App Store Connect
-rejects the build if that key IS present, and the thread closes unresolved. **Ruled out here** — the
-target iPhone is on iOS 26.5, so the extension is installable in principle and the failure is purely
-Sideloadly's re-signing of the appex. Untried as of this writing: delete the app from the phone
-first, then sideload the FULL ipa with "Remove plugins" unticked.
+**RESOLVED — add `NSExtensionPrincipalClass` (`ios/LoggedWidget/Info.plist`).** Apple Developer
+Forums 734428 describes this as a catch-22: the key is required for installation but rejected by
+App Store Connect as "unexpected". Logged is local-only and never submitted, so only the first half
+applies — the key is now set to `$(PRODUCT_MODULE_NAME).LoggedWidgetBundle`, which builds out to
+`LoggedWidgetExtension.LoggedWidgetBundle`, verified inside the shipped IPA. **Remove this key if
+the app is ever submitted to the App Store.** WidgetKit enters via the `@main` attribute rather than
+instantiating the named class, so the value only has to exist.
+
+What was ruled out before landing there: not an OS-version issue (reproduced on iOS 26.5, so the
+iOS-14-only reading of that thread was wrong), not a stale install (uninstalling first changed
+nothing), and not a malformed build (Xcode 26.4's own template generates exactly the plist we had).
+Artifact: `dist/logged-1.0.0-widget-sideload-fix-unsigned.ipa`. Not yet confirmed installed on
+hardware at the time of writing.
 
 If the Xcode route is used instead, note that the widget needs the `group.com.palash.logged` App
 Group to read any data, and App Groups is not available to free personal-team provisioning — on a

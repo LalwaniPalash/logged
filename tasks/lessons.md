@@ -199,3 +199,16 @@ Format: [date] | what went wrong | rule to prevent it
   `res/raw/keep.xml` with `tools:keep="@drawable/ic_stat_logged"`. Rule: any resource named only from
   Dart/reflection must be listed in keep.xml, and the check is
   `aapt2 dump resources <apk> | grep drawable/<name>` on the RELEASE apk — not "it works in debug".
+- 2026-07-26 | Sideloaded iOS installs failed with `AppexBundleMissingClassOrStoryboard`: installd
+  requires an appex to declare `NSExtensionMainStoryboard` or `NSExtensionPrincipalClass`, and a
+  SwiftUI `@main WidgetBundle` declares neither — Xcode's own Widget Extension template generates
+  only `NSExtensionPointIdentifier = com.apple.widgetkit-extension` (verified against the template in
+  Xcode 26.4, so our build was NOT malformed). Not an iOS-version issue: reproduced on iOS 26.5, and
+  uninstalling first did not help. Fix: add `NSExtensionPrincipalClass` to
+  `ios/LoggedWidget/Info.plist` anyway. Per Apple Developer Forums 734428 this is a genuine catch-22 —
+  the key makes installation work but makes App Store Connect reject the upload as "unexpected".
+  Logged is local-only and never submitted, so the trade is free; the key must be REMOVED if that
+  ever changes. WidgetKit enters through the `@main` attribute, not by instantiating the named class,
+  so the value only has to exist. Rule: when a plist key is required by one tool and rejected by
+  another, decide by which pipeline the project actually uses — and write the reason next to the key,
+  because the next person will "fix" it by deleting it.

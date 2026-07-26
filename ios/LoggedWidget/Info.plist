@@ -1,11 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	NSExtensionPrincipalClass is deliberately present, and Xcode's own Widget
+	Extension template does NOT generate it.
+
+	Without it, installing a sideloaded build fails at install time with
+	AppexBundleMissingClassOrStoryboard: installd insists an appex declare either
+	NSExtensionMainStoryboard or NSExtensionPrincipalClass, and a SwiftUI @main
+	WidgetBundle declares neither. See Apple Developer Forums thread 734428 for
+	the catch-22: adding the key fixes installation, and the only thing it breaks
+	is App Store Connect upload, which rejects it as an unexpected key.
+
+	Logged is local-only and is never submitted to the App Store, so that trade
+	costs nothing here. WidgetKit launches the extension through its own entry
+	point (the @main attribute), not by instantiating this class, so the value
+	only has to exist for installd's benefit.
+
+	If this app is ever submitted to the App Store, this key must be removed.
+-->
 <plist version="1.0">
 <dict>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).LoggedWidgetBundle</string>
 	</dict>
 </dict>
 </plist>
