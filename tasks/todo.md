@@ -687,11 +687,23 @@ resources packaged in the APK). Platform floors are now Android `minSdk` 26 / iO
 Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone, 2026-07-24); Android
 shares the code path but not separately hardware-tested.
 
-**Not yet done / next time:** no RELEASE builds cut since `95dbd38` — `dist/` still holds the
-rest-timer-toggle APK/IPA, so the last two commits are not in any distributable artifact yet. The IPA
-remains unsigned (sideload/codesign). The widget and Health export have NOT been exercised on real
-hardware: the widget has never been placed on a home screen, and no workout has actually been written
-to Apple Health or Health Connect. Both are build-verified only.
+## Release artifacts — 2026-07-26 (`23c950a`)
+- `dist/logged-1.0.0-widget-health-export.apk` (98.5 MB, release)
+- `dist/logged-1.0.0-widget-health-export-unsigned.ipa` (27.7 MB, release, UNSIGNED)
+- Verified in the shipped APK (aapt2 badging + manifest xmltree): `minSdkVersion 26`,
+  `android.permission.health.WRITE_EXERCISE`, and the `LoggedWidgetProvider` receiver with its
+  `APPWIDGET_UPDATE` filter.
+- Verified in the release xcarchive: `LoggedWidgetExtension.appex` embedded at `MinimumOSVersion 14`,
+  and `health` / `home_widget` / `sqlite3` / `objective_c` frameworks all bundled.
+- **`flutter build ipa --no-codesign` does NOT emit an .ipa** — it logs "Codesigning disabled with
+  --no-codesign, skipping IPA" and stops at the xcarchive. The unsigned IPA is packaged by hand:
+  copy `Runner.xcarchive/Products/Applications/Runner.app` into a `Payload/` directory and zip it.
+- Cosmetic, pre-existing: the iOS launch image is still the default Flutter placeholder.
+
+**Not yet done / next time:** the widget and Health export have NOT been exercised on real hardware —
+the widget has never been placed on a home screen, and no workout has actually been written to Apple
+Health or Health Connect. Both are build-verified only. The IPA is unsigned (sideload/codesign), and
+no git remote is connected.
 
 ## Smaller wins (not in T1–T3 scope; slot in opportunistically)
 - [x] PR-celebration moment — already shipped in T2.5-E (`46fef11`): session-finish PR dialog reusing
