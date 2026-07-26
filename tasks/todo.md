@@ -733,11 +733,17 @@ The rejection comes from the sideload/re-sign path, which rewrites bundle IDs (t
 - **Install from Xcode** (device selected, signed with the Apple ID) — the only path that installs
   the extension properly, so it is the one that keeps iOS widgets.
 
-**There may be no fix at all on an iOS 14 device.** Apple Developer Forums thread 734428 documents a
-catch-22 for `@main WidgetBundle` extensions: iOS 14 refuses to install without
-`NSExtensionPrincipalClass`, while App Store Connect rejects the build if that key IS present. The
-thread closes unresolved. If the target iPhone is on iOS 14.x, expect the widget extension to be
-uninstallable regardless of how it is signed; iOS 15+ does not have this problem.
+Apple Developer Forums thread 734428 documents a catch-22 for `@main WidgetBundle` extensions on
+iOS 14: the OS refuses to install without `NSExtensionPrincipalClass`, while App Store Connect
+rejects the build if that key IS present, and the thread closes unresolved. **Ruled out here** — the
+target iPhone is on iOS 26.5, so the extension is installable in principle and the failure is purely
+Sideloadly's re-signing of the appex. Untried as of this writing: delete the app from the phone
+first, then sideload the FULL ipa with "Remove plugins" unticked.
+
+If the Xcode route is used instead, note that the widget needs the `group.com.palash.logged` App
+Group to read any data, and App Groups is not available to free personal-team provisioning — on a
+free Apple ID Xcode will refuse to build with a "profile doesn't support the App Groups capability"
+error. That is an account-tier limit, not a code problem.
 
 Note also that even a successfully installed extension needs the App Group entitlement to show real
 data; personal-team provisioning may not grant it, in which case the widget renders its placeholders
