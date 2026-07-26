@@ -43,8 +43,18 @@ class NotificationService implements NotificationClient {
   final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
 
+  /// Android keeps only the alpha channel of a small icon and paints the result
+  /// white, so the launcher icon (an opaque square) showed up as a blank block
+  /// in the shade. This is a transparent-backgrounded silhouette of the mark.
+  static const _androidNotificationIcon = 'ic_stat_logged';
+
+  /// Tints the silhouette and the app name in the shade. Matches the streak
+  /// amber in [AppTheme] rather than the mark's green, which is the accent the
+  /// rest of the app actually leads with.
+  static const _androidNotificationAccent = Color(0xFFC9821F);
+
   static const _androidInitialization = AndroidInitializationSettings(
-    '@mipmap/ic_launcher',
+    _androidNotificationIcon,
   );
   static const _darwinInitialization = DarwinInitializationSettings(
     requestAlertPermission: false,
@@ -176,6 +186,11 @@ class NotificationService implements NotificationClient {
           importance: Importance.high,
           priority: Priority.high,
           enableVibration: true,
+          // Set per-notification as well as at init: a notification posted
+          // before init ran would otherwise fall back to the launcher icon.
+          icon: _androidNotificationIcon,
+          color: _androidNotificationAccent,
+          colorized: false,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

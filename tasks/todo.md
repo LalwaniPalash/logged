@@ -677,15 +677,27 @@ countdown on every completed set is noise for them.
 - [x] Release builds: `dist/logged-1.0.0-rest-timer-toggle.apk` (97MB) +
       `...-rest-timer-toggle-unsigned.ipa` (24MB).
 
-# Current state (2026-07-26)
-Branch `feat/set-editor-backup-ux`, 6 unpushed commits on top of T1–T3: `849441a` loadingMode fixes →
-`e94477f` per-exercise video button → `e126dd0` rank-flicker fix → `95dbd38` rest-timer auto-start
-toggle → `297027a` plate calculator + warm-up generator → `1b09784` home-screen widget + Health
-export. No git remote connected yet. `flutter analyze` clean, **186 tests green**. Debug APK + iOS
-simulator builds both succeed (`LoggedWidgetExtension.appex` embedded, MinimumOSVersion 14; widget
-resources packaged in the APK). Platform floors are now Android `minSdk` 26 / iOS 14.0.
-Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone, 2026-07-24); Android
-shares the code path but not separately hardware-tested.
+# Current state (2026-07-26, end of day)
+Branch `feat/set-editor-backup-ux`, nothing pushed anywhere — **no git remote is connected at all**,
+so every commit is local-only. `flutter analyze` clean, **193 tests green**. Release APK + release
+xcarchive both build. Platform floors are Android `minSdk` 26 / iOS 14.0.
+
+Hardware-verified on Android (2026-07-26, user's phone):
+- All three home-screen widgets add and render.
+- Reminder notifications arrive backgrounded — so notifications are now verified on BOTH platforms
+  (iOS 2026-07-24). This closes the "Android shares the code path but is untested" caveat.
+- Health Connect is **not available on that device**, so Android Health export remains untested.
+  The service already handles this: `isHealthConnectAvailable()` is checked up front and the user
+  gets "Health Connect is not available on this device." rather than a silent failure. Health Connect
+  is built into Android 14+; on Android 8–13 it is a separate Play Store app.
+
+Still hardware-unverified: Apple Health export (never written a real workout), and the iOS widgets
+(iOS is build-verified only — all three kinds are in the appex binary, but none has been placed).
+
+The seven unticked boxes under "Phases & acceptance criteria" at the bottom of this file are the
+ORIGINAL implementation brief (scaffold → data layer → logging → dashboard → progress → export →
+polish). All of it shipped long ago; the boxes were simply never ticked. Do not read them as open
+work.
 
 ## Release artifacts — 2026-07-26 (`cbd0296`, widget fix + three variants)
 - `dist/logged-1.0.0-widget-variants.apk` (94 MB, release)

@@ -184,3 +184,18 @@ Format: [date] | what went wrong | rule to prevent it
   running lint once on any widget change would have caught it before shipping the APK.
   Toolchain note: gradle/lint here need `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`
   — the default Homebrew JDK 26 makes AGP fail with a bare "26.0.1" error.
+- 2026-07-26 | Android notification showed a blank grey square instead of the logo. Two separate
+  causes, both invisible in debug builds. (1) `AndroidInitializationSettings('@mipmap/ic_launcher')`
+  — Android discards every colour in a notification SMALL icon and keeps only the alpha channel,
+  painting the result white, so an opaque launcher square renders as a featureless block. A small
+  icon must be a transparent-backgrounded silhouette; added `drawable/ic_stat_logged.xml` (vector,
+  minSdk 26 renders framework VectorDrawable fine) and set it both at init and per-notification.
+  Do NOT hardcode `android:tint` on it — the system tints it, and a baked tint can defeat
+  `AndroidNotificationDetails.color`. (2) **The drawable was then stripped from the release APK.**
+  Flutter release builds run the resource shrinker (proof: `build/app/outputs/mapping/release/
+  resources.txt` exists and is full of "Marking … reachable"), and a resource referenced only by NAME
+  at runtime — `Resources.getIdentifier`, which is how flutter_local_notifications resolves an icon —
+  is never marked reachable. Debug builds do not shrink, so this class of bug ships silently. Fix:
+  `res/raw/keep.xml` with `tools:keep="@drawable/ic_stat_logged"`. Rule: any resource named only from
+  Dart/reflection must be listed in keep.xml, and the check is
+  `aapt2 dump resources <apk> | grep drawable/<name>` on the RELEASE apk — not "it works in debug".

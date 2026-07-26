@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Notification small icon: the Logged mark as a flat white silhouette.
+
+  Android throws away every colour in a small icon and keeps only the alpha
+  channel, painting the result white. A launcher icon (opaque square) therefore
+  renders as a featureless block in the shade — this file exists so the shape
+  survives that treatment. Keep it transparent-backgrounded and free of detail
+  finer than the diagonal below, which is already near the limit at 24dp.
+
+  Geometry mirrors assets/branding/logged-icon.png: three ascending bars with
+  slanted tops, sliced by the diagonal. The slice is a gap, not a fill, because
+  the mark's stripe is a lighter colour that alpha-only rendering cannot keep.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Short bar -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,13.29 L7.88,11.03 L7.88,16.44 L3,18.7 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,20.2 L7.88,17.94 L7.88,21 L3,21 Z" />
+
+    <!-- Middle bar -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.46,9.33 L14.59,7.15 L14.59,13.33 L9.46,15.71 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.46,17.21 L14.59,14.83 L14.59,21 L9.46,21 Z" />
+
+    <!-- Tall bar -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M16.16,5.57 L21,3.5 L21,10.37 L16.16,12.61 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M16.16,14.11 L21,11.87 L21,21 L16.16,21 Z" />
+
+</vector>

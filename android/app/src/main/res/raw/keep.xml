@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The notification icon is looked up at runtime by name
+  (Resources.getIdentifier, via flutter_local_notifications), so the resource
+  shrinker that runs on release builds sees no reference to it and strips it
+  from the APK. Debug builds do not shrink, so this only ever fails on release.
+
+  Verify with:
+    aapt2 dump resources build/app/outputs/flutter-apk/app-release.apk \
+      | grep drawable/ic_stat_logged
+
+  Anything else referenced only by name from Dart must be listed here too.
+-->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_logged" />
