@@ -687,6 +687,26 @@ resources packaged in the APK). Platform floors are now Android `minSdk` 26 / iO
 Backgrounded notifications VERIFIED on iOS (reminder fired on a real iPhone, 2026-07-24); Android
 shares the code path but not separately hardware-tested.
 
+## Release artifacts — 2026-07-26 (`cbd0296`, widget fix + three variants)
+- `dist/logged-1.0.0-widget-variants.apk` (94 MB, release)
+- `dist/logged-1.0.0-widget-variants-unsigned.ipa` (27 MB, release, UNSIGNED)
+- Fixes the reason the widget could not be added at all on a real phone: the divider in
+  `logged_widget.xml` was a bare `<View>`, which `RemoteViews` refuses to inflate, so the launcher
+  showed "couldn't add widget" over an empty shell. Reproduced and confirmed fixed with
+  `./gradlew :app:lintDebug` (`RemoteViewLayout`) — see `tasks/lessons.md`.
+- Adds three pickable variants per platform: `LoggedStreakWidgetProvider` / `LoggedStreakWidget`
+  (2x2, small), `LoggedWidgetProvider` / `LoggedWidget` (4x2, medium), `LoggedSummaryWidgetProvider` /
+  `LoggedSummaryWidget` (4x4, large). The medium provider class name is unchanged, so widgets already
+  placed on a home screen survive the update.
+- Verified in the shipped APK (aapt2 dump resources + apkanalyzer manifest): all three receivers,
+  all three layouts, and all three `appwidget-provider` configs.
+- Verified in the release xcarchive: `LoggedWidgetExtension.appex` at `MinimumOSVersion 14`, with all
+  three widget `kind` strings present in the extension binary.
+- Still hardware-unverified: the small and large layouts have never been rendered on a device, and
+  Health export has still never written a real workout.
+- Minor, pre-existing: `ios/LoggedWidget/README.md` is in the extension's Copy Bundle Resources, so
+  the internal setup notes ship inside `LoggedWidgetExtension.appex`. Harmless, needs Xcode to fix.
+
 ## Release artifacts — 2026-07-26 (`23c950a`)
 - `dist/logged-1.0.0-widget-health-export.apk` (98.5 MB, release)
 - `dist/logged-1.0.0-widget-health-export-unsigned.ipa` (27.7 MB, release, UNSIGNED)
