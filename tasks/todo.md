@@ -727,9 +727,17 @@ would be a fabrication, not a fix.
 
 The rejection comes from the sideload/re-sign path, which rewrites bundle IDs (the error shows
 `com.palash.logged.KDZBF8D2X2.LoggedWidget`, not our `com.palash.logged.LoggedWidget`). Options:
+- **Sideloadly's own answer is to tick "Remove plugins"** (their support forum, thread 166824), which
+  strips the appex — identical in effect to the `-nowidget-` IPA. Also uninstall the app from the
+  phone first; a stale appex from a previous install reproduces the same error.
 - **Install from Xcode** (device selected, signed with the Apple ID) — the only path that installs
   the extension properly, so it is the one that keeps iOS widgets.
-- **Use the `-nowidget-` IPA** to get the app on the phone now, without iOS widgets.
+
+**There may be no fix at all on an iOS 14 device.** Apple Developer Forums thread 734428 documents a
+catch-22 for `@main WidgetBundle` extensions: iOS 14 refuses to install without
+`NSExtensionPrincipalClass`, while App Store Connect rejects the build if that key IS present. The
+thread closes unresolved. If the target iPhone is on iOS 14.x, expect the widget extension to be
+uninstallable regardless of how it is signed; iOS 15+ does not have this problem.
 
 Note also that even a successfully installed extension needs the App Group entitlement to show real
 data; personal-team provisioning may not grant it, in which case the widget renders its placeholders
