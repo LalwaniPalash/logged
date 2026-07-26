@@ -172,3 +172,15 @@ Format: [date] | what went wrong | rule to prevent it
   matched both "8/side" (reps per side → sideCount 2) and "7.5-10 kg/side" (load per hand → perSide,
   sideCount 1) — opposite meanings, same substring. Rule: when parsing free text into a semantic flag,
   enumerate the strings that must NOT match and test them explicitly.
+- 2026-07-26 | Android home-screen widget failed to add on device ("couldn't add widget", empty 4x3
+  shell). Cause: `logged_widget.xml` used a bare `<View>` as a hairline divider. `RemoteViews` inflates
+  through a filter that only accepts classes annotated `@RemoteView` — `android.view.View` is not one
+  of them, so the launcher's inflation of `initialLayout` throws and it renders the error shell. Fixed
+  by swapping the divider to `ImageView` (allowed, same visual). Rule: widget layouts may only use the
+  RemoteViews-allowed views (FrameLayout/LinearLayout/RelativeLayout/GridLayout, TextView, ImageView,
+  Button, ImageButton, ProgressBar, Chronometer, AnalogClock, ViewFlipper, ListView/GridView/StackView,
+  ViewStub) — never a plain `<View>`. Verification: `./gradlew :app:lintDebug` catches this as
+  `RemoteViewLayout` ("includes views not allowed in a RemoteView"); it is an ERROR, not a warning, so
+  running lint once on any widget change would have caught it before shipping the APK.
+  Toolchain note: gradle/lint here need `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`
+  — the default Homebrew JDK 26 makes AGP fail with a bare "26.0.1" error.

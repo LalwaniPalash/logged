@@ -66,12 +66,17 @@
         </LinearLayout>
     </LinearLayout>
 
-    <View
+    <!-- A bare <View> is not annotated @RemoteView, so RemoteViews refuses to
+         inflate it and the launcher shows "couldn't add widget". ImageView is
+         on the allowed list and works the same as a hairline divider. -->
+    <ImageView
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="12dp"
-        android:background="@color/widget_outline" />
+        android:background="@color/widget_outline"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no" />
 
     <TextView
         android:layout_width="wrap_content"
