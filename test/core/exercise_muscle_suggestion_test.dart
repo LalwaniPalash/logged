@@ -34,4 +34,15 @@ void main() {
     expect(suggestion.primary, isEmpty);
     expect(suggestion.secondary, isEmpty);
   });
+
+  test('reuses incline chest rules for generic press matches', () {
+    final suggestion = suggestMuscles('Incline Smith Press');
+
+    expect(suggestion.primary, {MuscleId.upperChest});
+    expect(suggestion.secondary, {
+      MuscleId.frontDelts,
+      MuscleId.triceps,
+      MuscleId.serratusAnterior,
+    });
+  });
 }

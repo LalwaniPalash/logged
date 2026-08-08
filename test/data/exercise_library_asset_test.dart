@@ -36,7 +36,7 @@ void main() {
     final data = jsonDecode(assetFile.readAsStringSync()) as List<dynamic>;
     expect(
       data,
-      hasLength(213),
+      hasLength(1047),
       reason: 'Every bundled exercise must have reviewed anatomy metadata',
     );
 
@@ -183,6 +183,26 @@ void main() {
     );
     expect(exercise('Stationary Bike')['primaryMuscles'], ['quads']);
     expect(exercise('Hip Flexor Stretch')['primaryMuscles'], ['hip_flexors']);
+    expect(
+      exercise('Smith Machine One-Arm Upright Row')['primaryMuscles'],
+      ['side_delts'],
+    );
+    expect(
+      exercise('Smith Machine One-Arm Upright Row')['secondaryMuscles'],
+      containsAll(['upper_traps', 'mid_lower_traps']),
+    );
+    expect(
+      exercise('Smith Machine One-Arm Upright Row')['weightEntry'],
+      'perSide',
+    );
+    expect(
+      exercise('Wide-Grip Pulldown Behind The Neck')['primaryMuscles'],
+      ['lats'],
+    );
+    expect(
+      exercise('Wide-Grip Pulldown Behind The Neck')['secondaryMuscles'],
+      containsAll(['biceps', 'rhomboids']),
+    );
   });
 
   test('seeds the real asset through the real seeding path', () async {

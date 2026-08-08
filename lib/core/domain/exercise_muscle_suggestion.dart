@@ -1,4 +1,5 @@
 import 'exercise_name_matcher.dart';
+import 'exercise_muscle_name_rules.dart';
 import 'muscle.dart';
 
 typedef ExerciseMuscleSuggestion = ({
@@ -8,22 +9,6 @@ typedef ExerciseMuscleSuggestion = ({
 
 const Map<String, ({List<MuscleId> primary, List<MuscleId> secondary})>
 _keywordSuggestions = {
-  'bench press': (
-    primary: [MuscleId.midLowerChest],
-    secondary: [
-      MuscleId.frontDelts,
-      MuscleId.triceps,
-      MuscleId.serratusAnterior,
-    ],
-  ),
-  'chest press': (
-    primary: [MuscleId.midLowerChest],
-    secondary: [
-      MuscleId.frontDelts,
-      MuscleId.triceps,
-      MuscleId.serratusAnterior,
-    ],
-  ),
   'shoulder press': (
     primary: [MuscleId.frontDelts, MuscleId.sideDelts],
     secondary: [
@@ -267,7 +252,6 @@ _keywordSuggestions = {
     primary: [MuscleId.obliques, MuscleId.spinalErectors],
     secondary: [MuscleId.rhomboids],
   ),
-  'abduction': (primary: [MuscleId.gluteMedMin], secondary: []),
   'adduction': (primary: [MuscleId.adductors], secondary: []),
   'carry': (
     primary: [MuscleId.forearms, MuscleId.upperTraps],
@@ -292,22 +276,59 @@ _keywordSuggestions = {
     primary: [MuscleId.biceps],
     secondary: [MuscleId.brachialis, MuscleId.forearms],
   ),
-  'press': (
-    primary: [MuscleId.midLowerChest],
-    secondary: [
-      MuscleId.frontDelts,
-      MuscleId.triceps,
-      MuscleId.serratusAnterior,
-    ],
-  ),
-  'fly': (primary: [MuscleId.midLowerChest], secondary: [MuscleId.frontDelts]),
-  'raise': (primary: [MuscleId.sideDelts], secondary: [MuscleId.upperTraps]),
+  'bench press': (primary: [], secondary: []),
+  'chest press': (primary: [], secondary: []),
+  'abduction': (primary: [], secondary: []),
+  'press': (primary: [], secondary: []),
+  'fly': (primary: [], secondary: []),
+  'raise': (primary: [], secondary: []),
   'extension': (primary: [MuscleId.triceps], secondary: [MuscleId.forearms]),
-  'thrust': (
-    primary: [MuscleId.gluteMax],
-    secondary: [MuscleId.hamstrings, MuscleId.adductors, MuscleId.abs],
-  ),
+  'thrust': (primary: [], secondary: []),
 };
+
+ExerciseMuscleSuggestion _dynamicSuggestionForMatch(
+  String match,
+  String exerciseName,
+) {
+  switch (match) {
+    case 'bench press':
+    case 'chest press':
+    case 'press':
+      return (
+        primary: {chestMuscleFromExerciseName(exerciseName)},
+        secondary: {
+          MuscleId.frontDelts,
+          MuscleId.triceps,
+          MuscleId.serratusAnterior,
+        },
+      );
+    case 'fly':
+      return (
+        primary: {chestMuscleFromExerciseName(exerciseName)},
+        secondary: {MuscleId.frontDelts},
+      );
+    case 'raise':
+      return (
+        primary: {shoulderMuscleFromExerciseName(exerciseName)},
+        secondary: {MuscleId.upperTraps},
+      );
+    case 'abduction':
+      return (
+        primary: {gluteMuscleFromExerciseName(exerciseName)},
+        secondary: {},
+      );
+    case 'thrust':
+      return (
+        primary: {gluteMuscleFromExerciseName(exerciseName)},
+        secondary: {MuscleId.hamstrings, MuscleId.adductors, MuscleId.abs},
+      );
+  }
+
+  final suggestion = _keywordSuggestions[match]!;
+  final primary = suggestion.primary.toSet();
+  final secondary = suggestion.secondary.toSet()..removeAll(primary);
+  return (primary: primary, secondary: secondary);
+}
 
 ExerciseMuscleSuggestion suggestMuscles(String exerciseName) {
   final tokens = tokenizeExerciseName(exerciseName);
@@ -319,8 +340,5 @@ ExerciseMuscleSuggestion suggestMuscles(String exerciseName) {
     return (primary: <MuscleId>{}, secondary: <MuscleId>{});
   }
 
-  final suggestion = _keywordSuggestions[match]!;
-  final primary = suggestion.primary.toSet();
-  final secondary = suggestion.secondary.toSet()..removeAll(primary);
-  return (primary: primary, secondary: secondary);
+  return _dynamicSuggestionForMatch(match, exerciseName);
 }
