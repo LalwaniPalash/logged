@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
+import '../../core/domain/exercise_muscle_suggestion.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/plate_math.dart';
 import '../../core/domain/streak.dart';
@@ -150,6 +151,7 @@ class SettingsScreen extends ConsumerWidget {
     var category = ExerciseCategory.strength;
     var primary = <MuscleId>{};
     var secondary = <MuscleId>{};
+    var musclesTouched = false;
     var loadingMode = LoadingMode.external;
     final shouldSave = await showDialog<bool>(
       context: context,
@@ -186,7 +188,14 @@ class SettingsScreen extends ConsumerWidget {
                       labelText: 'Name',
                       hintText: 'e.g. Cable Crossover',
                     ),
-                    onChanged: (_) => setDialogState(() {}),
+                    onChanged: (_) {
+                      if (!musclesTouched) {
+                        final suggestion = suggestMuscles(name.text);
+                        primary = suggestion.primary;
+                        secondary = suggestion.secondary;
+                      }
+                      setDialogState(() {});
+                    },
                   ),
                   const SizedBox(height: 20),
                   const _FieldLabel('Category'),
@@ -254,6 +263,7 @@ class SettingsScreen extends ConsumerWidget {
                     label: 'Primary muscles',
                     selected: primary,
                     onTap: () async {
+                      musclesTouched = true;
                       final value = await _showMusclePicker(
                         context,
                         title: 'Primary muscles',
@@ -271,6 +281,7 @@ class SettingsScreen extends ConsumerWidget {
                     label: 'Secondary muscles',
                     selected: secondary,
                     onTap: () async {
+                      musclesTouched = true;
                       final value = await _showMusclePicker(
                         context,
                         title: 'Secondary muscles',
