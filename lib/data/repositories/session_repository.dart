@@ -27,6 +27,7 @@ class SetSeed {
     this.durationSec,
     this.distanceMeters,
     this.sideCount = 1,
+    this.muscleBias,
   });
 
   factory SetSeed.fromSetEntry(SetEntry set) => SetSeed(
@@ -38,6 +39,7 @@ class SetSeed {
     durationSec: set.durationSec,
     distanceMeters: set.distanceMeters,
     sideCount: set.sideCount,
+    muscleBias: set.muscleBias,
   );
 
   final int? reps;
@@ -48,6 +50,7 @@ class SetSeed {
   final int? durationSec;
   final double? distanceMeters;
   final int sideCount;
+  final double? muscleBias;
 
   SetSeed copyWith({
     int? reps,
@@ -58,6 +61,7 @@ class SetSeed {
     int? durationSec,
     double? distanceMeters,
     int? sideCount,
+    double? muscleBias,
   }) => SetSeed(
     reps: reps ?? this.reps,
     weightValue: weightValue ?? this.weightValue,
@@ -67,6 +71,7 @@ class SetSeed {
     durationSec: durationSec ?? this.durationSec,
     distanceMeters: distanceMeters ?? this.distanceMeters,
     sideCount: sideCount ?? this.sideCount,
+    muscleBias: muscleBias ?? this.muscleBias,
   );
 }
 

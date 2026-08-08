@@ -22,6 +22,7 @@ class SetRepository {
     int? durationSec,
     bool isWarmup = false,
     double? rpe,
+    double? muscleBias,
     String? notes,
   }) => _database
       .into(_database.setEntries)
@@ -39,6 +40,7 @@ class SetRepository {
           durationSec: Value(durationSec),
           isWarmup: Value(isWarmup),
           rpe: Value(rpe),
+          muscleBias: Value(muscleBias),
           notes: Value(notes),
         ),
       );
@@ -55,6 +57,7 @@ class SetRepository {
     double? distanceMeters,
     int? durationSec,
     double? rpe,
+    double? muscleBias,
     bool? isWarmup,
     String? notes,
   }) =>
@@ -71,6 +74,7 @@ class SetRepository {
           distanceMeters: Value(distanceMeters),
           durationSec: Value(durationSec),
           rpe: Value(rpe),
+          muscleBias: Value(muscleBias),
           isWarmup: Value(isWarmup ?? false),
           notes: Value(notes),
         ),
@@ -128,6 +132,7 @@ class SetRepository {
               sideCount: Value(sideCount),
               loadingMode: Value(loadingMode),
               isWarmup: const Value(true),
+              muscleBias: const Value(null),
             ),
         ]);
       });

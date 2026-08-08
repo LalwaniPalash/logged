@@ -539,7 +539,8 @@ class _MuscleDetails extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            '${load!.primarySets} primary · ${load!.secondarySets} secondary · '
+            '${_formatSetCount(load!.primarySets)} primary · '
+            '${_formatSetCount(load!.secondarySets.toDouble())} secondary · '
             '${load!.effectiveSets.toStringAsFixed(1)} effective sets',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -617,10 +618,12 @@ class _ExerciseContributionRow extends StatelessWidget {
   String get _roleText {
     final roles = <String>[];
     if (contribution.primarySets > 0) {
-      roles.add('${contribution.primarySets} primary');
+      roles.add('${_formatSetCount(contribution.primarySets)} primary');
     }
     if (contribution.secondarySets > 0) {
-      roles.add('${contribution.secondarySets} secondary');
+      roles.add(
+        '${_formatSetCount(contribution.secondarySets.toDouble())} secondary',
+      );
     }
     return roles.join(' · ');
   }
@@ -716,6 +719,10 @@ Color _zoneColor(ThemeData theme, VolumeZone zone, double intensity) {
 
 String _sets(double value) => value == value.roundToDouble()
     ? '${value.toInt()}'
+    : value.toStringAsFixed(1);
+
+String _formatSetCount(double value) => value == value.roundToDouble()
+    ? value.toInt().toString()
     : value.toStringAsFixed(1);
 
 String _zoneSuggestion(

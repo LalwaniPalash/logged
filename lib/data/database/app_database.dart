@@ -23,6 +23,8 @@ class Exercises extends Table {
   // itself, so it shows in any workout the exercise appears in. A per-template
   // override still lives on TemplateExercises/SessionExercises.formUrl.
   TextColumn get videoUrl => text().nullable()();
+  TextColumn get biasMuscleA => text().nullable()();
+  TextColumn get biasMuscleB => text().nullable()();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -100,6 +102,7 @@ class SetEntries extends Table {
   IntColumn get durationSec => integer().nullable()();
   BoolColumn get isWarmup => boolean().withDefault(const Constant(false))();
   RealColumn get rpe => real().nullable()();
+  RealColumn get muscleBias => real().nullable()();
   TextColumn get notes => text().nullable()();
 }
 
@@ -147,7 +150,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'logged'));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -279,6 +282,11 @@ class AppDatabase extends _$AppDatabase {
       // so existing rows need no backfill).
       if (from < 7) {
         await migrator.addColumn(exercises, exercises.videoUrl);
+      }
+      if (from < 8) {
+        await migrator.addColumn(exercises, exercises.biasMuscleA);
+        await migrator.addColumn(exercises, exercises.biasMuscleB);
+        await migrator.addColumn(setEntries, setEntries.muscleBias);
       }
     },
     beforeOpen: (details) async {

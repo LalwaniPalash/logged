@@ -105,6 +105,41 @@ void main() {
           reason: '$name references unknown muscle $id',
         );
       }
+
+      final biasMuscleA = raw['biasMuscleA'] as String?;
+      final biasMuscleB = raw['biasMuscleB'] as String?;
+      expect(
+        biasMuscleA == null,
+        equals(biasMuscleB == null),
+        reason: '$name must define both biasMuscleA and biasMuscleB or neither',
+      );
+      if (biasMuscleA != null && biasMuscleB != null) {
+        expect(
+          () => MuscleId.fromId(biasMuscleA),
+          returnsNormally,
+          reason: '$name references unknown bias muscle $biasMuscleA',
+        );
+        expect(
+          () => MuscleId.fromId(biasMuscleB),
+          returnsNormally,
+          reason: '$name references unknown bias muscle $biasMuscleB',
+        );
+        expect(
+          biasMuscleA == biasMuscleB,
+          isFalse,
+          reason: '$name bias axis must use two different muscles',
+        );
+        expect(
+          primarySet.contains(biasMuscleA),
+          isTrue,
+          reason: '$name biasMuscleA must be a primary muscle',
+        );
+        expect(
+          primarySet.contains(biasMuscleB),
+          isTrue,
+          reason: '$name biasMuscleB must be a primary muscle',
+        );
+      }
     }
   });
 
@@ -126,6 +161,10 @@ void main() {
       exercise('Barbell Back Squat')['primaryMuscles'],
       containsAll(['quads', 'glute_max']),
     );
+    expect(exercise('Barbell Back Squat')['biasMuscleA'], 'quads');
+    expect(exercise('Barbell Back Squat')['biasMuscleB'], 'glute_max');
+    expect(exercise('Leg Press')['biasMuscleA'], 'quads');
+    expect(exercise('Leg Press')['biasMuscleB'], 'glute_max');
     expect(exercise('Dumbbell Lateral Raise')['primaryMuscles'], [
       'side_delts',
     ]);

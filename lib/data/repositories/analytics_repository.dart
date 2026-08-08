@@ -111,6 +111,9 @@ class AnalyticsRepository {
       'SELECT s.started_at AS started, e.name AS ename, '
       'e.primary_muscles AS primary_muscles, '
       'e.secondary_muscles AS secondary_muscles, '
+      'e.bias_muscle_a AS bias_muscle_a, '
+      'e.bias_muscle_b AS bias_muscle_b, '
+      'se.muscle_bias AS muscle_bias, '
       'se.is_warmup AS is_warmup '
       'FROM set_entries se '
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
@@ -122,11 +125,14 @@ class AnalyticsRepository {
       'SELECT s.started_at AS started, e.id AS eid, e.name AS ename, '
       'e.primary_muscles AS primary_muscles, '
       'e.secondary_muscles AS secondary_muscles, '
+      'e.bias_muscle_a AS bias_muscle_a, '
+      'e.bias_muscle_b AS bias_muscle_b, '
       'e.bodyweight_factor AS bodyweight_factor, '
       'se.loading_mode AS loading_mode, se.weight_value AS weight_value, '
       'se.unit AS unit, se.weight_entry AS weight_entry, '
       'se.side_count AS side_count, se.reps AS reps, '
       'se.duration_sec AS duration_sec, se.distance_meters AS distance_meters, '
+      'se.muscle_bias AS muscle_bias, '
       'se.is_warmup AS is_warmup '
       'FROM set_entries se '
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
@@ -377,6 +383,17 @@ class AnalyticsRepository {
           row.data['secondary_muscles'],
           row.data['ename'] as String? ?? '',
         ),
+        biasMuscleA: _decodeMuscleOrNull(
+          row.data['bias_muscle_a'],
+          exerciseName: row.data['ename'] as String? ?? '',
+          columnName: 'bias_muscle_a',
+        ),
+        biasMuscleB: _decodeMuscleOrNull(
+          row.data['bias_muscle_b'],
+          exerciseName: row.data['ename'] as String? ?? '',
+          columnName: 'bias_muscle_b',
+        ),
+        muscleBias: (row.data['muscle_bias'] as num?)?.toDouble(),
         isWarmup: switch (row.data['is_warmup']) {
           final bool value => value,
           final num value => value != 0,
@@ -401,6 +418,17 @@ class AnalyticsRepository {
           row.data['secondary_muscles'],
           row.data['ename'] as String? ?? '',
         ),
+        biasMuscleA: _decodeMuscleOrNull(
+          row.data['bias_muscle_a'],
+          exerciseName: row.data['ename'] as String? ?? '',
+          columnName: 'bias_muscle_a',
+        ),
+        biasMuscleB: _decodeMuscleOrNull(
+          row.data['bias_muscle_b'],
+          exerciseName: row.data['ename'] as String? ?? '',
+          columnName: 'bias_muscle_b',
+        ),
+        muscleBias: (row.data['muscle_bias'] as num?)?.toDouble(),
         loadingMode: LoadingMode.values.byName(
           row.data['loading_mode'] as String? ?? 'external',
         ),
@@ -453,6 +481,25 @@ class AnalyticsRepository {
         stackTrace: stackTrace,
       );
       return const [];
+    }
+  }
+
+  MuscleId? _decodeMuscleOrNull(
+    Object? value, {
+    required String exerciseName,
+    required String columnName,
+  }) {
+    if (value == null) return null;
+    try {
+      return MuscleId.fromId(value as String);
+    } on ArgumentError catch (error, stackTrace) {
+      developer.log(
+        'Ignoring unknown $columnName metadata for $exerciseName',
+        name: 'logged.analytics',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 

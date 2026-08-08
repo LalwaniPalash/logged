@@ -21,8 +21,8 @@ class BackupService {
   final ExerciseAnatomyService _anatomyService;
 
   /// Schema versions this build can read. The current writer is [_schemaVersion].
-  static const Set<int> _supportedSchemaVersions = {1, 2, 3, 4, 5, 6, 7};
-  static const int _schemaVersion = 7;
+  static const Set<int> _supportedSchemaVersions = {1, 2, 3, 4, 5, 6, 7, 8};
+  static const int _schemaVersion = 8;
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';
@@ -113,24 +113,25 @@ class BackupService {
     final db = _database;
     final rows =
         await (db.select(db.setEntries).join([
-          innerJoin(
-            db.sessionExercises,
-            db.sessionExercises.id.equalsExp(
-              db.setEntries.sessionExerciseId,
-            ),
-          ),
-          innerJoin(
-            db.sessions,
-            db.sessions.id.equalsExp(db.sessionExercises.sessionId),
-          ),
-          innerJoin(
-            db.exercises,
-            db.exercises.id.equalsExp(db.sessionExercises.exerciseId),
-          ),
-        ])..orderBy([
-          OrderingTerm.asc(db.sessions.startedAt),
-          OrderingTerm.asc(db.setEntries.setNumber),
-        ])).get();
+              innerJoin(
+                db.sessionExercises,
+                db.sessionExercises.id.equalsExp(
+                  db.setEntries.sessionExerciseId,
+                ),
+              ),
+              innerJoin(
+                db.sessions,
+                db.sessions.id.equalsExp(db.sessionExercises.sessionId),
+              ),
+              innerJoin(
+                db.exercises,
+                db.exercises.id.equalsExp(db.sessionExercises.exerciseId),
+              ),
+            ])..orderBy([
+              OrderingTerm.asc(db.sessions.startedAt),
+              OrderingTerm.asc(db.setEntries.setNumber),
+            ]))
+            .get();
 
     final buffer = StringBuffer()
       ..writeln(
@@ -253,6 +254,8 @@ class BackupService {
         'weightEntry': source['weightEntry'] ?? 'total',
         'preferredLoadingMode': source['preferredLoadingMode'] ?? 'external',
         'bodyweightFactor': source['bodyweightFactor'] ?? 1.0,
+        'biasMuscleA': source['biasMuscleA'],
+        'biasMuscleB': source['biasMuscleB'],
       });
 
   SetEntry _setEntryFromBackup(Map<String, dynamic> source) =>
@@ -261,6 +264,7 @@ class BackupService {
         'weightEntry': source['weightEntry'] ?? 'total',
         'sideCount': source['sideCount'] ?? 1,
         'loadingMode': source['loadingMode'] ?? 'external',
+        'muscleBias': source['muscleBias'],
       });
 
   TemplateExercise _templateExerciseFromBackup(Map<String, dynamic> source) =>
@@ -371,7 +375,7 @@ class BackupService {
       });
     });
     final version = source['schemaVersion'] as int? ?? 1;
-    if (version < 3) {
+    if (version < 8) {
       await _anatomyService.enrichBundledExercises();
     }
   }

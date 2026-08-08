@@ -114,4 +114,26 @@ void main() {
       expect(rows.map((row) => row.weightValue), [20.0, 40.0, 80.0, 80.0]);
     },
   );
+
+  test('add and edit persist muscle bias', () async {
+    final setId = await repository.add(
+      sessionExerciseId: sessionExerciseId,
+      setNumber: 1,
+      reps: 8,
+      weightValue: 60,
+      unit: WeightUnit.kg,
+      muscleBias: -0.5,
+    );
+
+    var set = await (database.select(
+      database.setEntries,
+    )..where((row) => row.id.equals(setId))).getSingle();
+    expect(set.muscleBias, -0.5);
+
+    await repository.edit(setId, muscleBias: 0.25);
+    set = await (database.select(
+      database.setEntries,
+    )..where((row) => row.id.equals(setId))).getSingle();
+    expect(set.muscleBias, 0.25);
+  });
 }

@@ -324,6 +324,131 @@ void main() {
     final exercise = await database.select(database.exercises).getSingle();
     expect(exercise.name, 'Legacy Row');
     expect(exercise.videoUrl, isNull);
-    expect(database.schemaVersion, 7);
+    expect(database.schemaVersion, 8);
   });
+
+  test(
+    'v7 gains bias columns without losing existing exercise and set data',
+    () async {
+      final executor = NativeDatabase.memory(
+        setup: (database) {
+          database.execute('''
+          CREATE TABLE exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            category TEXT NOT NULL,
+            muscle_group TEXT NOT NULL,
+            primary_muscles TEXT NOT NULL DEFAULT '[]',
+            secondary_muscles TEXT NOT NULL DEFAULT '[]',
+            default_unit TEXT NOT NULL DEFAULT 'kg',
+            weight_entry TEXT NOT NULL DEFAULT 'total',
+            preferred_loading_mode TEXT NOT NULL DEFAULT 'external',
+            bodyweight_factor REAL NOT NULL DEFAULT 1.0,
+            video_url TEXT,
+            is_custom INTEGER NOT NULL DEFAULT 0,
+            is_archived INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE sessions (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            started_at INTEGER NOT NULL,
+            ended_at INTEGER,
+            template_id INTEGER,
+            notes TEXT
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE session_exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            exercise_id INTEGER NOT NULL,
+            position INTEGER NOT NULL
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE set_entries (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_exercise_id INTEGER NOT NULL,
+            set_number INTEGER NOT NULL,
+            reps INTEGER,
+            weight_value REAL,
+            unit TEXT,
+            weight_entry TEXT NOT NULL DEFAULT 'total',
+            side_count INTEGER NOT NULL DEFAULT 1,
+            loading_mode TEXT NOT NULL DEFAULT 'external',
+            distance_meters REAL,
+            duration_sec INTEGER,
+            is_warmup INTEGER NOT NULL DEFAULT 0,
+            rpe REAL,
+            notes TEXT
+          )
+        ''');
+          database.execute('''
+          INSERT INTO exercises (
+            id,
+            name,
+            category,
+            muscle_group,
+            primary_muscles,
+            secondary_muscles,
+            default_unit,
+            video_url
+          ) VALUES (
+            1,
+            'Legacy Leg Press',
+            'strength',
+            'legs',
+            '["quads","glute_max"]',
+            '["hamstrings","adductors"]',
+            'lb',
+            'https://youtu.be/legacy'
+          )
+        ''');
+          database.execute('''
+          INSERT INTO sessions (id, started_at, ended_at)
+          VALUES (1, 1784505600, 1784509200)
+        ''');
+          database.execute('''
+          INSERT INTO session_exercises (
+            id,
+            session_id,
+            exercise_id,
+            position
+          ) VALUES (1, 1, 1, 0)
+        ''');
+          database.execute('''
+          INSERT INTO set_entries (
+            id,
+            session_exercise_id,
+            set_number,
+            reps,
+            weight_value,
+            unit,
+            weight_entry,
+            side_count,
+            loading_mode,
+            rpe
+          ) VALUES (1, 1, 1, 12, 180, 'lb', 'total', 1, 'external', 8.5)
+        ''');
+          database.userVersion = 7;
+        },
+      );
+      final database = AppDatabase(executor);
+      addTearDown(database.close);
+
+      final exercise = await database.select(database.exercises).getSingle();
+      final set = await database.select(database.setEntries).getSingle();
+
+      expect(exercise.name, 'Legacy Leg Press');
+      expect(exercise.videoUrl, 'https://youtu.be/legacy');
+      expect(exercise.biasMuscleA, isNull);
+      expect(exercise.biasMuscleB, isNull);
+      expect(set.reps, 12);
+      expect(set.weightValue, 180);
+      expect(set.muscleBias, isNull);
+      expect(database.schemaVersion, 8);
+    },
+  );
 }

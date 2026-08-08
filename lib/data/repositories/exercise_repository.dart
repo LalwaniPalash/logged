@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/enums.dart';
+import '../../core/domain/muscle.dart';
+import '../../core/domain/muscle_bias.dart';
 import '../database/app_database.dart';
 
 class ExerciseRepository {
@@ -59,6 +61,45 @@ class ExerciseRepository {
           secondaryMuscles: Value(secondaryMuscles),
         ),
       );
+
+  Future<void> updateBiasAxis(
+    int exerciseId, {
+    MuscleId? biasMuscleA,
+    MuscleId? biasMuscleB,
+  }) async {
+    final axis = normalizeBiasAxis(
+      biasMuscleA: biasMuscleA,
+      biasMuscleB: biasMuscleB,
+    );
+    if (axis.biasMuscleA == null || axis.biasMuscleB == null) {
+      await (_database.update(
+        _database.exercises,
+      )..where((row) => row.id.equals(exerciseId))).write(
+        const ExercisesCompanion(
+          biasMuscleA: Value(null),
+          biasMuscleB: Value(null),
+        ),
+      );
+      return;
+    }
+
+    final exercise = await (_database.select(
+      _database.exercises,
+    )..where((row) => row.id.equals(exerciseId))).getSingle();
+    validateBiasAxis(
+      primary: decodeMuscleIds(exercise.primaryMuscles),
+      biasMuscleA: axis.biasMuscleA,
+      biasMuscleB: axis.biasMuscleB,
+    );
+    await (_database.update(
+      _database.exercises,
+    )..where((row) => row.id.equals(exerciseId))).write(
+      ExercisesCompanion(
+        biasMuscleA: Value(axis.biasMuscleA!.id),
+        biasMuscleB: Value(axis.biasMuscleB!.id),
+      ),
+    );
+  }
 
   Future<void> archive(int exerciseId, {required bool archived}) =>
       (_database.update(_database.exercises)

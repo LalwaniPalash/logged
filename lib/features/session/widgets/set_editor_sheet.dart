@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/app_icons.dart';
 import '../../../core/domain/enums.dart';
+import '../../../core/domain/muscle.dart';
+import '../../../core/domain/muscle_bias.dart';
 import '../../../core/domain/workout_metrics.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/session_repository.dart';
@@ -25,6 +27,7 @@ class SetEditorResult {
     required this.rpe,
     required this.isWarmup,
     required this.notes,
+    required this.muscleBias,
     this.delete = false,
   });
 
@@ -39,6 +42,7 @@ class SetEditorResult {
   final double? rpe;
   final bool isWarmup;
   final String? notes;
+  final double? muscleBias;
   final bool delete;
 }
 
@@ -53,6 +57,8 @@ class SetEditorSheet extends StatefulWidget {
     required this.existing,
     required this.seed,
     required this.effectiveBodyweightKg,
+    this.biasMuscleA,
+    this.biasMuscleB,
     this.timed = false,
   });
 
@@ -67,6 +73,8 @@ class SetEditorSheet extends StatefulWidget {
   final SetEntry? existing;
   final SetSeed? seed;
   final double? effectiveBodyweightKg;
+  final MuscleId? biasMuscleA;
+  final MuscleId? biasMuscleB;
 
   @override
   State<SetEditorSheet> createState() => _SetEditorSheetState();
@@ -111,6 +119,10 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
   late bool _warmup = widget.existing?.isWarmup ?? false;
   late bool _eachSide =
       (widget.existing?.sideCount ?? widget.seed?.sideCount ?? 1) > 1;
+  late double? _bias =
+      widget.existing?.muscleBias ??
+      widget.seed?.muscleBias ??
+      (widget.biasMuscleA != null ? 0.0 : null);
   String? _errorText;
 
   // Which sections apply. Distance on a barbell squat is noise, but anything a
@@ -176,6 +188,9 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
         rpe: double.tryParse(_rpe.text),
         isWarmup: _warmup,
         notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+        muscleBias: widget.biasMuscleA == null || widget.biasMuscleB == null
+            ? null
+            : _bias,
       ),
     );
   }
@@ -194,6 +209,7 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
       rpe: null,
       isWarmup: false,
       notes: null,
+      muscleBias: null,
       delete: true,
     ),
   );
@@ -223,6 +239,16 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
       return 'The number is per limb — counted twice.';
     }
     return '$value each side = ${value * 2} reps total.';
+  }
+
+  String get _biasEcho {
+    final muscleA = widget.biasMuscleA;
+    final muscleB = widget.biasMuscleB;
+    if (muscleA == null || muscleB == null) return '';
+    final shares = resolveMuscleBiasShares(_bias);
+    final shareA = (shares.shareA * 100).round();
+    final shareB = (shares.shareB * 100).round();
+    return '$shareA% ${muscleA.label} · $shareB% ${muscleB.label}';
   }
 
   @override
@@ -388,6 +414,38 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
           onChanged: (value) => setState(() => _eachSide = value),
         ),
         _EchoLine(_repsEcho),
+        const SizedBox(height: 18),
+      ],
+
+      if (widget.biasMuscleA != null && widget.biasMuscleB != null) ...[
+        const _SectionLabel('Bias axis'),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.biasMuscleA!.label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Text(
+              widget.biasMuscleB!.label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        Slider(
+          value: (_bias ?? 0.0).clamp(-1.0, 1.0),
+          min: -1,
+          max: 1,
+          divisions: 20,
+          label: _biasEcho,
+          onChanged: (value) => setState(() => _bias = value),
+        ),
+        _EchoLine(_biasEcho),
         const SizedBox(height: 18),
       ],
 

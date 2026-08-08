@@ -930,6 +930,8 @@
       "spinal_erectors",
       "abs"
     ],
+    "biasMuscleA": "quads",
+    "biasMuscleB": "glute_max",
     "defaultUnit": "kg"
   },
   {
@@ -973,6 +975,8 @@
       "hamstrings",
       "adductors"
     ],
+    "biasMuscleA": "quads",
+    "biasMuscleB": "glute_max",
     "defaultUnit": "lb"
   },
   {

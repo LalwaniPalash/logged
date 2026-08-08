@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
@@ -18,11 +18,13 @@ void main() {
         .into(database.exercises)
         .insert(
           ExercisesCompanion.insert(
-            name: 'Dumbbell Lateral Raise',
+            name: 'Leg Press',
             category: ExerciseCategory.strength,
-            muscleGroup: 'shoulders',
-            primaryMuscles: Value(jsonEncode(['side_delts'])),
-            secondaryMuscles: Value(jsonEncode(['upper_traps'])),
+            muscleGroup: 'legs',
+            primaryMuscles: Value(jsonEncode(['quads', 'glute_max'])),
+            secondaryMuscles: Value(jsonEncode(['hamstrings', 'adductors'])),
+            biasMuscleA: const Value('quads'),
+            biasMuscleB: const Value('glute_max'),
           ),
         );
     final sessionId = await database
@@ -53,9 +55,12 @@ void main() {
     expect(await iterator.moveNext(), isTrue);
     expect(iterator.current, hasLength(1));
     final record = iterator.current.single;
-    expect(record.exerciseName, 'Dumbbell Lateral Raise');
-    expect(record.primaryMuscles, [MuscleId.sideDelts]);
-    expect(record.secondaryMuscles, [MuscleId.upperTraps]);
+    expect(record.exerciseName, 'Leg Press');
+    expect(record.primaryMuscles, [MuscleId.quads, MuscleId.gluteMax]);
+    expect(record.secondaryMuscles, [MuscleId.hamstrings, MuscleId.adductors]);
+    expect(record.biasMuscleA, MuscleId.quads);
+    expect(record.biasMuscleB, MuscleId.gluteMax);
+    expect(record.muscleBias, isNull);
     expect(record.isWarmup, isFalse);
 
     expect(

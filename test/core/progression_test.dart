@@ -24,6 +24,7 @@ void main() {
     loadingMode: mode,
     isWarmup: warmup,
     rpe: rpe,
+    muscleBias: null,
   );
 
   group('double progression matrix', () {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
@@ -42,6 +42,8 @@ void main() {
           'muscleGroup': 'shoulders',
           'primaryMuscles': ['side_delts'],
           'secondaryMuscles': ['upper_traps'],
+          'biasMuscleA': 'side_delts',
+          'biasMuscleB': 'upper_traps',
           'defaultUnit': 'kg',
         },
       ]);
@@ -58,8 +60,12 @@ void main() {
       final custom = exercises.singleWhere((exercise) => exercise.isCustom);
       expect(jsonDecode(bundled.primaryMuscles), ['side_delts']);
       expect(jsonDecode(bundled.secondaryMuscles), ['upper_traps']);
+      expect(bundled.biasMuscleA, 'side_delts');
+      expect(bundled.biasMuscleB, 'upper_traps');
       expect(jsonDecode(custom.primaryMuscles), ['front_delts']);
       expect(jsonDecode(custom.secondaryMuscles), isEmpty);
+      expect(custom.biasMuscleA, isNull);
+      expect(custom.biasMuscleB, isNull);
     },
   );
 
@@ -168,7 +174,10 @@ void main() {
             preferredLoadingMode: const Value(LoadingMode.external),
           ),
         );
-    final service = ExerciseAnatomyService(database, loadAsset: () async => '[]');
+    final service = ExerciseAnatomyService(
+      database,
+      loadAsset: () async => '[]',
+    );
 
     expect(await service.backfillPullUpOnce(), isTrue);
     final pullUp = await (database.select(
@@ -183,28 +192,34 @@ void main() {
     expect(all, hasLength(1));
   });
 
-  test('does not override a deliberately chosen strict-bodyweight Pull-Up', () async {
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-    // The user made Pull-Up strict bodyweight on purpose (not the legacy
-    // `external` breakage) — the one-time heal must leave that alone.
-    await database
-        .into(database.exercises)
-        .insert(
-          ExercisesCompanion.insert(
-            name: 'Pull-Up',
-            category: ExerciseCategory.bodyweight,
-            muscleGroup: 'back',
-            preferredLoadingMode: const Value(LoadingMode.bodyweight),
-          ),
-        );
-    final service = ExerciseAnatomyService(database, loadAsset: () async => '[]');
+  test(
+    'does not override a deliberately chosen strict-bodyweight Pull-Up',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      // The user made Pull-Up strict bodyweight on purpose (not the legacy
+      // `external` breakage) — the one-time heal must leave that alone.
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Pull-Up',
+              category: ExerciseCategory.bodyweight,
+              muscleGroup: 'back',
+              preferredLoadingMode: const Value(LoadingMode.bodyweight),
+            ),
+          );
+      final service = ExerciseAnatomyService(
+        database,
+        loadAsset: () async => '[]',
+      );
 
-    // Ran (flag set) but changed nothing.
-    expect(await service.backfillPullUpOnce(), isFalse);
-    final pullUp = await (database.select(
-      database.exercises,
-    )..where((exercise) => exercise.name.equals('Pull-Up'))).getSingle();
-    expect(pullUp.preferredLoadingMode, LoadingMode.bodyweight);
-  });
+      // Ran (flag set) but changed nothing.
+      expect(await service.backfillPullUpOnce(), isFalse);
+      final pullUp = await (database.select(
+        database.exercises,
+      )..where((exercise) => exercise.name.equals('Pull-Up'))).getSingle();
+      expect(pullUp.preferredLoadingMode, LoadingMode.bodyweight);
+    },
+  );
 }

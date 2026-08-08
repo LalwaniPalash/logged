@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'enums.dart';
 import 'live_muscle_state.dart';
+import 'muscle_bias.dart';
 import 'muscle.dart';
 import 'streak.dart';
 import 'training_goal.dart';
@@ -56,6 +57,9 @@ class MusclePerformanceRecord {
     required this.primaryMuscles,
     required this.secondaryMuscles,
     required this.loadingMode,
+    this.biasMuscleA,
+    this.biasMuscleB,
+    this.muscleBias,
     this.reps,
     this.weightValue,
     this.unit,
@@ -73,6 +77,9 @@ class MusclePerformanceRecord {
   final List<MuscleId> primaryMuscles;
   final List<MuscleId> secondaryMuscles;
   final LoadingMode loadingMode;
+  final MuscleId? biasMuscleA;
+  final MuscleId? biasMuscleB;
+  final double? muscleBias;
   final int? reps;
   final double? weightValue;
   final WeightUnit? unit;
@@ -152,7 +159,7 @@ class MuscleProgress {
   final MuscleMomentum momentum;
   final List<MuscleTrendPoint> points;
   final Map<DateTime, double> effectiveSetHistory;
-  final int primarySets;
+  final double primarySets;
   final int secondarySets;
   final DateTime? lastTrained;
   final List<MuscleExerciseProgress> exercises;
@@ -216,7 +223,7 @@ class _ExerciseSeries {
 }
 
 class _Accumulator {
-  int primarySets = 0;
+  double primarySets = 0;
   int secondarySets = 0;
   final Map<DateTime, double> effectiveSetHistory = {};
   DateTime? lastTrained;
@@ -254,12 +261,21 @@ Map<MuscleId, MuscleProgress> buildMuscleProgress({
 
     final day = dateOnly(record.date);
     for (final muscle in primary) {
+      final weight =
+          primaryMuscleBiasWeight(
+            muscle: muscle,
+            biasMuscleA: record.biasMuscleA,
+            biasMuscleB: record.biasMuscleB,
+            muscleBias: record.muscleBias,
+          ) ??
+          1.0;
       final acc = accumulators[muscle]!;
-      acc.primarySets++;
+      acc.primarySets += weight;
       acc.lastTrained = record.date;
-      acc.effectiveSetHistory[day] = (acc.effectiveSetHistory[day] ?? 0) + 1;
+      acc.effectiveSetHistory[day] =
+          (acc.effectiveSetHistory[day] ?? 0) + weight;
       acc.exerciseWeights[record.exerciseId] =
-          (acc.exerciseWeights[record.exerciseId] ?? 0) + 1;
+          (acc.exerciseWeights[record.exerciseId] ?? 0) + weight;
     }
     for (final muscle in secondary) {
       final acc = accumulators[muscle]!;

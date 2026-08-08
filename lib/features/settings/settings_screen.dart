@@ -9,6 +9,7 @@ import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/exercise_muscle_suggestion.dart';
 import '../../core/domain/muscle.dart';
+import '../../core/domain/muscle_bias.dart';
 import '../../core/domain/plate_math.dart';
 import '../../core/domain/streak.dart';
 import '../../core/domain/training_goal.dart';
@@ -151,6 +152,8 @@ class SettingsScreen extends ConsumerWidget {
     var category = ExerciseCategory.strength;
     var primary = <MuscleId>{};
     var secondary = <MuscleId>{};
+    MuscleId? biasMuscleA;
+    MuscleId? biasMuscleB;
     var musclesTouched = false;
     var loadingMode = LoadingMode.external;
     final shouldSave = await showDialog<bool>(
@@ -193,6 +196,8 @@ class SettingsScreen extends ConsumerWidget {
                         final suggestion = suggestMuscles(name.text);
                         primary = suggestion.primary;
                         secondary = suggestion.secondary;
+                        if (!primary.contains(biasMuscleA)) biasMuscleA = null;
+                        if (!primary.contains(biasMuscleB)) biasMuscleB = null;
                       }
                       setDialogState(() {});
                     },
@@ -273,6 +278,8 @@ class SettingsScreen extends ConsumerWidget {
                       setDialogState(() {
                         primary = value;
                         secondary.removeAll(primary);
+                        if (!primary.contains(biasMuscleA)) biasMuscleA = null;
+                        if (!primary.contains(biasMuscleB)) biasMuscleB = null;
                       });
                     },
                   ),
@@ -292,6 +299,26 @@ class SettingsScreen extends ConsumerWidget {
                       setDialogState(() => secondary = value);
                     },
                   ),
+                  if (primary.length >= 2) ...[
+                    const SizedBox(height: 20),
+                    const _FieldLabel('Bias axis (optional)'),
+                    const SizedBox(height: 8),
+                    _BiasAxisField(
+                      label: 'Muscle A',
+                      options: primary,
+                      value: biasMuscleA,
+                      onChanged: (value) =>
+                          setDialogState(() => biasMuscleA = value),
+                    ),
+                    const SizedBox(height: 10),
+                    _BiasAxisField(
+                      label: 'Muscle B',
+                      options: primary,
+                      value: biasMuscleB,
+                      onChanged: (value) =>
+                          setDialogState(() => biasMuscleB = value),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   TextField(
                     controller: videoUrl,
@@ -324,6 +351,15 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (shouldSave != true || name.text.trim().isEmpty) return;
     validateMuscleSelection(primary: primary, secondary: secondary);
+    final axis = normalizeBiasAxis(
+      biasMuscleA: biasMuscleA,
+      biasMuscleB: biasMuscleB,
+    );
+    validateBiasAxis(
+      primary: primary,
+      biasMuscleA: axis.biasMuscleA,
+      biasMuscleB: axis.biasMuscleB,
+    );
     final factor = (double.tryParse(bodyweightFactor.text) ?? 1.0).clamp(
       0.0,
       1.0,
@@ -340,6 +376,8 @@ class SettingsScreen extends ConsumerWidget {
             defaultUnit: const Value(WeightUnit.kg),
             preferredLoadingMode: Value(loadingMode),
             bodyweightFactor: Value(factor),
+            biasMuscleA: Value(axis.biasMuscleA?.id),
+            biasMuscleB: Value(axis.biasMuscleB?.id),
             videoUrl: Value(
               videoUrl.text.trim().isEmpty ? null : videoUrl.text.trim(),
             ),
@@ -361,6 +399,8 @@ class SettingsScreen extends ConsumerWidget {
   ) async {
     Set<MuscleId> primary;
     Set<MuscleId> secondary;
+    var biasMuscleA = _decodeMuscleIdOrNull(exercise.biasMuscleA);
+    var biasMuscleB = _decodeMuscleIdOrNull(exercise.biasMuscleB);
     try {
       primary = decodeMuscleIds(exercise.primaryMuscles).toSet();
       secondary = decodeMuscleIds(exercise.secondaryMuscles).toSet();
@@ -371,6 +411,8 @@ class SettingsScreen extends ConsumerWidget {
       primary = {};
       secondary = {};
     }
+    if (!primary.contains(biasMuscleA)) biasMuscleA = null;
+    if (!primary.contains(biasMuscleB)) biasMuscleB = null;
 
     final shouldSave = await showDialog<bool>(
       context: context,
@@ -393,6 +435,8 @@ class SettingsScreen extends ConsumerWidget {
                   setDialogState(() {
                     primary = value;
                     secondary.removeAll(primary);
+                    if (!primary.contains(biasMuscleA)) biasMuscleA = null;
+                    if (!primary.contains(biasMuscleB)) biasMuscleB = null;
                   });
                 },
               ),
@@ -411,6 +455,26 @@ class SettingsScreen extends ConsumerWidget {
                   setDialogState(() => secondary = value);
                 },
               ),
+              if (primary.length >= 2) ...[
+                const SizedBox(height: 16),
+                const _FieldLabel('Bias axis (optional)'),
+                const SizedBox(height: 8),
+                _BiasAxisField(
+                  label: 'Muscle A',
+                  options: primary,
+                  value: biasMuscleA,
+                  onChanged: (value) =>
+                      setDialogState(() => biasMuscleA = value),
+                ),
+                const SizedBox(height: 10),
+                _BiasAxisField(
+                  label: 'Muscle B',
+                  options: primary,
+                  value: biasMuscleB,
+                  onChanged: (value) =>
+                      setDialogState(() => biasMuscleB = value),
+                ),
+              ],
             ],
           ),
           actions: [
@@ -430,12 +494,28 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (shouldSave != true) return;
     validateMuscleSelection(primary: primary, secondary: secondary);
+    final axis = normalizeBiasAxis(
+      biasMuscleA: biasMuscleA,
+      biasMuscleB: biasMuscleB,
+    );
+    validateBiasAxis(
+      primary: primary,
+      biasMuscleA: axis.biasMuscleA,
+      biasMuscleB: axis.biasMuscleB,
+    );
     await ref
         .read(exerciseRepositoryProvider)
         .updateMuscles(
           exercise.id,
           primaryMuscles: encodeMuscleIds(primary),
           secondaryMuscles: encodeMuscleIds(secondary),
+        );
+    await ref
+        .read(exerciseRepositoryProvider)
+        .updateBiasAxis(
+          exercise.id,
+          biasMuscleA: axis.biasMuscleA,
+          biasMuscleB: axis.biasMuscleB,
         );
   }
 
@@ -1179,6 +1259,46 @@ class _FieldLabel extends StatelessWidget {
 
 String _titleCase(String value) =>
     value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
+
+MuscleId? _decodeMuscleIdOrNull(String? id) {
+  if (id == null) return null;
+  try {
+    return MuscleId.fromId(id);
+  } on ArgumentError {
+    return null;
+  }
+}
+
+class _BiasAxisField extends StatelessWidget {
+  const _BiasAxisField({
+    required this.label,
+    required this.options,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final Set<MuscleId> options;
+  final MuscleId? value;
+  final ValueChanged<MuscleId?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = options.toList()..sort((a, b) => a.label.compareTo(b.label));
+    return DropdownButtonFormField<MuscleId?>(
+      key: ValueKey('$label-${value?.id ?? 'none'}-${sorted.length}'),
+      initialValue: value,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: label),
+      items: [
+        const DropdownMenuItem<MuscleId?>(value: null, child: Text('None')),
+        for (final muscle in sorted)
+          DropdownMenuItem<MuscleId?>(value: muscle, child: Text(muscle.label)),
+      ],
+      onChanged: onChanged,
+    );
+  }
+}
 
 class _MuscleSelectionField extends StatelessWidget {
   const _MuscleSelectionField({

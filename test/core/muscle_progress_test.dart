@@ -13,6 +13,9 @@ void main() {
     List<MuscleId> primary = const [MuscleId.midLowerChest],
     List<MuscleId> secondary = const [MuscleId.triceps],
     LoadingMode loadingMode = LoadingMode.external,
+    MuscleId? biasMuscleA,
+    MuscleId? biasMuscleB,
+    double? muscleBias,
     double? weightValue = 100,
     WeightUnit? unit = WeightUnit.kg,
     WeightEntry weightEntry = WeightEntry.total,
@@ -29,6 +32,9 @@ void main() {
     primaryMuscles: primary,
     secondaryMuscles: secondary,
     loadingMode: loadingMode,
+    biasMuscleA: biasMuscleA,
+    biasMuscleB: biasMuscleB,
+    muscleBias: muscleBias,
     weightValue: weightValue,
     unit: unit,
     weightEntry: weightEntry,
@@ -304,4 +310,59 @@ void main() {
     )[MuscleId.midLowerChest]!;
     expect(rankExplainer(progress, TrainingGoal.build), contains('sets'));
   });
+
+  test(
+    'bias reallocates primary-set credit while other primaries stay full',
+    () {
+      final progress = buildMuscleProgress(
+        records: [
+          record(
+            date: DateTime(2026, 7, 1),
+            exerciseName: 'Leg Press',
+            primary: const [
+              MuscleId.quads,
+              MuscleId.gluteMax,
+              MuscleId.hipFlexors,
+            ],
+            secondary: const [MuscleId.hamstrings],
+            biasMuscleA: MuscleId.quads,
+            biasMuscleB: MuscleId.gluteMax,
+            muscleBias: -1,
+          ),
+          record(
+            date: DateTime(2026, 7, 8),
+            exerciseName: 'Leg Press',
+            primary: const [
+              MuscleId.quads,
+              MuscleId.gluteMax,
+              MuscleId.hipFlexors,
+            ],
+            secondary: const [MuscleId.hamstrings],
+            biasMuscleA: MuscleId.quads,
+            biasMuscleB: MuscleId.gluteMax,
+            muscleBias: 0,
+          ),
+          record(
+            date: DateTime(2026, 7, 15),
+            exerciseName: 'Leg Press',
+            primary: const [
+              MuscleId.quads,
+              MuscleId.gluteMax,
+              MuscleId.hipFlexors,
+            ],
+            secondary: const [MuscleId.hamstrings],
+            biasMuscleA: MuscleId.quads,
+            biasMuscleB: MuscleId.gluteMax,
+            muscleBias: null,
+          ),
+        ],
+        today: DateTime(2026, 7, 20),
+      );
+
+      expect(progress[MuscleId.quads]!.primarySets, 2);
+      expect(progress[MuscleId.gluteMax]!.primarySets, 1);
+      expect(progress[MuscleId.hipFlexors]!.primarySets, 3);
+      expect(progress[MuscleId.hamstrings]!.secondarySets, 3);
+    },
+  );
 }

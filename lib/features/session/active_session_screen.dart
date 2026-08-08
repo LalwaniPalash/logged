@@ -260,6 +260,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         : weightKg(bodyweight.value, bodyweight.unit) *
               detail.exercise.bodyweightFactor.clamp(0.0, 1.0);
     if (!mounted) return;
+    final biasMuscleA = _decodeMuscleIdOrNull(detail.exercise.biasMuscleA);
+    final biasMuscleB = _decodeMuscleIdOrNull(detail.exercise.biasMuscleB);
 
     final result = await showModalBottomSheet<SetEditorResult>(
       context: context,
@@ -280,6 +282,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         seed: resolvedSeed,
         defaultLoadingMode: detail.exercise.preferredLoadingMode,
         effectiveBodyweightKg: effectiveBodyweightKg,
+        biasMuscleA: biasMuscleA,
+        biasMuscleB: biasMuscleB,
       ),
     );
     if (result == null) return;
@@ -321,6 +325,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             distanceMeters: result.distanceMeters,
             durationSec: result.durationSec,
             rpe: result.rpe,
+            muscleBias: result.muscleBias,
             isWarmup: result.isWarmup,
             notes: result.notes,
           );
@@ -339,6 +344,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             distanceMeters: result.distanceMeters,
             durationSec: result.durationSec,
             rpe: result.rpe,
+            muscleBias: result.muscleBias,
             isWarmup: result.isWarmup,
             notes: result.notes,
           );
@@ -382,6 +388,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           loadingMode: seed.loadingMode,
           distanceMeters: seed.distanceMeters,
           durationSec: seed.durationSec,
+          muscleBias: seed.muscleBias,
         );
     setState(_refresh);
   }
@@ -404,6 +411,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           durationSec: last.durationSec,
           isWarmup: last.isWarmup,
           rpe: last.rpe,
+          muscleBias: last.muscleBias,
           notes: last.notes,
         );
     setState(_refresh);
@@ -449,6 +457,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           distanceMeters: draft.distanceMeters,
           durationSec: draft.durationSec,
           rpe: set.rpe,
+          muscleBias: set.muscleBias,
           isWarmup: set.isWarmup,
           notes: set.notes,
         );
@@ -736,6 +745,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         );
       },
     );
+  }
+}
+
+MuscleId? _decodeMuscleIdOrNull(String? id) {
+  if (id == null) return null;
+  try {
+    return MuscleId.fromId(id);
+  } on ArgumentError {
+    return null;
   }
 }
 

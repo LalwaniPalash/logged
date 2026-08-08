@@ -38,6 +38,7 @@ void main() {
     distanceMeters: distanceMeters,
     durationSec: durationSec,
     isWarmup: isWarmup,
+    muscleBias: null,
   );
 
   Widget harness({

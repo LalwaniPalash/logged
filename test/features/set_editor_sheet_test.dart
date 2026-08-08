@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
+import 'package:logged/core/domain/muscle.dart';
 import 'package:logged/core/theme/app_theme.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/features/session/widgets/set_editor_sheet.dart';
@@ -19,6 +20,7 @@ void main() {
     WeightEntry weightEntry = WeightEntry.total,
     int sideCount = 1,
     LoadingMode loadingMode = LoadingMode.external,
+    double? muscleBias,
   }) => SetEntry(
     id: 1,
     sessionExerciseId: 1,
@@ -30,6 +32,7 @@ void main() {
     sideCount: sideCount,
     loadingMode: loadingMode,
     isWarmup: false,
+    muscleBias: muscleBias,
   );
 
   Widget harness({
@@ -37,6 +40,8 @@ void main() {
     SetEntry? existing,
     String name = 'Barbell Back Squat',
     bool timed = false,
+    MuscleId? biasMuscleA,
+    MuscleId? biasMuscleB,
   }) => MaterialApp(
     theme: AppTheme.light(),
     home: Scaffold(
@@ -50,6 +55,8 @@ void main() {
         existing: existing,
         seed: null,
         effectiveBodyweightKg: null,
+        biasMuscleA: biasMuscleA,
+        biasMuscleB: biasMuscleB,
       ),
     ),
   );
@@ -64,10 +71,7 @@ void main() {
   testWidgets('a barbell lift hides cardio-only fields', (tester) async {
     await pumpAt(
       tester,
-      harness(
-        category: ExerciseCategory.strength,
-        existing: buildSet(),
-      ),
+      harness(category: ExerciseCategory.strength, existing: buildSet()),
       iphoneSize,
     );
 
@@ -197,6 +201,65 @@ void main() {
       narrowSize,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('bias slider appears for axis exercises and saves the value', (
+    tester,
+  ) async {
+    SetEditorResult? result;
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<SetEditorResult>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => SetEditorSheet(
+                    exerciseName: 'Leg Press',
+                    category: ExerciseCategory.strength,
+                    defaultUnit: WeightUnit.kg,
+                    defaultWeightEntry: WeightEntry.total,
+                    defaultLoadingMode: LoadingMode.external,
+                    existing: buildSet(muscleBias: 0),
+                    seed: null,
+                    effectiveBodyweightKg: null,
+                    biasMuscleA: MuscleId.quads,
+                    biasMuscleB: MuscleId.gluteMax,
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('BIAS AXIS'), findsOneWidget);
+    expect(find.text('50% Quads · 50% Glute max'), findsOneWidget);
+
+    final slider = find.byType(Slider);
+    await tester.ensureVisible(slider);
+    await tester.pumpAndSettle();
+    final rect = tester.getRect(slider);
+    await tester.dragFrom(rect.center, Offset(-rect.width, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('100% Quads · 0% Glute max'), findsOneWidget);
+
+    await tester.tap(find.text('Save set'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result!.muscleBias, -1);
   });
 
   testWidgets('save returns the toggles as separate multipliers', (

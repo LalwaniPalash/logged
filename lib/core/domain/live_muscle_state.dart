@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'muscle_bias.dart';
 import 'muscle.dart';
 import 'streak.dart';
 import 'volume_landmarks.dart';
@@ -13,6 +14,9 @@ class MuscleSetRecord {
     required this.exerciseName,
     required this.primaryMuscles,
     required this.secondaryMuscles,
+    required this.biasMuscleA,
+    required this.biasMuscleB,
+    required this.muscleBias,
     required this.isWarmup,
   });
 
@@ -20,6 +24,9 @@ class MuscleSetRecord {
   final String exerciseName;
   final List<MuscleId> primaryMuscles;
   final List<MuscleId> secondaryMuscles;
+  final MuscleId? biasMuscleA;
+  final MuscleId? biasMuscleB;
+  final double? muscleBias;
   final bool isWarmup;
 }
 
@@ -31,7 +38,7 @@ class ExerciseMuscleContribution {
   });
 
   final String exerciseName;
-  final int primarySets;
+  final double primarySets;
   final int secondarySets;
 
   double get effectiveSets =>
@@ -47,7 +54,7 @@ class MuscleLoad {
   });
 
   final MuscleId muscle;
-  final int primarySets;
+  final double primarySets;
   final int secondarySets;
   final List<ExerciseMuscleContribution> exercises;
 
@@ -77,14 +84,14 @@ class LiveMuscleState {
 class _MutableContribution {
   _MutableContribution(this.exerciseName);
   final String exerciseName;
-  int primarySets = 0;
+  double primarySets = 0;
   int secondarySets = 0;
 }
 
 class _MutableLoad {
   _MutableLoad(this.muscle);
   final MuscleId muscle;
-  int primarySets = 0;
+  double primarySets = 0;
   int secondarySets = 0;
   final Map<String, _MutableContribution> exercises = {};
 }
@@ -107,11 +114,19 @@ LiveMuscleState buildLiveMuscleState(
 
     final primary = record.primaryMuscles.toSet();
     for (final muscle in primary) {
+      final weight =
+          primaryMuscleBiasWeight(
+            muscle: muscle,
+            biasMuscleA: record.biasMuscleA,
+            biasMuscleB: record.biasMuscleB,
+            muscleBias: record.muscleBias,
+          ) ??
+          1.0;
       final load = mutable.putIfAbsent(muscle, () => _MutableLoad(muscle));
-      load.primarySets++;
+      load.primarySets += weight;
       (load.exercises[record.exerciseName] ??= _MutableContribution(
         record.exerciseName,
-      )).primarySets++;
+      )).primarySets += weight;
     }
     for (final muscle in record.secondaryMuscles.toSet().difference(primary)) {
       final load = mutable.putIfAbsent(muscle, () => _MutableLoad(muscle));

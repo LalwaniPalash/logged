@@ -23,30 +23,49 @@ class ExerciseAnatomyService {
   /// Returns how many bundled exercise rows changed.
   Future<int> enrichBundledExercises() async {
     final source = jsonDecode(await _loadAsset()) as List<dynamic>;
-    final anatomyByName = <String, ({String primary, String secondary})>{
-      for (final raw in source.cast<Map<String, dynamic>>())
-        raw['name']! as String: (
-          primary: jsonEncode(
-            (raw['primaryMuscles'] as List<dynamic>?) ?? const [],
-          ),
-          secondary: jsonEncode(
-            (raw['secondaryMuscles'] as List<dynamic>?) ?? const [],
-          ),
-        ),
-    };
+    final anatomyByName =
+        <
+          String,
+          ({
+            String primary,
+            String secondary,
+            String? biasMuscleA,
+            String? biasMuscleB,
+          })
+        >{
+          for (final raw in source.cast<Map<String, dynamic>>())
+            raw['name']! as String: (
+              primary: jsonEncode(
+                (raw['primaryMuscles'] as List<dynamic>?) ?? const [],
+              ),
+              secondary: jsonEncode(
+                (raw['secondaryMuscles'] as List<dynamic>?) ?? const [],
+              ),
+              biasMuscleA: raw['biasMuscleA'] as String?,
+              biasMuscleB: raw['biasMuscleB'] as String?,
+            ),
+        };
 
     final bundled = await (_database.select(
       _database.exercises,
     )..where((exercise) => exercise.isCustom.equals(false))).get();
-    final changes = <(int, String, String)>[];
+    final changes = <(int, String, String, String?, String?)>[];
     for (final exercise in bundled) {
       final anatomy = anatomyByName[exercise.name];
       if (anatomy == null) continue;
       if (exercise.primaryMuscles == anatomy.primary &&
-          exercise.secondaryMuscles == anatomy.secondary) {
+          exercise.secondaryMuscles == anatomy.secondary &&
+          exercise.biasMuscleA == anatomy.biasMuscleA &&
+          exercise.biasMuscleB == anatomy.biasMuscleB) {
         continue;
       }
-      changes.add((exercise.id, anatomy.primary, anatomy.secondary));
+      changes.add((
+        exercise.id,
+        anatomy.primary,
+        anatomy.secondary,
+        anatomy.biasMuscleA,
+        anatomy.biasMuscleB,
+      ));
     }
 
     if (changes.isEmpty) return 0;
@@ -57,6 +76,8 @@ class ExerciseAnatomyService {
           ExercisesCompanion(
             primaryMuscles: Value(change.$2),
             secondaryMuscles: Value(change.$3),
+            biasMuscleA: Value(change.$4),
+            biasMuscleB: Value(change.$5),
           ),
           where: (exercise) => exercise.id.equals(change.$1),
         );
@@ -152,13 +173,13 @@ class ExerciseAnatomyService {
         // `external` column default, which demanded a bogus weight. A user who
         // deliberately picked strict `bodyweight` (or anything else) is left
         // alone — over-correcting would fight their choice.
-        await (_database.update(_database.exercises)
-              ..where((exercise) => exercise.id.equals(existing.id)))
-            .write(
-              const ExercisesCompanion(
-                preferredLoadingMode: Value(LoadingMode.bodyweightAdded),
-              ),
-            );
+        await (_database.update(
+          _database.exercises,
+        )..where((exercise) => exercise.id.equals(existing.id))).write(
+          const ExercisesCompanion(
+            preferredLoadingMode: Value(LoadingMode.bodyweightAdded),
+          ),
+        );
         changed = true;
       }
       await _database
