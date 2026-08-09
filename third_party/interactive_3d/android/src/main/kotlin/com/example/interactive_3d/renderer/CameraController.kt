@@ -6,6 +6,23 @@ import com.google.android.filament.Camera
 import kotlin.math.cos
 import kotlin.math.sin
 
+internal interface IdleScheduler {
+    fun removeCallbacks(runnable: Runnable)
+    fun postDelayed(runnable: Runnable, delayMs: Long)
+}
+
+private object MainThreadIdleScheduler : IdleScheduler {
+    private val handler = Handler(Looper.getMainLooper())
+
+    override fun removeCallbacks(runnable: Runnable) {
+        handler.removeCallbacks(runnable)
+    }
+
+    override fun postDelayed(runnable: Runnable, delayMs: Long) {
+        handler.postDelayed(runnable, delayMs)
+    }
+}
+
 /**
  * Controls the orbit camera around the 3D model.
  *
@@ -17,7 +34,10 @@ import kotlin.math.sin
  * the user is actively touching the viewport. The render loop reads this
  * flag to throttle frame rate when idle (see [FrameCallback] in the renderer).
  */
-internal class CameraController {
+internal class CameraController(
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
+    private val idleScheduler: IdleScheduler = MainThreadIdleScheduler,
+) {
 
     companion object {
         private const val DEFAULT_FOV = 45.0
@@ -44,7 +64,6 @@ internal class CameraController {
     var idleFrameCount = 0
 
     private var lastCameraUpdate = 0L
-    private val idleHandler = Handler(Looper.getMainLooper())
     private val markIdleRunnable = Runnable {
         isInteracting = false
         idleFrameCount = 0
@@ -110,6 +129,16 @@ internal class CameraController {
     }
 
     /**
+     * Restores the default orbit angles and default "no zoom" state while
+     * preserving the fitted orbit radius from the current model.
+     */
+    fun resetOrbit() {
+        orbitAngleX = 0.0f
+        orbitAngleY = 0.0f
+        zoomLevel = 1.0f
+    }
+
+    /**
      * Sets the zoom level directly (e.g. from the public API).
      */
     fun setZoom(zoom: Float) {
@@ -154,19 +183,19 @@ internal class CameraController {
     fun markInteracting() {
         isInteracting = true
         idleFrameCount = 0
-        idleHandler.removeCallbacks(markIdleRunnable)
-        idleHandler.postDelayed(markIdleRunnable, 500)
+        idleScheduler.removeCallbacks(markIdleRunnable)
+        idleScheduler.postDelayed(markIdleRunnable, 500)
     }
 
     /**
      * Cancels any pending idle callbacks. Call during cleanup.
      */
     fun cancelCallbacks() {
-        idleHandler.removeCallbacks(markIdleRunnable)
+        idleScheduler.removeCallbacks(markIdleRunnable)
     }
 
     private fun shouldUpdate(): Boolean {
-        val now = System.currentTimeMillis()
+        val now = currentTimeMillis()
         if (now - lastCameraUpdate < THROTTLE_MS) return false
         lastCameraUpdate = now
         return true

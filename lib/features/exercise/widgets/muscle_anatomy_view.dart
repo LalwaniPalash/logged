@@ -12,6 +12,19 @@ import '../../../core/domain/muscle_model.dart';
 import '../../../core/domain/volume_landmarks.dart';
 import 'muscle_heatmap.dart';
 
+@visibleForTesting
+Future<void> resetMuscleModelView({
+  required bool supports3d,
+  required Interactive3dController controller,
+}) async {
+  if (!supports3d) return;
+  try {
+    await controller.resetCamera();
+  } on StateError {
+    // The native view can still be attaching during first load.
+  }
+}
+
 class MuscleAnatomyView extends StatefulWidget {
   const MuscleAnatomyView({
     super.key,
@@ -42,8 +55,6 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
   final Interactive3dController _controller = Interactive3dController();
   MuscleId? _selectedMuscle;
   bool _showAllMuscles = false;
-
-  static const double _defaultModelZoom = 3.0;
 
   bool get _supports3d =>
       widget.enable3d && (Platform.isAndroid || Platform.isIOS);
@@ -103,13 +114,10 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
   }
 
   Future<void> _resetModelView() async {
-    if (!_supports3d) return;
-    try {
-      await _controller.setCameraZoomLevel(_defaultModelZoom);
-    } on StateError {
-      // The native view can still be attaching during first load. The
-      // Interactive3d widget also receives this same value as defaultZoom.
-    }
+    await resetMuscleModelView(
+      supports3d: _supports3d,
+      controller: _controller,
+    );
   }
 
   @override
@@ -161,7 +169,7 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
                 state: widget.state,
                 landmarks: widget.landmarks,
                 controller: _controller,
-                defaultZoom: _defaultModelZoom,
+                defaultZoom: _ThreeDimensionalMuscleModel.defaultModelZoom,
                 onSelectionChanged: _onEntitiesSelected,
               )
             : MuscleHeatmap(
@@ -256,6 +264,8 @@ class _ThreeDimensionalMuscleModel extends StatelessWidget {
     required this.defaultZoom,
     required this.onSelectionChanged,
   });
+
+  static const double defaultModelZoom = 3.0;
 
   final LiveMuscleState state;
   final Map<MuscleId, VolumeLandmarks> landmarks;

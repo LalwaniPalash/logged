@@ -151,6 +151,9 @@ class Interactive3dTextureEntry(
     fun setCameraZoomLevel(zoom: Float) =
         mainHandler.post { filamentRenderer?.setCameraZoomLevel(zoom) }
 
+    fun resetCamera() =
+        mainHandler.post { filamentRenderer?.resetCamera() }
+
     fun setPartGroupVisibility(group: Map<String, Any>, isVisible: Boolean) =
         mainHandler.post { filamentRenderer?.setPartGroupVisibility(group, isVisible) }
 

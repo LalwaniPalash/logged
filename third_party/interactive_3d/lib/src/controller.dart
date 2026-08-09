@@ -59,6 +59,12 @@ class Interactive3dController {
     await _state!.setZoom(zoomLevel);
   }
 
+  /// Restores the camera to its initial orbit / rotation and zoom.
+  Future<void> resetCamera() async {
+    _ensureAttached();
+    await _state!.resetCamera();
+  }
+
   /// Toggles visibility for a group of model parts.
   Future<void> updatePartGroupConfig({
     required bool isVisible,

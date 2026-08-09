@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:interactive_3d/interactive_3d.dart';
 import 'package:logged/core/domain/live_muscle_state.dart';
 import 'package:logged/core/domain/muscle.dart';
 import 'package:logged/core/theme/app_theme.dart';
 import 'package:logged/features/exercise/widgets/muscle_anatomy_view.dart';
 
 void main() {
+  test('resetMuscleModelView uses resetCamera instead of zoom', () async {
+    final controller = _RecordingInteractive3dController();
+
+    await resetMuscleModelView(supports3d: true, controller: controller);
+
+    expect(controller.resetCalls, 1);
+    expect(controller.zoomCalls, 0);
+  });
+
   testWidgets('2D fallback exposes detailed primary and secondary set data', (
     tester,
   ) async {
@@ -151,4 +161,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(opened, [MuscleId.sideDelts]);
   });
+}
+
+class _RecordingInteractive3dController extends Interactive3dController {
+  int resetCalls = 0;
+  int zoomCalls = 0;
+
+  @override
+  Future<void> resetCamera() async {
+    resetCalls += 1;
+  }
+
+  @override
+  Future<void> setCameraZoomLevel(double zoomLevel) async {
+    zoomCalls += 1;
+  }
 }

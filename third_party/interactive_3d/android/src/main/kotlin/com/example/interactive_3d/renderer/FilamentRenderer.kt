@@ -420,6 +420,16 @@ class FilamentRenderer(
             cameraController.applyProjection(it, width, height)
             cameraController.applyToCamera(it)
         }
+        requestRender()
+    }
+
+    fun resetCamera() {
+        cameraController.resetOrbit()
+        camera?.let {
+            cameraController.applyProjection(it, width, height)
+            cameraController.applyToCamera(it)
+        }
+        requestRender()
     }
 
     fun setPartGroupVisibility(group: Map<String, Any>, isVisible: Boolean) {

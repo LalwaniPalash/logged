@@ -60,6 +60,7 @@ class Interactive3dPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
       "loadModel" -> handleLoadModel(call, result)
       "loadEnvironment" -> handleLoadEnvironment(call, result)
       "setZoomLevel" -> handleSetZoomLevel(call, result)
+      "resetCamera" -> handleResetCamera(call, result)
       "setPartGroupVisibility" -> handleSetPartGroupVisibility(call, result)
       "unselectEntities" -> handleUnselectEntities(call, result)
       "clearCache" -> handleClearCache(call, result)
@@ -184,6 +185,17 @@ class Interactive3dPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
       ?: return result.error("TEXTURE_NOT_FOUND", "Texture $textureId not found", null)
 
     entry.setCameraZoomLevel(zoom)
+    result.success(null)
+  }
+
+  private fun handleResetCamera(call: MethodCall, result: MethodChannel.Result) {
+    val textureId = call.argument<Number>("textureId")?.toLong()
+      ?: return result.error("INVALID_ARGUMENT", "textureId required", null)
+
+    val entry = textureEntries[textureId]
+      ?: return result.error("TEXTURE_NOT_FOUND", "Texture $textureId not found", null)
+
+    entry.resetCamera()
     result.success(null)
   }
 

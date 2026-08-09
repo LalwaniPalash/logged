@@ -86,6 +86,8 @@ class Interactive3DPlatformView: NSObject, FlutterPlatformView, FlutterStreamHan
             handleLoadModel(call, result: result)
         case "setZoomLevel":
             handleSetZoomLevel(call, result: result)
+        case "resetCamera":
+            handleResetCamera(result: result)
         case "loadHdrBackground":
             handleLoadHdrBackground(call, result: result)
         case "unselectEntities":
@@ -205,6 +207,13 @@ class Interactive3DPlatformView: NSObject, FlutterPlatformView, FlutterStreamHan
         }
         DispatchQueue.main.async { [weak self] in
             self?.sceneManager.setCameraZoomLevel(Float(zoom))
+            result(nil)
+        }
+    }
+
+    private func handleResetCamera(result: @escaping FlutterResult) {
+        DispatchQueue.main.async { [weak self] in
+            self?.sceneManager.resetCamera()
             result(nil)
         }
     }

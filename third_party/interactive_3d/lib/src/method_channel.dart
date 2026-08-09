@@ -17,7 +17,8 @@ class MethodChannelInteractive3d extends Interactive3dPlatform {
 
   final Map<int, EventChannel> _eventChannels = {};
   final Map<int, StreamController<List<EntityData>>> _selectionControllers = {};
-  final Map<int, StreamController<List<String>>> _cacheSelectionControllers = {};
+  final Map<int, StreamController<List<String>>> _cacheSelectionControllers =
+      {};
 
   @override
   Future<Map<String, dynamic>> createTexture({
@@ -110,7 +111,8 @@ class MethodChannelInteractive3d extends Interactive3dPlatform {
     } else if (modelUrl != null) {
       final response = await http.get(Uri.parse(modelUrl));
       if (response.statusCode != 200) {
-        throw Exception('Failed to load model: $modelUrl (${response.statusCode})');
+        throw Exception(
+            'Failed to load model: $modelUrl (${response.statusCode})');
       }
       modelBytes = response.bodyBytes;
       modelName = modelUrl.split('/').last;
@@ -119,7 +121,7 @@ class MethodChannelInteractive3d extends Interactive3dPlatform {
     }
 
     final resourceMap = resources.map(
-          (key, value) => MapEntry(key, value.buffer.asUint8List()),
+      (key, value) => MapEntry(key, value.buffer.asUint8List()),
     );
 
     await _pluginChannel.invokeMethod('loadModel', {
@@ -129,9 +131,8 @@ class MethodChannelInteractive3d extends Interactive3dPlatform {
       'resources': resourceMap,
       'preselectedEntities': preselectedEntities,
       'selectionColor': selectionColor,
-      'patchColors': patchColors
-          ?.map((p) => {'name': p.name, 'color': p.color})
-          .toList(),
+      'patchColors':
+          patchColors?.map((p) => {'name': p.name, 'color': p.color}).toList(),
       'enableCache': enableCache,
       'cacheColor': cacheColor,
       'clearSelectionsOnHighlight': clearSelectionsOnHighlight,
@@ -218,7 +219,8 @@ class MethodChannelInteractive3d extends Interactive3dPlatform {
     Uint8List? backgroundBytes;
 
     if (backgroundPath != null) {
-      backgroundBytes = (await rootBundle.load(backgroundPath)).buffer.asUint8List();
+      backgroundBytes =
+          (await rootBundle.load(backgroundPath)).buffer.asUint8List();
     } else if (backgroundUrl != null) {
       final response = await http.get(Uri.parse(backgroundUrl));
       if (response.statusCode == 200) {
@@ -265,6 +267,13 @@ class MethodChannelInteractive3d extends Interactive3dPlatform {
     await _pluginChannel.invokeMethod('setZoomLevel', {
       'textureId': textureId,
       'zoom': zoom,
+    });
+  }
+
+  @override
+  Future<void> resetCamera(int textureId) async {
+    await _pluginChannel.invokeMethod('resetCamera', {
+      'textureId': textureId,
     });
   }
 

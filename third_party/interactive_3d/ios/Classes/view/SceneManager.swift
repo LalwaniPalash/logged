@@ -10,6 +10,12 @@ import UIKit
 class SceneManager {
 
     private weak var scnView: SCNView?
+    private var resetCameraTransform: SCNMatrix4?
+    private var resetCameraTarget: SCNVector3?
+    private var resetCameraFieldOfView: CGFloat?
+    private var modelNodesForFraming: [SCNNode] = []
+    private var shouldCaptureNextZoomAsResetBaseline = false
+
     var cameraNode: SCNNode?
     var useSolidBackground = false
 
@@ -49,6 +55,11 @@ class SceneManager {
 
         SCNTransaction.flush()
         cameraNode = nil
+        resetCameraTransform = nil
+        resetCameraTarget = nil
+        resetCameraFieldOfView = nil
+        modelNodesForFraming = []
+        shouldCaptureNextZoomAsResetBaseline = false
     }
 
     /// Loads a GLB/glTF model from raw bytes into the scene view.
@@ -91,19 +102,86 @@ class SceneManager {
             }
         }
 
+        scnView?.scene = scene
+        modelNodesForFraming = framableNodes(in: scene)
+        configureCamera(for: scene)
+
         // Add default lighting if model has none
         if !hasLightNodes(in: scene.rootNode) {
             addDefaultLighting(to: scene)
         }
 
-        scnView?.scene = scene
+        captureCurrentCameraResetState()
+        shouldCaptureNextZoomAsResetBaseline = true
     }
 
     /// Sets the camera distance from the model origin.
     func setCameraZoomLevel(_ zoomLevel: Float) {
-        guard let cam = cameraNode, zoomLevel > 0 else { return }
-        cam.position = SCNVector3(x: 0, y: 0, z: zoomLevel)
+        guard zoomLevel > 0,
+              let scnView,
+              let cam = cameraNode else { return }
+
+        let controller = scnView.defaultCameraController
+        controller.stopInertia()
+        controller.pointOfView = cam
+        scnView.pointOfView = cam
+
+        let target = controller.target
+        let offset = SCNVector3(
+            x: cam.worldPosition.x - target.x,
+            y: cam.worldPosition.y - target.y,
+            z: cam.worldPosition.z - target.z
+        )
+        let length = sqrt(
+            (offset.x * offset.x) +
+            (offset.y * offset.y) +
+            (offset.z * offset.z)
+        )
+        let direction = length > 0
+            ? SCNVector3(x: offset.x / length, y: offset.y / length, z: offset.z / length)
+            : SCNVector3(x: 0, y: 0, z: 1)
+
+        cam.worldPosition = SCNVector3(
+            x: target.x + direction.x * zoomLevel,
+            y: target.y + direction.y * zoomLevel,
+            z: target.z + direction.z * zoomLevel
+        )
+        cam.look(at: target)
         cam.camera?.zNear = 0.01
+
+        if shouldCaptureNextZoomAsResetBaseline {
+            captureCurrentCameraResetState()
+            shouldCaptureNextZoomAsResetBaseline = false
+        }
+
+        scnView.setNeedsDisplay()
+    }
+
+    /// Restores the camera to the initial framed rotation and zoom.
+    func resetCamera() {
+        guard let scnView,
+              let cam = cameraNode,
+              let resetTransform = resetCameraTransform else { return }
+
+        let controller = scnView.defaultCameraController
+        controller.stopInertia()
+        controller.clearRoll()
+        controller.pointOfView = cam
+        scnView.pointOfView = cam
+
+        if !modelNodesForFraming.isEmpty {
+            controller.frameNodes(modelNodesForFraming)
+        }
+
+        cam.transform = resetTransform
+        if let fieldOfView = resetCameraFieldOfView {
+            cam.camera?.fieldOfView = fieldOfView
+        }
+        if let target = resetCameraTarget {
+            controller.target = target
+        }
+
+        scnView.setNeedsDisplay()
     }
 
     /// Loads an HDR/EXR image as the scene background.
@@ -232,5 +310,52 @@ class SceneManager {
         defer { UIGraphicsEndImageContext() }
         image.draw(in: CGRect(origin: .zero, size: target))
         return UIGraphicsGetImageFromCurrentImageContext() ?? image
+    }
+
+    private func configureCamera(for scene: SCNScene) {
+        let cameraNode = SCNNode()
+        cameraNode.name = "__interactive3d_camera__"
+
+        let camera = SCNCamera()
+        camera.zNear = 0.01
+        camera.automaticallyAdjustsZRange = true
+        cameraNode.camera = camera
+        scene.rootNode.addChildNode(cameraNode)
+
+        self.cameraNode = cameraNode
+
+        guard let scnView else { return }
+        scnView.pointOfView = cameraNode
+
+        let controller = scnView.defaultCameraController
+        controller.pointOfView = cameraNode
+        controller.interactionMode = .orbitTurntable
+        controller.automaticTarget = false
+        controller.worldUp = SCNVector3(x: 0, y: 1, z: 0)
+        controller.stopInertia()
+        controller.clearRoll()
+
+        if !modelNodesForFraming.isEmpty {
+            controller.frameNodes(modelNodesForFraming)
+        } else {
+            cameraNode.position = SCNVector3(x: 0, y: 0, z: 3)
+            cameraNode.look(at: SCNVector3Zero)
+            controller.target = SCNVector3Zero
+        }
+    }
+
+    private func captureCurrentCameraResetState() {
+        guard let scnView,
+              let pointOfView = scnView.pointOfView else { return }
+
+        resetCameraTransform = pointOfView.transform
+        resetCameraTarget = scnView.defaultCameraController.target
+        resetCameraFieldOfView = pointOfView.camera?.fieldOfView
+    }
+
+    private func framableNodes(in scene: SCNScene) -> [SCNNode] {
+        scene.rootNode.childNodes.filter { node in
+            node.camera == nil && node.light == nil
+        }
     }
 }
