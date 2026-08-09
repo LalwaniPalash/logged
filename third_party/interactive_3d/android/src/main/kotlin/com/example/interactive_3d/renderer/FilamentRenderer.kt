@@ -285,6 +285,17 @@ class FilamentRenderer(
         val asset = modelLoader.loadModel(eng, scn, loader, resLoader, buffer, fileName, resources)
             ?: return
 
+        val transformManager = eng.transformManager
+        selection.replaceResolvedEntityNames(
+            EntityNameResolver.buildRenderableEntityNameMap(
+                renderableEntities = asset.renderableEntities ?: intArrayOf(),
+                resolveDirectName = asset::getName,
+                hasTransformComponent = transformManager::hasComponent,
+                getTransformInstance = transformManager::getInstance,
+                getParentEntity = transformManager::getParent,
+            )
+        )
+
         // Fit camera to model
         modelLoader.getBoundingBox()?.let { (center, halfExtent) ->
             cameraController.fitToBoundingBox(center, halfExtent)
@@ -370,10 +381,10 @@ class FilamentRenderer(
             val eng = engine ?: return@pick
 
             // Sequence validation — mirror iOS Interactive3dView.handleTap
-            val nodeName = asset.getName(entity)
+            val nodeName = selection.resolveEntityName(entity, asset)
             if (nodeName != null) {
                 val selectedNames = selection.selectedEntities
-                    .mapNotNull { asset.getName(it) }
+                    .mapNotNull { selection.resolveEntityName(it, asset) }
                     .toSet()
                 if (!sequenceValidator.isTapAllowed(nodeName, selectedNames)) {
                     onSelectionRejected?.invoke(nodeName)
@@ -459,12 +470,7 @@ class FilamentRenderer(
                     }
                 }
             }
-            selection.onSelectionChanged?.invoke(
-                selection.selectedEntities.mapNotNull { e ->
-                    val n = asset.getName(e)
-                    if (n != null && n != "Unnamed Entity") mapOf("id" to e.toLong(), "name" to n) else null
-                }
-            )
+            selection.notifySelectionChanged(asset)
         }
     }
 
@@ -500,12 +506,7 @@ class FilamentRenderer(
                 selection.selectedEntities.remove(entity)
             }
         }
-        selection.onSelectionChanged?.invoke(
-            selection.selectedEntities.mapNotNull { e ->
-                val n = asset.getName(e)
-                if (n != null) mapOf("id" to e.toLong(), "name" to n) else null
-            }
-        )
+        selection.notifySelectionChanged(asset)
         selection.notifyCacheChanged()
         requestRender()
     }

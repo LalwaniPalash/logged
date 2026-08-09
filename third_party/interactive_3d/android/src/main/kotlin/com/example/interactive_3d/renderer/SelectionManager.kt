@@ -54,17 +54,29 @@ internal class SelectionManager {
 
     // Part visibility tracking
     val entityVisibilities = mutableMapOf<Int, Boolean>()
+    private val resolvedEntityNames = mutableMapOf<Int, String>()
 
     // Event listeners
     var onSelectionChanged: ((List<Map<String, Any>>) -> Unit)? = null
     var onCacheSelectionChanged: ((List<Map<String, Any>>) -> Unit)? = null
+
+    fun replaceResolvedEntityNames(namesByEntity: Map<Int, String>) {
+        resolvedEntityNames.clear()
+        resolvedEntityNames.putAll(namesByEntity)
+    }
+
+    fun resolveEntityName(entity: Int, asset: FilamentAsset): String? {
+        resolvedEntityNames[entity]?.let { return it }
+        val directName = asset.getName(entity)
+        return directName?.takeIf { it.isNotBlank() && it != "Unnamed Entity" }
+    }
 
     /**
      * Processes a tap on [entity]. Toggles selection state and applies or
      * removes the highlight color.
      */
     fun handleTap(entity: Int, asset: FilamentAsset, engine: Engine) {
-        val entityName = asset.getName(entity)
+        val entityName = resolveEntityName(entity, asset)
 
         if (selectedEntities.contains(entity)) {
             resetColor(entity, engine)
@@ -440,7 +452,7 @@ internal class SelectionManager {
 
         // 3. Selection on top regardless of cache or override.
         for (entity in selectedEntities.toSet()) {
-            val name = asset.getName(entity)
+            val name = resolveEntityName(entity, asset)
             if (name != null && !cachedSet.contains(name)) {
                 val color = resolveColor(name)
                 applySelectionColor(entity, color, engine)
@@ -463,7 +475,7 @@ internal class SelectionManager {
         cacheManager!!.clearCache()
 
         asset.entities?.forEach { entity ->
-            val name = asset.getName(entity)
+            val name = resolveEntityName(entity, asset)
             if (name != null && entitiesToClear.contains(name)) {
                 resetColor(entity, engine)
                 // If entity is still actively selected, re-apply its selection color
@@ -531,14 +543,15 @@ internal class SelectionManager {
     // -- Events --
 
     fun notifySelectionChanged(asset: FilamentAsset) {
-        val items = selectedEntities.mapNotNull { entity ->
-            val name = asset.getName(entity)
-            if (name != null && name != "Unnamed Entity") {
-                mapOf("id" to entity.toLong(), "name" to name)
-            } else null
-        }
-        onSelectionChanged?.invoke(items)
+        onSelectionChanged?.invoke(selectedEntityPayload(asset))
     }
+
+    fun selectedEntityPayload(asset: FilamentAsset): List<Map<String, Any>> =
+        selectedEntities.mapNotNull { entity ->
+            resolveEntityName(entity, asset)?.let { name ->
+                mapOf("id" to entity.toLong(), "name" to name)
+            }
+        }
 
     fun notifyCacheChanged() {
         val cached = cacheManager?.cachedEntities?.map { mapOf("name" to it) } ?: emptyList()
@@ -571,6 +584,7 @@ internal class SelectionManager {
         entitiesWithCacheColor.clear()
         entitiesWithOverrideApplied.clear()
         overrideParams.clear()
+        resolvedEntityNames.clear()
     }
 
     private fun destroyOverrideInstances(engine: Engine) {
