@@ -279,4 +279,100 @@ void main() {
       expect(previous.single.unit, WeightUnit.kg);
     },
   );
+
+  test('reorderExercises persists the new position order', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SessionRepository(database);
+
+    final exerciseId = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Bench Press',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'chest',
+          ),
+        );
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 9)));
+
+    Future<int> addLink(int position) => database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: position,
+          ),
+        );
+    final first = await addLink(0);
+    final second = await addLink(1);
+    final third = await addLink(2);
+
+    await repository.reorderExercises(sessionId, [third, first, second]);
+
+    final reordered =
+        await (database.select(database.sessionExercises)
+              ..where((row) => row.sessionId.equals(sessionId))
+              ..orderBy([(row) => OrderingTerm.asc(row.position)]))
+            .get();
+    expect(reordered.map((row) => row.id), [third, first, second]);
+  });
+
+  test(
+    'reorderExercises rejects an id from a different session',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = SessionRepository(database);
+
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Squat',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'legs',
+            ),
+          );
+      final sessionId = await database
+          .into(database.sessions)
+          .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 9)));
+      final otherSessionId = await database
+          .into(database.sessions)
+          .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 8)));
+
+      final ownLink = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: exerciseId,
+              position: 0,
+            ),
+          );
+      final foreignLink = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: otherSessionId,
+              exerciseId: exerciseId,
+              position: 0,
+            ),
+          );
+
+      expect(
+        () => repository.reorderExercises(sessionId, [foreignLink]),
+        throwsArgumentError,
+      );
+      // The valid-but-incomplete list (missing ownLink) must also fail rather
+      // than silently reordering a subset.
+      expect(
+        () => repository.reorderExercises(sessionId, [ownLink, foreignLink]),
+        throwsArgumentError,
+      );
+    },
+  );
 }

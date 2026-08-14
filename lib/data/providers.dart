@@ -144,13 +144,15 @@ final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
   (ref) => AnalyticsRepository(ref.watch(databaseProvider)),
 );
 
-/// All completed, weighted sets (drives the Progress analytics).
+/// All completed working sets (drives the Progress analytics). Warm-ups are
+/// excluded; bodyweight sets are included and contribute 0 kg of tonnage.
 final completedSetsProvider = StreamProvider<List<WorkoutSetRecord>>(
   (ref) => ref.watch(analyticsRepositoryProvider).watchCompletedSets(),
 );
 
-/// Benchmark-lift sets for Strength Standards. Includes strict-bodyweight reps,
-/// which [completedSetsProvider] drops, so unweighted pull-ups still count.
+/// Benchmark-lift sets for Strength Standards. Carries the bodyweight factor
+/// that [completedSetsProvider] does not, so a strict pull-up scores its real
+/// resisted mass rather than 0 kg.
 final benchmarkSetsProvider = StreamProvider<List<BenchmarkSetRecord>>(
   (ref) => ref.watch(analyticsRepositoryProvider).watchBenchmarkSets(),
 );

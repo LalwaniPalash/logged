@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
+import '../../core/domain/muscle_bias.dart';
 import '../../core/domain/plate_math.dart';
 import '../../core/domain/progression.dart';
 import '../../core/domain/muscle.dart';
@@ -190,6 +191,23 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     setState(_refresh);
   }
 
+  Future<void> _reorderExercises(
+    List<SessionExerciseDetails> details,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    // Flutter's reorder callback targets the index BEFORE the dragged item is
+    // removed, so an item moving downward needs its target shifted back one.
+    if (oldIndex < newIndex) newIndex -= 1;
+    final ids = [for (final detail in details) detail.sessionExercise.id];
+    final moved = ids.removeAt(oldIndex);
+    ids.insert(newIndex, moved);
+    await ref
+        .read(sessionRepositoryProvider)
+        .reorderExercises(widget.sessionId, ids);
+    setState(_refresh);
+  }
+
   /// Add / edit / clear the exercise's own demo video link. Stored on the
   /// exercise so it shows in every workout it appears in, not just this one.
   Future<void> _editVideoUrl(SessionExerciseDetails detail) async {
@@ -260,8 +278,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         : weightKg(bodyweight.value, bodyweight.unit) *
               detail.exercise.bodyweightFactor.clamp(0.0, 1.0);
     if (!mounted) return;
-    final biasMuscleA = _decodeMuscleIdOrNull(detail.exercise.biasMuscleA);
-    final biasMuscleB = _decodeMuscleIdOrNull(detail.exercise.biasMuscleB);
+    final primaryMuscles = decodeMuscleIds(detail.exercise.primaryMuscles);
 
     final result = await showModalBottomSheet<SetEditorResult>(
       context: context,
@@ -282,8 +299,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         seed: resolvedSeed,
         defaultLoadingMode: detail.exercise.preferredLoadingMode,
         effectiveBodyweightKg: effectiveBodyweightKg,
-        biasMuscleA: biasMuscleA,
-        biasMuscleB: biasMuscleB,
+        primaryMuscles: primaryMuscles,
       ),
     );
     if (result == null) return;
@@ -325,7 +341,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             distanceMeters: result.distanceMeters,
             durationSec: result.durationSec,
             rpe: result.rpe,
-            muscleBias: result.muscleBias,
+            muscleBiasWeights: result.muscleBiasWeights,
             isWarmup: result.isWarmup,
             notes: result.notes,
           );
@@ -344,7 +360,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             distanceMeters: result.distanceMeters,
             durationSec: result.durationSec,
             rpe: result.rpe,
-            muscleBias: result.muscleBias,
+            muscleBiasWeights: result.muscleBiasWeights,
             isWarmup: result.isWarmup,
             notes: result.notes,
           );
@@ -388,7 +404,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           loadingMode: seed.loadingMode,
           distanceMeters: seed.distanceMeters,
           durationSec: seed.durationSec,
-          muscleBias: seed.muscleBias,
+          muscleBiasWeights: seed.muscleBiasWeights,
         );
     setState(_refresh);
   }
@@ -411,7 +427,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           durationSec: last.durationSec,
           isWarmup: last.isWarmup,
           rpe: last.rpe,
-          muscleBias: last.muscleBias,
+          muscleBiasWeights: decodeMuscleBiasWeights(last.muscleBiasWeights),
           notes: last.notes,
         );
     setState(_refresh);
@@ -457,7 +473,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           distanceMeters: draft.distanceMeters,
           durationSec: draft.durationSec,
           rpe: set.rpe,
-          muscleBias: set.muscleBias,
+          muscleBiasWeights: decodeMuscleBiasWeights(set.muscleBiasWeights),
           isWarmup: set.isWarmup,
           notes: set.notes,
         );
@@ -698,44 +714,69 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                           label: const Text('Add exercise'),
                         ),
                       )
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                        children: [
-                          for (final detail in details)
-                            _ExerciseCard(
-                              detail: detail,
-                              previousSets:
-                                  view?.previousSets[detail
-                                      .sessionExercise
-                                      .id] ??
-                                  const [],
-                              progressionAggressiveness:
-                                  trainingGoal.progressionAggressiveness,
-                              inventory: plateInventory,
-                              onAddSet: () => _addSet(detail),
-                              onRepeatSet: () => _repeatSet(detail),
-                              onInlineCommit: (set, draft) =>
-                                  _updateInlineSet(detail, set, draft),
-                              onEditSet: (set) =>
-                                  _openSet(detail, existing: set),
-                              onOpenPlates: _openPlateCalculator,
-                              onOpenWarmup: _previewWarmup,
-                              onSwap: () => _swapExercise(detail),
-                              onRemove: () =>
-                                  _removeExercise(detail.sessionExercise.id),
-                              onEditVideoUrl: () => _editVideoUrl(detail),
+                    : CustomScrollView(
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            sliver: SliverReorderableList(
+                              itemCount: details.length,
+                              onReorder: completed
+                                  ? (_, _) {}
+                                  : (oldIndex, newIndex) => _reorderExercises(
+                                      details,
+                                      oldIndex,
+                                      newIndex,
+                                    ),
+                              itemBuilder: (context, index) {
+                                final detail = details[index];
+                                return _ExerciseCard(
+                                  key: ValueKey(detail.sessionExercise.id),
+                                  index: index,
+                                  reorderable: !completed,
+                                  detail: detail,
+                                  previousSets:
+                                      view?.previousSets[detail
+                                          .sessionExercise
+                                          .id] ??
+                                      const [],
+                                  progressionAggressiveness:
+                                      trainingGoal.progressionAggressiveness,
+                                  inventory: plateInventory,
+                                  onAddSet: () => _addSet(detail),
+                                  onRepeatSet: () => _repeatSet(detail),
+                                  onInlineCommit: (set, draft) =>
+                                      _updateInlineSet(detail, set, draft),
+                                  onEditSet: (set) =>
+                                      _openSet(detail, existing: set),
+                                  onOpenPlates: _openPlateCalculator,
+                                  onOpenWarmup: _previewWarmup,
+                                  onSwap: () => _swapExercise(detail),
+                                  onRemove: () => _removeExercise(
+                                    detail.sessionExercise.id,
+                                  ),
+                                  onEditVideoUrl: () => _editVideoUrl(detail),
+                                );
+                              },
                             ),
-                          const SizedBox(height: 8),
-                          if (!completed)
-                            FilledButton.icon(
-                              onPressed: _finish,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.secondary,
-                                foregroundColor: theme.colorScheme.onSecondary,
-                              ),
-                              icon: const Icon(AppIcons.check),
-                              label: const Text('Finish workout'),
+                          ),
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                            sliver: SliverToBoxAdapter(
+                              child: !completed
+                                  ? FilledButton.icon(
+                                      onPressed: _finish,
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor:
+                                            theme.colorScheme.secondary,
+                                        foregroundColor:
+                                            theme.colorScheme.onSecondary,
+                                      ),
+                                      icon: const Icon(AppIcons.check),
+                                      label: const Text('Finish workout'),
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
+                          ),
                         ],
                       ),
               ),
@@ -745,15 +786,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         );
       },
     );
-  }
-}
-
-MuscleId? _decodeMuscleIdOrNull(String? id) {
-  if (id == null) return null;
-  try {
-    return MuscleId.fromId(id);
-  } on ArgumentError {
-    return null;
   }
 }
 
@@ -816,6 +848,9 @@ class _WarmupRequest {
 
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({
+    super.key,
+    required this.index,
+    required this.reorderable,
     required this.detail,
     required this.previousSets,
     required this.onAddSet,
@@ -831,6 +866,8 @@ class _ExerciseCard extends StatelessWidget {
     required this.inventory,
   });
 
+  final int index;
+  final bool reorderable;
   final SessionExerciseDetails detail;
   final List<SetEntry> previousSets;
   final VoidCallback onAddSet;
@@ -1034,6 +1071,18 @@ class _ExerciseCard extends StatelessWidget {
                     ),
                     tooltip: 'Remove exercise',
                   ),
+                  if (reorderable)
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          AppIcons.drag,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 8),

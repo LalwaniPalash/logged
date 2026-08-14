@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
 import 'package:logged/core/domain/muscle.dart';
+import 'package:logged/core/domain/muscle_bias.dart';
+import 'package:logged/core/domain/muscle_progress.dart';
 import 'package:logged/core/theme/app_theme.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/features/session/widgets/set_editor_sheet.dart';
@@ -20,7 +22,7 @@ void main() {
     WeightEntry weightEntry = WeightEntry.total,
     int sideCount = 1,
     LoadingMode loadingMode = LoadingMode.external,
-    double? muscleBias,
+    String? muscleBiasWeights,
   }) => SetEntry(
     id: 1,
     sessionExerciseId: 1,
@@ -32,7 +34,7 @@ void main() {
     sideCount: sideCount,
     loadingMode: loadingMode,
     isWarmup: false,
-    muscleBias: muscleBias,
+    muscleBiasWeights: muscleBiasWeights,
   );
 
   Widget harness({
@@ -40,8 +42,7 @@ void main() {
     SetEntry? existing,
     String name = 'Barbell Back Squat',
     bool timed = false,
-    MuscleId? biasMuscleA,
-    MuscleId? biasMuscleB,
+    List<MuscleId> primaryMuscles = const [],
   }) => MaterialApp(
     theme: AppTheme.light(),
     home: Scaffold(
@@ -55,8 +56,7 @@ void main() {
         existing: existing,
         seed: null,
         effectiveBodyweightKg: null,
-        biasMuscleA: biasMuscleA,
-        biasMuscleB: biasMuscleB,
+        primaryMuscles: primaryMuscles,
       ),
     ),
   );
@@ -203,7 +203,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('bias slider appears for axis exercises and saves the value', (
+  testWidgets('muscle-bias sliders save a normalized two-muscle split', (
     tester,
   ) async {
     SetEditorResult? result;
@@ -224,11 +224,15 @@ void main() {
                     defaultUnit: WeightUnit.kg,
                     defaultWeightEntry: WeightEntry.total,
                     defaultLoadingMode: LoadingMode.external,
-                    existing: buildSet(muscleBias: 0),
+                    existing: buildSet(
+                      muscleBiasWeights: encodeMuscleBiasWeights(const {
+                        MuscleId.quads: 0.5,
+                        MuscleId.gluteMax: 0.5,
+                      }),
+                    ),
                     seed: null,
                     effectiveBodyweightKg: null,
-                    biasMuscleA: MuscleId.quads,
-                    biasMuscleB: MuscleId.gluteMax,
+                    primaryMuscles: const [MuscleId.quads, MuscleId.gluteMax],
                   ),
                 );
               },
@@ -243,14 +247,14 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('BIAS AXIS'), findsOneWidget);
+    expect(find.text('PRIMARY MUSCLE FOCUS'), findsOneWidget);
     expect(find.text('50% Quads · 50% Glute max'), findsOneWidget);
 
-    final slider = find.byType(Slider);
+    final slider = find.byKey(const ValueKey('muscle-bias-quads'));
     await tester.ensureVisible(slider);
     await tester.pumpAndSettle();
     final rect = tester.getRect(slider);
-    await tester.dragFrom(rect.center, Offset(-rect.width, 0));
+    await tester.dragFrom(rect.center, Offset(rect.width, 0));
     await tester.pumpAndSettle();
 
     expect(find.text('100% Quads · 0% Glute max'), findsOneWidget);
@@ -259,7 +263,129 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result, isNotNull);
-    expect(result!.muscleBias, -1);
+    expect(result!.muscleBiasWeights, const {
+      MuscleId.quads: 2.0,
+      MuscleId.gluteMax: 0.0,
+    });
+  });
+
+  testWidgets(
+    'saving an untouched two-primary sheet preserves the no-bias domain credit',
+    (tester) async {
+      SetEditorResult? result;
+      await pumpAt(
+        tester,
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  result = await showModalBottomSheet<SetEditorResult>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => SetEditorSheet(
+                      exerciseName: 'Leg Press',
+                      category: ExerciseCategory.strength,
+                      defaultUnit: WeightUnit.kg,
+                      defaultWeightEntry: WeightEntry.total,
+                      defaultLoadingMode: LoadingMode.external,
+                      existing: buildSet(),
+                      seed: null,
+                      effectiveBodyweightKg: null,
+                      primaryMuscles: const [MuscleId.quads, MuscleId.gluteMax],
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+        iphoneSize,
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save set'));
+      await tester.pumpAndSettle();
+
+      expect(result?.muscleBiasWeights, isNotNull);
+      final savedProgress = buildMuscleProgress(
+        records: [
+          MusclePerformanceRecord(
+            date: DateTime(2026, 8, 14),
+            exerciseId: 1,
+            exerciseName: 'Leg Press',
+            primaryMuscles: const [MuscleId.quads, MuscleId.gluteMax],
+            secondaryMuscles: const [],
+            loadingMode: LoadingMode.external,
+            reps: 5,
+            weightValue: 100,
+            unit: WeightUnit.kg,
+            muscleBiasWeights: result!.muscleBiasWeights,
+          ),
+        ],
+        today: DateTime(2026, 8, 14),
+      );
+      final unbiasedProgress = buildMuscleProgress(
+        records: [
+          MusclePerformanceRecord(
+            date: DateTime(2026, 8, 14),
+            exerciseId: 1,
+            exerciseName: 'Leg Press',
+            primaryMuscles: const [MuscleId.quads, MuscleId.gluteMax],
+            secondaryMuscles: const [],
+            loadingMode: LoadingMode.external,
+            reps: 5,
+            weightValue: 100,
+            unit: WeightUnit.kg,
+            muscleBiasWeights: null,
+          ),
+        ],
+        today: DateTime(2026, 8, 14),
+      );
+
+      expect(
+        savedProgress[MuscleId.quads]!.primarySets,
+        unbiasedProgress[MuscleId.quads]!.primarySets,
+      );
+      expect(
+        savedProgress[MuscleId.gluteMax]!.primarySets,
+        unbiasedProgress[MuscleId.gluteMax]!.primarySets,
+      );
+    },
+  );
+
+  testWidgets('shows three linked sliders for multi-primary exercises', (
+    tester,
+  ) async {
+    await pumpAt(
+      tester,
+      harness(
+        category: ExerciseCategory.strength,
+        existing: buildSet(),
+        name: 'Zercher Squat',
+        primaryMuscles: const [
+          MuscleId.quads,
+          MuscleId.gluteMax,
+          MuscleId.hamstrings,
+        ],
+      ),
+      iphoneSize,
+    );
+
+    expect(find.text('PRIMARY MUSCLE FOCUS'), findsOneWidget);
+    expect(find.byKey(const ValueKey('muscle-bias-quads')), findsOneWidget);
+    expect(find.byKey(const ValueKey('muscle-bias-glute_max')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('muscle-bias-hamstrings')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('33% Quads · 33% Glute max · 34% Hamstrings'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('save returns the toggles as separate multipliers', (
@@ -291,6 +417,7 @@ void main() {
                     ),
                     seed: null,
                     effectiveBodyweightKg: null,
+                    primaryMuscles: const [],
                   ),
                 );
               },
@@ -337,6 +464,7 @@ void main() {
                     existing: buildSet(),
                     seed: null,
                     effectiveBodyweightKg: null,
+                    primaryMuscles: const [],
                   ),
                 );
               },

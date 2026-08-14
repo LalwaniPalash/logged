@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
+import 'package:logged/core/domain/muscle.dart';
+import 'package:logged/core/domain/muscle_bias.dart';
 import 'package:logged/core/domain/warmup.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/repositories/set_repository.dart';
@@ -115,25 +117,34 @@ void main() {
     },
   );
 
-  test('add and edit persist muscle bias', () async {
+  test('add and edit persist muscle bias weights', () async {
     final setId = await repository.add(
       sessionExerciseId: sessionExerciseId,
       setNumber: 1,
       reps: 8,
       weightValue: 60,
       unit: WeightUnit.kg,
-      muscleBias: -0.5,
+      muscleBiasWeights: const {MuscleId.quads: 0.6, MuscleId.gluteMax: 0.4},
     );
 
     var set = await (database.select(
       database.setEntries,
     )..where((row) => row.id.equals(setId))).getSingle();
-    expect(set.muscleBias, -0.5);
+    expect(decodeMuscleBiasWeights(set.muscleBiasWeights), const {
+      MuscleId.quads: 0.6,
+      MuscleId.gluteMax: 0.4,
+    });
 
-    await repository.edit(setId, muscleBias: 0.25);
+    await repository.edit(
+      setId,
+      muscleBiasWeights: const {MuscleId.quads: 0.25, MuscleId.gluteMax: 0.75},
+    );
     set = await (database.select(
       database.setEntries,
     )..where((row) => row.id.equals(setId))).getSingle();
-    expect(set.muscleBias, 0.25);
+    expect(decodeMuscleBiasWeights(set.muscleBiasWeights), const {
+      MuscleId.quads: 0.25,
+      MuscleId.gluteMax: 0.75,
+    });
   });
 }

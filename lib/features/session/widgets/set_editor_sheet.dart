@@ -27,7 +27,7 @@ class SetEditorResult {
     required this.rpe,
     required this.isWarmup,
     required this.notes,
-    required this.muscleBias,
+    required this.muscleBiasWeights,
     this.delete = false,
   });
 
@@ -42,7 +42,7 @@ class SetEditorResult {
   final double? rpe;
   final bool isWarmup;
   final String? notes;
-  final double? muscleBias;
+  final Map<MuscleId, double>? muscleBiasWeights;
   final bool delete;
 }
 
@@ -57,8 +57,7 @@ class SetEditorSheet extends StatefulWidget {
     required this.existing,
     required this.seed,
     required this.effectiveBodyweightKg,
-    this.biasMuscleA,
-    this.biasMuscleB,
+    required this.primaryMuscles,
     this.timed = false,
   });
 
@@ -73,8 +72,7 @@ class SetEditorSheet extends StatefulWidget {
   final SetEntry? existing;
   final SetSeed? seed;
   final double? effectiveBodyweightKg;
-  final MuscleId? biasMuscleA;
-  final MuscleId? biasMuscleB;
+  final List<MuscleId> primaryMuscles;
 
   @override
   State<SetEditorSheet> createState() => _SetEditorSheetState();
@@ -119,10 +117,7 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
   late bool _warmup = widget.existing?.isWarmup ?? false;
   late bool _eachSide =
       (widget.existing?.sideCount ?? widget.seed?.sideCount ?? 1) > 1;
-  late double? _bias =
-      widget.existing?.muscleBias ??
-      widget.seed?.muscleBias ??
-      (widget.biasMuscleA != null ? 0.0 : null);
+  late Map<MuscleId, double>? _biasWeights = _initialBiasWeights();
   String? _errorText;
 
   // Which sections apply. Distance on a barbell squat is noise, but anything a
@@ -149,6 +144,131 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
   bool get _showsDistance =>
       widget.category == ExerciseCategory.cardio ||
       widget.existing?.distanceMeters != null;
+  bool get _showsMuscleBias => widget.primaryMuscles.length >= 2;
+
+  Map<MuscleId, double>? _initialBiasWeights() {
+    if (!_showsMuscleBias) return null;
+
+    Map<MuscleId, double>? stored;
+    final encoded = widget.existing?.muscleBiasWeights;
+    if (encoded != null) {
+      try {
+        stored = decodeMuscleBiasWeights(encoded);
+      } on FormatException {
+        stored = null;
+      } on ArgumentError {
+        stored = null;
+      }
+    }
+    stored ??= widget.seed?.muscleBiasWeights;
+    return _normalizeBiasWeights(stored);
+  }
+
+  Map<MuscleId, double> _normalizeBiasWeights(Map<MuscleId, double>? weights) {
+    final targetTotal = widget.primaryMuscles.length.toDouble();
+    final filtered = <MuscleId, double>{
+      for (final muscle in widget.primaryMuscles)
+        if (weights != null)
+          muscle: switch (weights[muscle]) {
+            final double value when value.isFinite && value >= 0 => value,
+            _ => 0,
+          },
+    };
+    final total = filtered.values.fold<double>(0, (sum, value) => sum + value);
+    if (total <= 0) {
+      return {for (final muscle in widget.primaryMuscles) muscle: 1.0};
+    }
+
+    final normalized = <MuscleId, double>{};
+    var allocated = 0.0;
+    for (var index = 0; index < widget.primaryMuscles.length; index++) {
+      final muscle = widget.primaryMuscles[index];
+      if (index == widget.primaryMuscles.length - 1) {
+        normalized[muscle] = (targetTotal - allocated)
+            .clamp(0.0, targetTotal)
+            .toDouble();
+        break;
+      }
+      final value = ((filtered[muscle] ?? 0) / total) * targetTotal;
+      normalized[muscle] = value;
+      allocated += value;
+    }
+    return normalized;
+  }
+
+  Map<MuscleId, double> get _effectiveBiasWeights =>
+      _biasWeights ?? _normalizeBiasWeights(null);
+
+  Map<MuscleId, double> get _biasShares {
+    final weights = _effectiveBiasWeights;
+    final total = weights.values.fold<double>(0, (sum, value) => sum + value);
+    if (total <= 0) {
+      final evenShare = 1 / widget.primaryMuscles.length;
+      return {for (final muscle in widget.primaryMuscles) muscle: evenShare};
+    }
+
+    final shares = <MuscleId, double>{};
+    var allocated = 0.0;
+    for (var index = 0; index < widget.primaryMuscles.length; index++) {
+      final muscle = widget.primaryMuscles[index];
+      if (index == widget.primaryMuscles.length - 1) {
+        shares[muscle] = (1 - allocated).clamp(0.0, 1.0).toDouble();
+        break;
+      }
+      final value = (weights[muscle]! / total).clamp(0.0, 1.0).toDouble();
+      shares[muscle] = value;
+      allocated += value;
+    }
+    return shares;
+  }
+
+  Map<MuscleId, int> get _biasPercentages {
+    final shares = _biasShares;
+    final percentages = <MuscleId, int>{};
+    var remaining = 100;
+    for (var index = 0; index < widget.primaryMuscles.length; index++) {
+      final muscle = widget.primaryMuscles[index];
+      if (index == widget.primaryMuscles.length - 1) {
+        percentages[muscle] = remaining;
+      } else {
+        final value = (shares[muscle]! * 100).round().clamp(0, remaining);
+        percentages[muscle] = value;
+        remaining -= value;
+      }
+    }
+    return percentages;
+  }
+
+  void _setBiasShare(MuscleId muscle, double share) {
+    if (!_showsMuscleBias) return;
+    final current = _effectiveBiasWeights;
+    final targetTotal = widget.primaryMuscles.length.toDouble();
+    final otherMuscles = [
+      for (final item in widget.primaryMuscles)
+        if (item != muscle) item,
+    ];
+    final clampedShare = share.clamp(0.0, 1.0).toDouble();
+    final targetWeight = clampedShare * targetTotal;
+    final remainingWeight = (1 - clampedShare) * targetTotal;
+    final otherTotal = otherMuscles.fold<double>(
+      0,
+      (sum, other) => sum + (current[other] ?? 0),
+    );
+    final updated = <MuscleId, double>{muscle: targetWeight};
+    if (otherTotal <= 0) {
+      final evenShare = remainingWeight / otherMuscles.length;
+      for (final other in otherMuscles) {
+        updated[other] = evenShare;
+      }
+    } else {
+      for (final other in otherMuscles) {
+        updated[other] = remainingWeight * (current[other] ?? 0) / otherTotal;
+      }
+    }
+    setState(() {
+      _biasWeights = _normalizeBiasWeights(updated);
+    });
+  }
 
   @override
   void dispose() {
@@ -188,9 +308,7 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
         rpe: double.tryParse(_rpe.text),
         isWarmup: _warmup,
         notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-        muscleBias: widget.biasMuscleA == null || widget.biasMuscleB == null
-            ? null
-            : _bias,
+        muscleBiasWeights: _showsMuscleBias ? _effectiveBiasWeights : null,
       ),
     );
   }
@@ -209,7 +327,7 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
       rpe: null,
       isWarmup: false,
       notes: null,
-      muscleBias: null,
+      muscleBiasWeights: null,
       delete: true,
     ),
   );
@@ -242,13 +360,11 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
   }
 
   String get _biasEcho {
-    final muscleA = widget.biasMuscleA;
-    final muscleB = widget.biasMuscleB;
-    if (muscleA == null || muscleB == null) return '';
-    final shares = resolveMuscleBiasShares(_bias);
-    final shareA = (shares.shareA * 100).round();
-    final shareB = (shares.shareB * 100).round();
-    return '$shareA% ${muscleA.label} · $shareB% ${muscleB.label}';
+    if (!_showsMuscleBias) return '';
+    final percentages = _biasPercentages;
+    return widget.primaryMuscles
+        .map((muscle) => '${percentages[muscle]}% ${muscle.label}')
+        .join(' · ');
   }
 
   @override
@@ -417,34 +533,32 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
         const SizedBox(height: 18),
       ],
 
-      if (widget.biasMuscleA != null && widget.biasMuscleB != null) ...[
-        const _SectionLabel('Bias axis'),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                widget.biasMuscleA!.label,
+      if (_showsMuscleBias) ...[
+        const _SectionLabel('Primary muscle focus'),
+        for (final muscle in widget.primaryMuscles) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(muscle.label, style: theme.textTheme.bodyMedium),
+              ),
+              Text(
+                '${_biasPercentages[muscle]}%',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-            Text(
-              widget.biasMuscleB!.label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        Slider(
-          value: (_bias ?? 0.0).clamp(-1.0, 1.0),
-          min: -1,
-          max: 1,
-          divisions: 20,
-          label: _biasEcho,
-          onChanged: (value) => setState(() => _bias = value),
-        ),
+            ],
+          ),
+          Slider(
+            key: ValueKey('muscle-bias-${muscle.id}'),
+            value: _biasShares[muscle]!,
+            min: 0,
+            max: 1,
+            divisions: 20,
+            label: '${_biasPercentages[muscle]}%',
+            onChanged: (value) => _setBiasShare(muscle, value),
+          ),
+        ],
         _EchoLine(_biasEcho),
         const SizedBox(height: 18),
       ],

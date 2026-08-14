@@ -17,58 +17,35 @@ class ExerciseAnatomyService {
   final AppDatabase _database;
   final Future<String> Function() _loadAsset;
 
+  static const _muscleAnatomyBackfillKey = 'muscleAnatomyBackfilled';
   static const _weightEntryBackfillKey = 'weightEntryBackfilled';
   static const _pullUpBackfillKey = 'pullUpExerciseBackfilled';
 
   /// Returns how many bundled exercise rows changed.
   Future<int> enrichBundledExercises() async {
-    final source = jsonDecode(await _loadAsset()) as List<dynamic>;
-    final anatomyByName =
-        <
-          String,
-          ({
-            String primary,
-            String secondary,
-            String? biasMuscleA,
-            String? biasMuscleB,
-          })
-        >{
-          for (final raw in source.cast<Map<String, dynamic>>())
-            raw['name']! as String: (
-              primary: jsonEncode(
-                (raw['primaryMuscles'] as List<dynamic>?) ?? const [],
-              ),
-              secondary: jsonEncode(
-                (raw['secondaryMuscles'] as List<dynamic>?) ?? const [],
-              ),
-              biasMuscleA: raw['biasMuscleA'] as String?,
-              biasMuscleB: raw['biasMuscleB'] as String?,
-            ),
-        };
-
-    final bundled = await (_database.select(
-      _database.exercises,
-    )..where((exercise) => exercise.isCustom.equals(false))).get();
-    final changes = <(int, String, String, String?, String?)>[];
-    for (final exercise in bundled) {
-      final anatomy = anatomyByName[exercise.name];
-      if (anatomy == null) continue;
-      if (exercise.primaryMuscles == anatomy.primary &&
-          exercise.secondaryMuscles == anatomy.secondary &&
-          exercise.biasMuscleA == anatomy.biasMuscleA &&
-          exercise.biasMuscleB == anatomy.biasMuscleB) {
-        continue;
-      }
-      changes.add((
-        exercise.id,
-        anatomy.primary,
-        anatomy.secondary,
-        anatomy.biasMuscleA,
-        anatomy.biasMuscleB,
-      ));
-    }
-
+    final changes = await _bundledAnatomyChanges();
     if (changes.isEmpty) return 0;
+    await _applyAnatomyChanges(changes);
+    return changes.length;
+  }
+
+  /// One-time backfill of bundled primary/secondary muscles from the asset.
+  ///
+  /// Seeding uses [InsertMode.insertOrIgnore], so anatomy edits shipped after a
+  /// user's first launch never reach the already-seeded bundled rows.
+  ///
+  /// Like [backfillWeightEntryOnce], this runs exactly once behind an app
+  /// setting because bundled exercise anatomy is user-editable from Settings.
+  /// Re-running it every launch would silently undo the user's later anatomy
+  /// edits to bundled exercises. Custom exercises are never touched.
+  Future<int> backfillMuscleAnatomyOnce() async {
+    final alreadyRun =
+        await (_database.select(_database.appSettings)
+              ..where((row) => row.key.equals(_muscleAnatomyBackfillKey)))
+            .getSingleOrNull();
+    if (alreadyRun != null) return 0;
+
+    final changes = await _bundledAnatomyChanges();
     await _database.batch((batch) {
       for (final change in changes) {
         batch.update(
@@ -76,12 +53,18 @@ class ExerciseAnatomyService {
           ExercisesCompanion(
             primaryMuscles: Value(change.$2),
             secondaryMuscles: Value(change.$3),
-            biasMuscleA: Value(change.$4),
-            biasMuscleB: Value(change.$5),
           ),
           where: (exercise) => exercise.id.equals(change.$1),
         );
       }
+      batch.insert(
+        _database.appSettings,
+        AppSettingsCompanion.insert(
+          key: _muscleAnatomyBackfillKey,
+          value: 'true',
+        ),
+        mode: InsertMode.insertOrReplace,
+      );
     });
     return changes.length;
   }
@@ -189,5 +172,54 @@ class ExerciseAnatomyService {
           );
     });
     return changed;
+  }
+
+  Future<Map<String, ({String primary, String secondary})>>
+  _assetAnatomyByName() async {
+    final source = jsonDecode(await _loadAsset()) as List<dynamic>;
+    return {
+      for (final raw in source.cast<Map<String, dynamic>>())
+        raw['name']! as String: (
+          primary: jsonEncode(
+            (raw['primaryMuscles'] as List<dynamic>?) ?? const [],
+          ),
+          secondary: jsonEncode(
+            (raw['secondaryMuscles'] as List<dynamic>?) ?? const [],
+          ),
+        ),
+    };
+  }
+
+  Future<List<(int, String, String)>> _bundledAnatomyChanges() async {
+    final anatomyByName = await _assetAnatomyByName();
+    final bundled = await (_database.select(
+      _database.exercises,
+    )..where((exercise) => exercise.isCustom.equals(false))).get();
+    final changes = <(int, String, String)>[];
+    for (final exercise in bundled) {
+      final anatomy = anatomyByName[exercise.name];
+      if (anatomy == null) continue;
+      if (exercise.primaryMuscles == anatomy.primary &&
+          exercise.secondaryMuscles == anatomy.secondary) {
+        continue;
+      }
+      changes.add((exercise.id, anatomy.primary, anatomy.secondary));
+    }
+    return changes;
+  }
+
+  Future<void> _applyAnatomyChanges(List<(int, String, String)> changes) async {
+    await _database.batch((batch) {
+      for (final change in changes) {
+        batch.update(
+          _database.exercises,
+          ExercisesCompanion(
+            primaryMuscles: Value(change.$2),
+            secondaryMuscles: Value(change.$3),
+          ),
+          where: (exercise) => exercise.id.equals(change.$1),
+        );
+      }
+    });
   }
 }

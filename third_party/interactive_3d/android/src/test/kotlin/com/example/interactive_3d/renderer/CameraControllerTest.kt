@@ -36,6 +36,31 @@ internal class CameraControllerTest {
         assertEquals(1.0f, controller.zoomLevel)
         assertEquals(fittedRadius, controller.orbitRadius)
     }
+
+    @Test
+    fun resetOrbit_restores_the_zoom_the_model_was_loaded_at_not_a_hardcoded_value() {
+        val clock = FakeClock()
+        val controller = CameraController(
+            currentTimeMillis = clock::now,
+            idleScheduler = FakeIdleScheduler(),
+        )
+
+        controller.fitToBoundingBox(
+            center = floatArrayOf(0f, 0f, 0f),
+            halfExtent = floatArrayOf(1f, 1f, 1f),
+        )
+        // Mirrors the app's initial-load call: Dart sends defaultZoom=3.0
+        // right after the model loads.
+        controller.setZoom(3.0f)
+
+        clock.advance(10L)
+        controller.onScale(0.5f) // user pinches out mid-session
+        assertTrue(controller.zoomLevel < 3.0f)
+
+        controller.resetOrbit()
+
+        assertEquals(3.0f, controller.zoomLevel)
+    }
 }
 
 private class FakeIdleScheduler : IdleScheduler {

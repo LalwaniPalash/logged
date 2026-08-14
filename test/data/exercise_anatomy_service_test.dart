@@ -42,8 +42,6 @@ void main() {
           'muscleGroup': 'shoulders',
           'primaryMuscles': ['side_delts'],
           'secondaryMuscles': ['upper_traps'],
-          'biasMuscleA': 'side_delts',
-          'biasMuscleB': 'upper_traps',
           'defaultUnit': 'kg',
         },
       ]);
@@ -60,14 +58,70 @@ void main() {
       final custom = exercises.singleWhere((exercise) => exercise.isCustom);
       expect(jsonDecode(bundled.primaryMuscles), ['side_delts']);
       expect(jsonDecode(bundled.secondaryMuscles), ['upper_traps']);
-      expect(bundled.biasMuscleA, 'side_delts');
-      expect(bundled.biasMuscleB, 'upper_traps');
       expect(jsonDecode(custom.primaryMuscles), ['front_delts']);
       expect(jsonDecode(custom.secondaryMuscles), isEmpty);
-      expect(custom.biasMuscleA, isNull);
-      expect(custom.biasMuscleB, isNull);
     },
   );
+
+  test('syncs bundled anatomy rows to the reviewed asset', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Leg Press',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'legs',
+            primaryMuscles: const Value('["quads"]'),
+            secondaryMuscles: const Value('["hamstrings"]'),
+          ),
+        );
+    await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Barbell Back Squat',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'legs',
+            primaryMuscles: const Value('["glute_max"]'),
+            secondaryMuscles: const Value('["hamstrings"]'),
+          ),
+        );
+
+    final asset = jsonEncode([
+      {
+        'name': 'Leg Press',
+        'primaryMuscles': ['quads', 'glute_max'],
+        'secondaryMuscles': ['hamstrings', 'adductors'],
+      },
+      {
+        'name': 'Barbell Back Squat',
+        'primaryMuscles': ['quads', 'glute_max'],
+        'secondaryMuscles': ['hamstrings', 'adductors'],
+      },
+    ]);
+    final service = ExerciseAnatomyService(
+      database,
+      loadAsset: () async => asset,
+    );
+
+    expect(await service.enrichBundledExercises(), 2);
+
+    final exercises = await database.select(database.exercises).get();
+    final legPress = exercises.singleWhere(
+      (exercise) => exercise.name == 'Leg Press',
+    );
+    final squat = exercises.singleWhere(
+      (exercise) => exercise.name == 'Barbell Back Squat',
+    );
+
+    expect(jsonDecode(legPress.primaryMuscles), ['quads', 'glute_max']);
+    expect(jsonDecode(legPress.secondaryMuscles), ['hamstrings', 'adductors']);
+    expect(jsonDecode(squat.primaryMuscles), ['quads', 'glute_max']);
+    expect(jsonDecode(squat.secondaryMuscles), ['hamstrings', 'adductors']);
+  });
 
   test(
     'backfills weightEntry once, then never overrides the user again',
@@ -137,6 +191,99 @@ void main() {
             .weightEntry,
         WeightEntry.total,
         reason: 'backfill runs once; it must not fight the user every launch',
+      );
+    },
+  );
+
+  test(
+    'backfills bundled anatomy once without touching custom exercises',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Pec Deck',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+              primaryMuscles: const Value('["mid_lower_chest"]'),
+              secondaryMuscles: const Value('["front_delts"]'),
+            ),
+          );
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'My Pec Deck',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+              primaryMuscles: const Value('["mid_lower_chest"]'),
+              secondaryMuscles: const Value('["front_delts"]'),
+              isCustom: const Value(true),
+            ),
+          );
+
+      const asset = '''
+[
+  {
+    "name": "Pec Deck",
+    "primaryMuscles": ["mid_lower_chest", "upper_chest"],
+    "secondaryMuscles": ["front_delts"]
+  },
+  {
+    "name": "My Pec Deck",
+    "primaryMuscles": ["mid_lower_chest", "upper_chest"],
+    "secondaryMuscles": ["front_delts"]
+  }
+]
+''';
+      final service = ExerciseAnatomyService(
+        database,
+        loadAsset: () async => asset,
+      );
+
+      expect(await service.backfillMuscleAnatomyOnce(), 1);
+      final afterFirst = await database.select(database.exercises).get();
+      expect(
+        jsonDecode(
+          afterFirst.singleWhere((e) => e.name == 'Pec Deck').primaryMuscles,
+        ),
+        ['mid_lower_chest', 'upper_chest'],
+      );
+      expect(
+        jsonDecode(
+          afterFirst.singleWhere((e) => e.name == 'My Pec Deck').primaryMuscles,
+        ),
+        ['mid_lower_chest'],
+        reason: 'custom exercises must never be rewritten by the library',
+      );
+
+      await (database.update(
+        database.exercises,
+      )..where((e) => e.name.equals('Pec Deck'))).write(
+        const ExercisesCompanion(
+          primaryMuscles: Value('["mid_lower_chest"]'),
+          secondaryMuscles: Value('["front_delts","triceps"]'),
+        ),
+      );
+
+      expect(await service.backfillMuscleAnatomyOnce(), 0);
+      final afterSecond = await database.select(database.exercises).get();
+      expect(
+        jsonDecode(
+          afterSecond.singleWhere((e) => e.name == 'Pec Deck').primaryMuscles,
+        ),
+        ['mid_lower_chest'],
+        reason:
+            'anatomy backfill runs once; it must not fight later user edits',
+      );
+      expect(
+        jsonDecode(
+          afterSecond.singleWhere((e) => e.name == 'Pec Deck').secondaryMuscles,
+        ),
+        ['front_delts', 'triceps'],
       );
     },
   );

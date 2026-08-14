@@ -799,9 +799,9 @@ class _AllMuscleRow extends StatelessWidget {
           '${(progress.rankProgress * 100).round()} percent toward next rank. Last trained $lastTrained.',
       child: Material(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) =>
@@ -982,6 +982,9 @@ class _WeeklyMuscleBalance extends StatelessWidget {
   }
 }
 
+/// Full-width themed card. Delegates to [Card] (via [ThemeData.cardTheme])
+/// instead of hand-copying its color/radius/border, so it can't drift from
+/// the app's actual card styling the way a duplicated decoration would.
 class _Card extends StatelessWidget {
   const _Card({required this.child, this.padding});
   final Widget child;
@@ -989,16 +992,14 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: padding ?? const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+      child: Card(
+        child: Padding(
+          padding: padding ?? const EdgeInsets.all(16),
+          child: child,
+        ),
       ),
-      child: child,
     );
   }
 }
@@ -1111,7 +1112,7 @@ class _VolumeMetric extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.control),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1172,7 +1173,7 @@ class _VolumeWeekRow extends StatelessWidget {
           color: current
               ? theme.colorScheme.primaryContainer.withValues(alpha: 0.48)
               : theme.colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.control),
           border: Border.all(
             color: current
                 ? theme.colorScheme.primary.withValues(alpha: 0.42)
@@ -1252,7 +1253,7 @@ class _PrRow extends StatelessWidget {
             width: 40,
             decoration: BoxDecoration(
               color: colors.streakContainer,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.control),
             ),
             child: Icon(AppIcons.trophy, size: 20, color: colors.streak),
           ),
@@ -1313,9 +1314,9 @@ class _ExercisePickerButton extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppRadius.card),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),

@@ -39,7 +39,7 @@ class RestTimerBar extends ConsumerWidget {
               IconButton(
                 tooltip: 'Subtract 15 seconds',
                 onPressed: () => controller.adjust(-15),
-                icon: const Icon(Icons.remove),
+                icon: const Icon(AppIcons.minus),
               ),
               IconButton(
                 tooltip: 'Add 15 seconds',

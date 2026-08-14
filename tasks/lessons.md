@@ -272,3 +272,219 @@ Format: [date] | what went wrong | rule to prevent it
   the latter. Corollary on account tier: App Groups AND HealthKit both require a paid membership, so on
   a free account the widget cannot be validly signed, and even if it could it could not read the shared
   container it exists to read. Verify the ceiling before writing code against it.
+- 2026-08-09 | A `guard let cam = cameraNode` in iOS's `SceneManager.setCameraZoomLevel` had been
+  silently no-op'ing on EVERY call since the feature shipped — `cameraNode` was declared but never
+  assigned anywhere in the file. "Reset view" wasn't buggy, it was inert; nothing about a green build or
+  a passing test suite could reveal this because nothing asserted the optional actually got populated.
+  Rule: an optional-typed piece of state that a feature depends on needs a test proving it gets SET, not
+  just tests proving what happens when it's present — a permanently-nil guard clause looks identical to
+  working code in every code review that doesn't grep for the assignment.
+- 2026-08-09 | Android tap-to-select silently failed for muscles whose glTF mesh has multiple primitives
+  (39 of 47 in `muscular.glb`) — Filament/gltfio only propagates the node name to ONE primitive's
+  renderable entity, and `SelectionManager.notifySelectionChanged` dropped any entity whose name didn't
+  resolve. iOS's tap handler already walks up to the nearest named ancestor to solve the exact same class
+  of problem (unnamed child geometry under a named node); Android had no equivalent. Rule: when a native
+  plugin implements "the same" feature on two platforms independently, a defensive pattern present on one
+  side (here: name-resolution fallback) is a signal to check whether the other side needs it too — it is
+  rarely a coincidence that only one platform anticipated the problem.
+- 2026-08-09 | Piping a long-running download through `head -N`
+  (`xcodebuild -downloadPlatform iOS | head -20`) sends SIGPIPE to the writer once `head`'s line quota is
+  hit, killing the download mid-transfer — and the backgrounded task still reported exit 0 because that
+  was `head`'s exit code, not the download's. Rule: never pipe a long-running download/build command
+  through `head`; redirect to a log file and `tail`/`grep` it instead.
+- 2026-08-09 | A previously-working `flutter build ipa` started failing with "iOS 26.5 is not installed"
+  after Xcode silently auto-updated (26.4→26.6) between sessions — looked like a clean missing-component
+  fix (`xcodebuild -downloadPlatform iOS`), but the actual blocker underneath was the machine's data
+  volume sitting at 100% capacity (1.1GB free of 460GB), which is what made the first download attempt
+  fail/truncate. Rule: when a previously-working build tool suddenly complains about a missing
+  platform/component, check disk space before assuming a straightforward re-download will fix it.
+- 2026-08-09 | `codex exec` hit its account usage limit mid-session (fixed reset schedule, e.g. "try
+  again Aug 11"), and the failure was an `ERROR:` line inside an otherwise exit-0 log, not an obvious
+  crash. Rule: when codex is unavailable for a review pass, don't skip review — do it manually against
+  the same risk-area checklist the codex prompt specified, reading the actual diff and code, not just
+  trusting a green test suite.
+- 2026-08-09 | Android's "Reset view" made the muscle model dramatically SMALLER than on first load,
+  not restored to its original framing — the opposite of what iOS's `resetCamera()` does, and the
+  opposite of what "reset" should mean. Root cause: `CameraController.kt`'s `resetOrbit()` hardcoded
+  `zoomLevel = 1.0f`, completely ignoring the `defaultZoom = 3.0` the Dart side sends via `setZoom()`
+  right after every model load — reset didn't restore the initial state, it jumped to an unrelated
+  neutral value 3x farther out. iOS never had this bug because `SceneManager.swift` captures a reset
+  baseline the first time `setCameraZoomLevel` is called after load
+  (`shouldCaptureNextZoomAsResetBaseline`), so its reset always matches initial framing — Android had
+  no equivalent capture step. Fixed by porting the same capture-on-first-zoom-after-load pattern to
+  `CameraController.kt` (`resetZoomLevel` + `shouldCaptureNextZoomAsResetBaseline`, captured in
+  `setZoom()`, consumed in `resetOrbit()`). Rule: when a "reset" button's behavior diverges between
+  two platforms implementing "the same" feature, don't assume the divergent one is buggy in isolation
+  — read the platform that behaves CORRECTLY first, since it usually already contains the exact
+  pattern (a captured baseline, a stored initial value) the broken one is missing.
+- 2026-08-09 | Extending an existing per-exercise field (bias axis) to bundled/library exercises hit a
+  dormant trap that only mattered once the door was opened: `exercise_anatomy_service.dart`'s
+  `enrichBundledExercises()` re-syncs `biasMuscleA/B` (and primary/secondary muscles) from
+  `assets/data/exercise_library.json` for every non-custom exercise on EVERY app launch — a silent
+  overwrite that would have reverted any user-set bias axis on a bundled exercise on their very next
+  launch, making the feature appear to work once and then "forget itself." This is the SAME failure
+  class as the documented `backfillWeightEntryOnce`/`backfillPullUpOnce` guards in the same file, just
+  not yet hit because no UI had ever let a user write to a bundled exercise's bias columns before. Fix:
+  a per-row `biasAxisUserSet` flag (schema v9), set whenever a user explicitly calls `updateBiasAxis`
+  (including clearing it back to null — a deliberate choice, not "back to default"), and the enrich
+  sync now leaves `biasMuscleA/B` untouched on protected rows. Rule: before exposing an existing
+  write-path to a wider set of rows than it was originally scoped for, grep for every OTHER writer of
+  the same columns on those rows — a sync/backfill routine that was safe when the rows were
+  unreachable by users can become a silent-revert bug the moment they become reachable.
+- 2026-08-09 | "Swipe down to dismiss the keyboard, globally" looked like a 25-call-site mechanical
+  edit (every `ListView`/`SingleChildScrollView`/`ReorderableListView` in the app individually passed
+  `keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag`), but Flutter already has a
+  single global hook for exactly this: every `ScrollView.keyboardDismissBehavior` falls back to
+  `ScrollBehavior.getKeyboardDismissBehavior(context)` (default `.manual`) via the ambient
+  `ScrollConfiguration` that `MaterialApp` installs around its whole `Navigator` — so one
+  `MaterialApp.scrollBehavior` override covers every scrollable app-wide, including dialogs/sheets
+  pushed later and any screen added in the future, with zero per-widget edits. Added
+  `lib/core/keyboard_dismiss_scroll_behavior.dart` (`KeyboardDismissScrollBehavior extends
+  MaterialScrollBehavior`, overrides `getKeyboardDismissBehavior` to always return `.onDrag`) and wired
+  it into `MaterialApp.scrollBehavior` in `main.dart`. Left the 2 existing explicit per-widget
+  overrides (`plate_calculator_sheet.dart`, `set_editor_sheet.dart`) alone — redundant now but
+  harmless. Rule: before doing a mechanical find-and-edit-N-call-sites task, check whether the
+  framework/library exposes a single ambient/ancestor-level override point for that exact behavior —
+  "global" often has a literal one-line answer, not just "apply the same edit everywhere."
+- 2026-08-09 | Delegated authoring ~231 new `exercise_library.json` entries to codex, including my own
+  instruction that `weightEntry: "perSide"` applies to "single-arm cable work" — wrong. `perSide` means
+  two implements held simultaneously (one per hand), not unilateral/alternating-side work; it doubles
+  `volumeKg`. Codex followed the bad instruction faithfully and its own schema/enum validator passed
+  clean (right enum value, just semantically wrong for 40 of the 231 entries — one-arm kettlebell
+  swings, single-leg cable kickbacks, single-arm curls all got silently double-counted). Schema
+  validation catches "is this a valid enum value," not "is this enum value semantically correct for
+  this specific exercise" — that needs a domain-level re-read of the generated data against the field's
+  actual definition (`enums.dart` docstring + `WeightEntryLabel`), not just a passing validator. Rule:
+  when delegating structured-data authoring, after schema validation passes, do a second manual pass
+  asking "does the RULE I gave the delegate actually match the codebase's real semantics" — re-read the
+  field's own doc comment, don't trust your own prompt's framing.
+- 2026-08-09 | Auditing the per-set `sideCount` ("each side ×2") feature for correctness surfaced that
+  it's applied inconsistently: correctly doubles reps in `setVolumeKg` and the per-exercise progress
+  trend, but is silently ignored by both muscle-group SET-COUNTING paths (`live_muscle_state.dart`'s
+  `MuscleSetRecord` has no `sideCount` field at all; `muscle_progress.dart`'s accumulator reads
+  `record.sideCount` but never multiplies it in) — found by tracing one field's usage through every
+  consumer rather than trusting that a passing test suite meant the feature was fully wired, since
+  no existing test exercised `sideCount > 1` together with the set-counting assertions. Rule: when a
+  per-set field has multiple consumers (volume math, trend math, set-counting), grep ALL of them and
+  check each one actually reads the field, not just the one you're currently working in — a field
+  correctly threaded through the DB layer and SOME consumers is easy to mistake for "correctly wired
+  everywhere."
+- 2026-08-09 | Design polish pass: wiring the previously-unused `StreakCard` into `dashboard_screen.dart`
+  crashed the whole Home screen (`BoxConstraints forces an infinite height`, blank body) — I'd wrapped
+  `StreakCard` + `StatTile` in `Row(crossAxisAlignment: CrossAxisAlignment.stretch, ...)` for equal
+  height, but that Row is a direct child of a `ListView`, which gives its children UNBOUNDED height —
+  `stretch` tries to fill that unbounded height and blows up. `flutter analyze` and all 227 tests stayed
+  green because no widget test exists for `dashboard_screen.dart` at all; only caught because the user
+  ran the actual app and sent a screenshot of the blank screen. Fix: wrap the `Row` in `IntrinsicHeight`
+  — it gives the Row a bounded height computed from its children's intrinsic heights before `stretch`
+  runs. Rule: `CrossAxisAlignment.stretch` on a `Row`/`Column` inside any unbounded-extent parent
+  (`ListView`, `Column` without `mainAxisSize`, etc.) needs `IntrinsicHeight` (or a `SizedBox`/fixed
+  height) around it — this is a distinct failure mode from the usual overflow errors and renders as a
+  total blank instead of the usual red/yellow overflow banner, easy to mistake for a data-loading bug.
+  Corollary: `dashboard_screen.dart` has zero test coverage — worth a widget test asserting it renders
+  without throwing, the way `muscle_anatomy_view_test.dart` already does for its screen.
+- 2026-08-09 | Same pass, a second wrong root-cause diagnosis: the Custom Exercise dialog's 4-segment
+  `SegmentedButton` (Weight/Bodyweight/Added/Assist) letter-wrapped "Bodyweight" mid-word. I assumed the
+  `AlertDialog`'s constrained max-width (~280–560dp) was the limiting factor and "fixed" it by converting
+  the dialog to a full-width `showModalBottomSheet` — `flutter analyze` passed, I reasoned through the
+  width math and moved on. It was STILL broken: a full 390–430pt phone width split into 4 fixed-width
+  segments still isn't enough room for a 10-character word at the button's default text style, sheet or
+  dialog. Caught only because the user reopened the screen and sent a screenshot. Real fix: `SegmentedButton`
+  is fundamentally the wrong widget for options whose label length varies — switched to the same
+  `Wrap` + `ChoiceChip` pattern already used one field above it (Category), which reflows to fit instead
+  of forcing N equal-width columns. Rule: when "fixed" text-wrap/overflow bugs recur after a container-size
+  fix, question whether the container was ever the actual constraint — measure the fixed-width-columns math
+  (label length × N vs. available width) before trusting that "more room" solved it, and re-render to
+  confirm rather than reasoning it through. A `SegmentedButton` with more than 2-3 short, fixed-vocabulary
+  labels is usually the wrong widget regardless of container width.
+- 2026-08-09 | This machine's AppleScript/System Events cannot drive iOS Simulator taps: `osascript`
+  querying `System Events` for the Simulator app's window (`window 1`, `first window`, or by name) fails
+  with "Invalid index" even right after `activate` + a settle delay, and `count of windows` returns 0 —
+  consistent with the executing process lacking macOS Accessibility permission (a one-time user grant in
+  System Settings, not something grantable from a script). No `idb`/`idb_companion`/`cliclick` installed
+  as a fallback either. `xcrun simctl` itself has no tap/interact command, only `io screenshot` (which
+  DOES work) and app lifecycle (`boot`, `install`, `launch`). Rule: for iOS Simulator visual verification
+  on this machine, screenshot-and-report is the ceiling — don't burn time retrying AppleScript window
+  queries with different reference forms; either ask the user to interact and describe/screenshot, or
+  install `idb`/`cliclick` first if actual automated tapping is needed.
+
+- 2026-08-14 | A full-app audit found 50+ real bugs against a baseline of `flutter analyze` clean and
+  `flutter test` 230/230 green. Not one of them was visible to that suite. The single highest-value
+  finding (G1: the set editor persists muscle-bias weights normalised to SUM 1.0 while the domain
+  reads them as MULTIPLIERS where null means 1.0 PER MUSCLE, so opening the set sheet halves an
+  exercise's credited volume) was invisible because **no test crosses the UI↔domain seam** — the
+  domain tests feed multiplier-shaped weights straight to `buildMuscleProgress` and never run the
+  UI's `_normalizeBiasWeights`. Two currently-green assertions are mutually contradictory as a unit:
+  `muscle_progress_test.dart:58` says 3 sets = 3.0 **per muscle**, `:362` says 3 sets = 3.0 **total
+  across 3 muscles**. Rule: when a value is produced by UI code and consumed by domain code, write
+  ONE test that runs both halves and asserts the unit survives the trip. Unit-of-measure bugs live
+  exactly and only at that seam, and testing each side separately proves nothing.
+
+- 2026-08-14 | Three separate features computed "effective sets per muscle" three different ways —
+  `buildLiveMuscleState` and `buildMuscleProgress` bias-weighted, `loadDeloadData` always `+= 1` —
+  and all three were compared against the SAME `VolumeLandmarks` (MEV/MAV/MRV). The deload assessor
+  could report "exceeded MRV" while the 3D sculpture showed the muscle mid-band. Rule: when several
+  call sites compute the same named quantity against a shared threshold, the computation must live
+  in ONE function they all call. A duplicated formula is a divergence waiting for the next edit.
+
+- 2026-08-14 | Deriving a fundamental property of an entity from its own history cannot work for the
+  first record. `Exercises` has no `isTimed` column; `isTimedExercise` infers it from existing sets
+  or a template prescription. A newly created custom exercise has neither, so the seconds field never
+  renders and a Copenhagen plank has to be logged as "30 reps/side". Every workaround was a trap:
+  `stretching` removes the weight field, `cardio` makes `isSetComplete` demand distance so the set
+  never completes, and the CSV importer has no duration column either. Rule: inference is fine as a
+  FALLBACK for seeded/library data that declares itself elsewhere, never as the only source of truth
+  for a user-created row. Ask for it at creation and store it.
+
+- 2026-08-14 | Three separate features were gated on optional data that most users never enter. RPE
+  has no input on the inline set row at all, yet `suggestNextSet`'s `increaseAllowed` requires
+  `topSet.rpe != null` (so the weight never increases, and the fall-through suggests the exact rep
+  count already performed while the rationale says "add one rep"), and one of deload's three signals
+  reads `rpeAtLoadSeries`, which is empty. The feature looked implemented and was inert. Rule:
+  optional input must ENHANCE a decision, never be a precondition for having one. Before gating on a
+  field, grep for its writers — if the fast path does not write it, the gate is an off switch.
+
+- 2026-08-14 | A partial current week compared against a full-week threshold breaks silently in two
+  places. `_rankScore` gives `offset 0` (this week, incomplete) the LARGEST decay weight, costing
+  ~11 of 100 rank points every Monday — enough to cross a rank tier, so muscles visibly rank down and
+  back up weekly with no change in training. Deload's overreach signal compares `values.last` (also
+  the partial week) against MRV, which is why it could effectively never fire. Rule: score completed
+  periods only, or prorate explicitly. Never let "so far this week" meet a threshold calibrated on a
+  whole one.
+
+- 2026-08-14 | `streak.dart` correctly builds dates as `DateTime(y, m, d - 1)` with a comment
+  explaining that subtracting a `Duration` drifts an hour across DST — and then `_rankScore` and
+  `loadDeloadData` both use `Duration(days: offset * 7)` and feed the result into an EXACT-equality
+  map/list lookup, so a DST transition silently drops a whole week of volume. Rule: when the codebase
+  already documents a hazard and its fix, grep for every other instance of the bad pattern in the
+  same commit. A lesson recorded in one file is not applied until it is applied everywhere.
+
+- 2026-08-14 | Backups carried device-local state. `appSettings` is exported wholesale and includes
+  `healthExportedSessionIds` plus the three one-time backfill flags. Restoring on a NEW phone tells
+  the app those workouts are already in Apple Health when that device's store is empty, so they are
+  never exported and there is no UI to reset it — the mirror image of the 2026-07-26 duplicate-record
+  lesson. Rule: a portable backup carries USER data. Device-local bookkeeping (external-system sync
+  markers, one-time migration flags, permission state) must be namespaced and excluded on import.
+
+- 2026-08-14 | Six audit rounds were needed because each pass had a blind spot the previous one could
+  not see: round 1 audited logic and CRUD on EXISTING records and never traced the CREATION flows,
+  which is where the user's actual reported bug lived. Rounds 2-6 each came from the user saying
+  "there are more". Rule: an audit organised by code layer will miss whole categories. Also sweep by
+  USER JOURNEY (create → log → edit → review → export) and by the inverse question — "which columns
+  have no writer?" — which alone surfaced `Sessions.notes` (dead), `RestDays.note` (dead), and the
+  fact that name, category, and `bodyweightFactor` are write-once on every exercise, custom or
+  bundled.
+
+- 2026-08-14 | Phase 1.4 fixed the 1RM proxy by taking the ENTERED value instead of `totalLoadKg`,
+  but only in the `LoadingMode.external` branch of `_resistedMassKg`. `totalLoadKg` applies
+  `weightEntry.implements` regardless of loading mode, so a weighted pull-up logged "per hand" kept
+  doubling its added plate into the performance index. Rule: when a fix is "use value A instead of
+  value B", grep every branch that reads value B — a `switch` over an enum is four call sites, not
+  one, and fixing the branch named in the bug report leaves the siblings broken.
+
+- 2026-08-14 | The backup importer committed its transaction and THEN rescaled muscle-bias weights.
+  The imported rows are already stamped at the current schema version, so a crash in that gap strands
+  share-scale weights that no migration will ever revisit — permanently halved volume, silently.
+  Rule: a data-shape conversion that a migration would otherwise own must run inside the same
+  transaction as the write it corrects. "After the transaction" is only safe for idempotent work that
+  something else will retry.

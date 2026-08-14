@@ -13,9 +13,7 @@ void main() {
     List<MuscleId> primary = const [MuscleId.midLowerChest],
     List<MuscleId> secondary = const [MuscleId.triceps],
     LoadingMode loadingMode = LoadingMode.external,
-    MuscleId? biasMuscleA,
-    MuscleId? biasMuscleB,
-    double? muscleBias,
+    Map<MuscleId, double>? muscleBiasWeights,
     double? weightValue = 100,
     WeightUnit? unit = WeightUnit.kg,
     WeightEntry weightEntry = WeightEntry.total,
@@ -32,9 +30,7 @@ void main() {
     primaryMuscles: primary,
     secondaryMuscles: secondary,
     loadingMode: loadingMode,
-    biasMuscleA: biasMuscleA,
-    biasMuscleB: biasMuscleB,
-    muscleBias: muscleBias,
+    muscleBiasWeights: muscleBiasWeights,
     weightValue: weightValue,
     unit: unit,
     weightEntry: weightEntry,
@@ -105,29 +101,62 @@ void main() {
     );
   });
 
-  test('uses doubled per-hand load for resisted muscle signals', () {
+  test('repetition-based muscle signals use the entered load, not 4x it', () {
     final progress = buildMuscleProgress(
       records: [
         record(
           date: DateTime(2026, 7, 1),
-          weightValue: 7.5,
-          unit: WeightUnit.lb,
+          weightValue: 20,
+          unit: WeightUnit.kg,
           weightEntry: WeightEntry.perSide,
-          reps: 10,
+          sideCount: 2,
+          reps: 5,
         ),
         record(
           date: DateTime(2026, 7, 8),
-          weightValue: 7.5,
-          unit: WeightUnit.lb,
+          weightValue: 20,
+          unit: WeightUnit.kg,
           weightEntry: WeightEntry.perSide,
-          reps: 10,
+          sideCount: 2,
+          reps: 5,
         ),
       ],
     );
 
     expect(
       progress[MuscleId.midLowerChest]!.exercises.single.latestRawValue,
-      closeTo(weightKg(15, WeightUnit.lb) * (1 + 10 / 30), 0.000001),
+      closeTo(weightKg(20, WeightUnit.kg) * (1 + 5 / 30), 0.000001),
+    );
+  });
+
+  test('added load logged per hand is not doubled into the 1RM proxy', () {
+    final bodyweights = [
+      BodyweightEntry(
+        date: DateTime(2026, 7, 1),
+        value: 80,
+        unit: WeightUnit.kg,
+      ),
+    ];
+    final progress = buildMuscleProgress(
+      bodyweights: bodyweights,
+      records: [
+        for (final date in [DateTime(2026, 7, 1), DateTime(2026, 7, 8)])
+          record(
+            date: date,
+            loadingMode: LoadingMode.bodyweightAdded,
+            weightValue: 10,
+            unit: WeightUnit.kg,
+            weightEntry: WeightEntry.perSide,
+            sideCount: 2,
+            reps: 5,
+            bodyweightFactor: 1,
+          ),
+      ],
+    );
+
+    expect(
+      progress[MuscleId.midLowerChest]!.exercises.single.latestRawValue,
+      closeTo((80 + 10) * (1 + 5 / 30), 0.000001),
     );
   });
 
@@ -311,58 +340,61 @@ void main() {
     expect(rankExplainer(progress, TrainingGoal.build), contains('sets'));
   });
 
-  test(
-    'bias reallocates primary-set credit while other primaries stay full',
-    () {
-      final progress = buildMuscleProgress(
-        records: [
-          record(
-            date: DateTime(2026, 7, 1),
-            exerciseName: 'Leg Press',
-            primary: const [
-              MuscleId.quads,
-              MuscleId.gluteMax,
-              MuscleId.hipFlexors,
-            ],
-            secondary: const [MuscleId.hamstrings],
-            biasMuscleA: MuscleId.quads,
-            biasMuscleB: MuscleId.gluteMax,
-            muscleBias: -1,
-          ),
-          record(
-            date: DateTime(2026, 7, 8),
-            exerciseName: 'Leg Press',
-            primary: const [
-              MuscleId.quads,
-              MuscleId.gluteMax,
-              MuscleId.hipFlexors,
-            ],
-            secondary: const [MuscleId.hamstrings],
-            biasMuscleA: MuscleId.quads,
-            biasMuscleB: MuscleId.gluteMax,
-            muscleBias: 0,
-          ),
-          record(
-            date: DateTime(2026, 7, 15),
-            exerciseName: 'Leg Press',
-            primary: const [
-              MuscleId.quads,
-              MuscleId.gluteMax,
-              MuscleId.hipFlexors,
-            ],
-            secondary: const [MuscleId.hamstrings],
-            biasMuscleA: MuscleId.quads,
-            biasMuscleB: MuscleId.gluteMax,
-            muscleBias: null,
-          ),
-        ],
-        today: DateTime(2026, 7, 20),
-      );
+  test('bias uses stored N-muscle distributions for primary-set credit', () {
+    final progress = buildMuscleProgress(
+      records: [
+        record(
+          date: DateTime(2026, 7, 1),
+          exerciseName: 'Zercher Squat',
+          primary: const [
+            MuscleId.quads,
+            MuscleId.gluteMax,
+            MuscleId.hamstrings,
+          ],
+          secondary: const [MuscleId.adductors],
+          muscleBiasWeights: const {
+            MuscleId.quads: 3.0,
+            MuscleId.gluteMax: 0.0,
+            MuscleId.hamstrings: 0.0,
+          },
+        ),
+        record(
+          date: DateTime(2026, 7, 8),
+          exerciseName: 'Zercher Squat',
+          primary: const [
+            MuscleId.quads,
+            MuscleId.gluteMax,
+            MuscleId.hamstrings,
+          ],
+          secondary: const [MuscleId.adductors],
+          muscleBiasWeights: const {
+            MuscleId.quads: 1.5,
+            MuscleId.gluteMax: 0.9,
+            MuscleId.hamstrings: 0.6,
+          },
+        ),
+        record(
+          date: DateTime(2026, 7, 15),
+          exerciseName: 'Zercher Squat',
+          primary: const [
+            MuscleId.quads,
+            MuscleId.gluteMax,
+            MuscleId.hamstrings,
+          ],
+          secondary: const [MuscleId.adductors],
+          muscleBiasWeights: const {
+            MuscleId.quads: 1.0,
+            MuscleId.gluteMax: 1.0,
+            MuscleId.hamstrings: 1.0,
+          },
+        ),
+      ],
+      today: DateTime(2026, 7, 20),
+    );
 
-      expect(progress[MuscleId.quads]!.primarySets, 2);
-      expect(progress[MuscleId.gluteMax]!.primarySets, 1);
-      expect(progress[MuscleId.hipFlexors]!.primarySets, 3);
-      expect(progress[MuscleId.hamstrings]!.secondarySets, 3);
-    },
-  );
+    expect(progress[MuscleId.quads]!.primarySets, closeTo(5.5, 0.000001));
+    expect(progress[MuscleId.gluteMax]!.primarySets, closeTo(1.9, 0.000001));
+    expect(progress[MuscleId.hamstrings]!.primarySets, closeTo(1.6, 0.000001));
+    expect(progress[MuscleId.adductors]!.secondarySets, 3);
+  });
 }

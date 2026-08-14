@@ -23,8 +23,6 @@ void main() {
             muscleGroup: 'legs',
             primaryMuscles: Value(jsonEncode(['quads', 'glute_max'])),
             secondaryMuscles: Value(jsonEncode(['hamstrings', 'adductors'])),
-            biasMuscleA: const Value('quads'),
-            biasMuscleB: const Value('glute_max'),
           ),
         );
     final sessionId = await database
@@ -58,9 +56,7 @@ void main() {
     expect(record.exerciseName, 'Leg Press');
     expect(record.primaryMuscles, [MuscleId.quads, MuscleId.gluteMax]);
     expect(record.secondaryMuscles, [MuscleId.hamstrings, MuscleId.adductors]);
-    expect(record.biasMuscleA, MuscleId.quads);
-    expect(record.biasMuscleB, MuscleId.gluteMax);
-    expect(record.muscleBias, isNull);
+    expect(record.muscleBiasWeights, isNull);
     expect(record.isWarmup, isFalse);
 
     expect(

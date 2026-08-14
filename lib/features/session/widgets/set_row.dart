@@ -710,12 +710,12 @@ class _MicroStepper extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.control),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
-          _RepeatIconButton(icon: Icons.remove_rounded, onPressed: onDecrement),
+          _RepeatIconButton(icon: AppIcons.minus, onPressed: onDecrement),
           Expanded(
             child: TextField(
               controller: controller,
@@ -738,7 +738,7 @@ class _MicroStepper extends StatelessWidget {
               onTapOutside: (_) => focusNode.unfocus(),
             ),
           ),
-          _RepeatIconButton(icon: Icons.add_rounded, onPressed: onIncrement),
+          _RepeatIconButton(icon: AppIcons.add, onPressed: onIncrement),
         ],
       ),
     );

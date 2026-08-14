@@ -2,6 +2,9 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
+import 'package:logged/core/domain/live_muscle_state.dart';
+import 'package:logged/core/domain/muscle.dart';
+import 'package:logged/core/domain/muscle_bias.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/repositories/analytics_repository.dart';
 
@@ -16,16 +19,22 @@ void main() {
     required ExerciseCategory category,
     required LoadingMode mode,
     double bodyweightFactor = 1,
-  }) => database.into(database.exercises).insert(
-    ExercisesCompanion.insert(
-      name: name,
-      category: category,
-      muscleGroup: 'back',
-      primaryMuscles: const Value('["lats"]'),
-      preferredLoadingMode: Value(mode),
-      bodyweightFactor: Value(bodyweightFactor),
-    ),
-  );
+    String muscleGroup = 'back',
+    String primaryMuscles = '["lats"]',
+    String secondaryMuscles = '[]',
+  }) => database
+      .into(database.exercises)
+      .insert(
+        ExercisesCompanion.insert(
+          name: name,
+          category: category,
+          muscleGroup: muscleGroup,
+          primaryMuscles: Value(primaryMuscles),
+          secondaryMuscles: Value(secondaryMuscles),
+          preferredLoadingMode: Value(mode),
+          bodyweightFactor: Value(bodyweightFactor),
+        ),
+      );
 
   Future<void> logSet({
     required int exerciseId,
@@ -34,6 +43,7 @@ void main() {
     double? weight,
     required LoadingMode mode,
     double? rpe,
+    String? muscleBiasWeights,
   }) async {
     final sessionId = await database
         .into(database.sessions)
@@ -60,15 +70,18 @@ void main() {
             setNumber: 1,
             reps: Value(reps),
             weightValue: Value(weight),
-            unit: weight == null ? const Value.absent() : const Value(WeightUnit.kg),
+            unit: weight == null
+                ? const Value.absent()
+                : const Value(WeightUnit.kg),
             loadingMode: Value(mode),
             rpe: Value(rpe),
+            muscleBiasWeights: Value(muscleBiasWeights),
           ),
         );
   }
 
   test(
-    'benchmark sets include a strict bodyweight pull-up the weighted query drops',
+    'completed and benchmark queries both include a strict bodyweight pull-up',
     () async {
       final pullUpId = await addExercise(
         name: 'Pull-Up',
@@ -84,8 +97,10 @@ void main() {
       );
 
       final repository = AnalyticsRepository(database);
-      // The Progress query filters weight_value IS NOT NULL, so it sees nothing.
-      expect(await repository.watchCompletedSets().first, isEmpty);
+      final completed = await repository.watchCompletedSets().first;
+      expect(completed, hasLength(1));
+      expect(completed.single.exerciseName, 'Pull-Up');
+      expect(completed.single.weightKg, 0);
 
       final benchmark = await repository.watchBenchmarkSets().first;
       expect(benchmark, hasLength(1));
@@ -93,10 +108,7 @@ void main() {
       expect(record.exerciseName, 'Pull-Up');
       expect(record.enteredWeightKg, isNull);
       // Bodyweight folds in: 80 kg * (1 + 8/30).
-      expect(
-        record.resistedOneRepMaxKg(80),
-        closeTo(80 * (1 + 8 / 30), 1e-9),
-      );
+      expect(record.resistedOneRepMaxKg(80), closeTo(80 * (1 + 8 / 30), 1e-9));
     },
   );
 
@@ -149,4 +161,40 @@ void main() {
       reason: 'externally loaded lifts still contribute a 1RM series',
     );
   });
+
+  test(
+    'deload weekly effective sets apply stored primary-muscle bias',
+    () async {
+      final legPressId = await addExercise(
+        name: 'Leg Press',
+        category: ExerciseCategory.strength,
+        mode: LoadingMode.external,
+        muscleGroup: 'legs',
+        primaryMuscles: '["quads","glute_max"]',
+        secondaryMuscles: '["hamstrings"]',
+      );
+      await logSet(
+        exerciseId: legPressId,
+        day: DateTime(2026, 8, 10, 12),
+        reps: 10,
+        weight: 180,
+        mode: LoadingMode.external,
+        muscleBiasWeights: encodeMuscleBiasWeights(const {
+          MuscleId.quads: 1.5,
+          MuscleId.gluteMax: 0.5,
+        }),
+      );
+
+      final data = await AnalyticsRepository(
+        database,
+      ).loadDeloadData(today: DateTime(2026, 8, 14));
+
+      expect(data.weeklyEffectiveSetsByMuscle[MuscleId.quads]!.last, 1.5);
+      expect(data.weeklyEffectiveSetsByMuscle[MuscleId.gluteMax]!.last, 0.5);
+      expect(
+        data.weeklyEffectiveSetsByMuscle[MuscleId.hamstrings]!.last,
+        secondaryMuscleSetWeight,
+      );
+    },
+  );
 }

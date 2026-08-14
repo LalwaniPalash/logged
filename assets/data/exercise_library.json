@@ -66,8 +66,9 @@
       "mid_lower_chest"
     ],
     "secondaryMuscles": [
+      "front_delts",
       "triceps",
-      "front_delts"
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -89,7 +90,8 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts"
@@ -101,7 +103,8 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
@@ -115,7 +118,8 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts"
@@ -170,7 +174,8 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts"
@@ -182,10 +187,9 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "upper_chest"
     ],
     "secondaryMuscles": [
-      "upper_chest",
       "front_delts"
     ],
     "defaultUnit": "lb",
@@ -235,11 +239,13 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "upper_chest",
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
       "triceps",
+      "upper_chest",
+      "upper_traps",
       "serratus_anterior"
     ],
     "defaultUnit": "kg"
@@ -360,9 +366,10 @@
       "lats"
     ],
     "secondaryMuscles": [
+      "mid_lower_traps",
+      "rhomboids",
       "biceps",
       "brachialis",
-      "mid_lower_traps",
       "forearms"
     ],
     "defaultUnit": "lb"
@@ -394,7 +401,8 @@
     "secondaryMuscles": [
       "rear_delts",
       "biceps",
-      "brachialis"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "lb"
   },
@@ -410,7 +418,8 @@
     "secondaryMuscles": [
       "rear_delts",
       "biceps",
-      "brachialis"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "lb"
   },
@@ -444,7 +453,8 @@
     "secondaryMuscles": [
       "rear_delts",
       "biceps",
-      "brachialis"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -453,11 +463,11 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
+      "spinal_erectors",
       "quads",
       "upper_traps",
       "lats",
@@ -544,14 +554,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "rear_delts",
-      "mid_lower_traps",
-      "rhomboids"
+      "rear_delts"
     ],
     "secondaryMuscles": [
-      "rotator_cuff",
-      "upper_traps",
-      "biceps"
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
     ],
     "defaultUnit": "lb"
   },
@@ -599,7 +607,8 @@
     "secondaryMuscles": [
       "rear_delts",
       "biceps",
-      "brachialis"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -797,10 +806,10 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "side_delts",
-      "upper_traps"
+      "side_delts"
     ],
     "secondaryMuscles": [
+      "upper_traps",
       "biceps",
       "forearms"
     ],
@@ -811,10 +820,10 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "side_delts",
-      "upper_traps"
+      "side_delts"
     ],
     "secondaryMuscles": [
+      "upper_traps",
       "biceps",
       "forearms"
     ],
@@ -827,10 +836,12 @@
     "muscleGroup": "shoulders",
     "primaryMuscles": [
       "front_delts",
-      "upper_chest"
+      "side_delts"
     ],
     "secondaryMuscles": [
       "triceps",
+      "upper_chest",
+      "upper_traps",
       "serratus_anterior"
     ],
     "defaultUnit": "kg"
@@ -866,12 +877,13 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "mid_lower_traps"
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "side_delts",
+      "mid_lower_traps",
       "rear_delts",
-      "rotator_cuff"
+      "rotator_cuff",
+      "upper_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -880,11 +892,10 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "side_delts",
-      "rotator_cuff"
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "front_delts",
+      "rotator_cuff",
       "upper_traps"
     ],
     "defaultUnit": "kg"
@@ -927,11 +938,9 @@
     "secondaryMuscles": [
       "hamstrings",
       "adductors",
-      "spinal_erectors",
-      "abs"
+      "abs",
+      "spinal_erectors"
     ],
-    "biasMuscleA": "quads",
-    "biasMuscleB": "glute_max",
     "defaultUnit": "kg"
   },
   {
@@ -958,6 +967,7 @@
       "glute_max"
     ],
     "secondaryMuscles": [
+      "hamstrings",
       "adductors",
       "abs"
     ],
@@ -975,8 +985,6 @@
       "hamstrings",
       "adductors"
     ],
-    "biasMuscleA": "quads",
-    "biasMuscleB": "glute_max",
     "defaultUnit": "lb"
   },
   {
@@ -1000,7 +1008,9 @@
     "primaryMuscles": [
       "quads"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "lb"
   },
   {
@@ -1502,7 +1512,8 @@
     ],
     "secondaryMuscles": [
       "obliques",
-      "hip_flexors"
+      "hip_flexors",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -1583,8 +1594,7 @@
       "obliques"
     ],
     "secondaryMuscles": [
-      "abs",
-      "hip_flexors"
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -1646,8 +1656,8 @@
       "abs"
     ],
     "secondaryMuscles": [
-      "lats",
       "obliques",
+      "lats",
       "front_delts",
       "serratus_anterior"
     ],
@@ -1658,10 +1668,10 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
-      "obliques",
-      "abs"
+      "obliques"
     ],
     "secondaryMuscles": [
+      "abs",
       "front_delts"
     ],
     "defaultUnit": "kg"
@@ -1821,10 +1831,10 @@
     "primaryMuscles": [
       "quads",
       "glute_max",
-      "hamstrings",
-      "spinal_erectors"
+      "hamstrings"
     ],
     "secondaryMuscles": [
+      "spinal_erectors",
       "forearms",
       "upper_traps",
       "abs"
@@ -2049,9 +2059,9 @@
       "obliques"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
       "brachialis",
-      "rear_delts",
       "triceps",
       "front_delts"
     ],
@@ -2063,11 +2073,11 @@
     "muscleGroup": "full body/olympic",
     "primaryMuscles": [
       "quads",
-      "glute_max",
-      "calves"
+      "glute_max"
     ],
     "secondaryMuscles": [
       "hamstrings",
+      "adductors",
       "abs"
     ],
     "defaultUnit": "kg"
@@ -2477,7 +2487,7 @@
     "defaultUnit": "kg"
   },
   {
-    "name": "Child’s Pose",
+    "name": "Child\u2019s Pose",
     "category": "stretching",
     "muscleGroup": "mobility/stretching",
     "primaryMuscles": [
@@ -2516,7 +2526,7 @@
     "defaultUnit": "kg"
   },
   {
-    "name": "World’s Greatest Stretch",
+    "name": "World\u2019s Greatest Stretch",
     "category": "stretching",
     "muscleGroup": "mobility/stretching",
     "primaryMuscles": [
@@ -3046,7 +3056,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg",
     "videoUrl": "https://www.youtube.com/watch?v=wm47Swzn_98"
   },
@@ -3070,7 +3082,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg",
     "videoUrl": "https://www.youtube.com/watch?v=zDSvdyyxH4w"
   },
@@ -3149,8 +3163,8 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "biceps",
-      "brachialis"
+      "brachialis",
+      "biceps"
     ],
     "secondaryMuscles": [
       "forearms"
@@ -3176,6 +3190,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg",
@@ -3202,10 +3217,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3268,11 +3287,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -3282,14 +3306,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "rhomboids"
+      "lats",
+      "abs",
+      "obliques"
     ],
     "secondaryMuscles": [
-      "abs",
+      "rear_delts",
       "biceps",
-      "mid_lower_chest",
-      "lats",
-      "triceps"
+      "brachialis",
+      "triceps",
+      "front_delts"
     ],
     "defaultUnit": "kg"
   },
@@ -3416,15 +3442,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
-      "hamstrings",
-      "rhomboids",
+      "spinal_erectors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -3433,11 +3460,12 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "rear_delts"
     ],
     "secondaryMuscles": [
       "rhomboids",
-      "triceps"
+      "mid_lower_traps",
+      "rotator_cuff"
     ],
     "defaultUnit": "kg"
   },
@@ -3501,9 +3529,10 @@
       "lats"
     ],
     "secondaryMuscles": [
-      "abs",
-      "forearms",
-      "rhomboids"
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -3591,8 +3620,10 @@
       "abs"
     ],
     "secondaryMuscles": [
-      "spinal_erectors",
-      "front_delts"
+      "obliques",
+      "lats",
+      "front_delts",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3604,8 +3635,10 @@
       "abs"
     ],
     "secondaryMuscles": [
-      "spinal_erectors",
-      "front_delts"
+      "obliques",
+      "lats",
+      "front_delts",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3630,7 +3663,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -3638,12 +3674,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -3656,8 +3693,9 @@
       "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -3666,11 +3704,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3679,12 +3718,12 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "forearms",
-      "hamstrings"
+      "hamstrings",
+      "adductors"
     ],
     "defaultUnit": "kg"
   },
@@ -3697,7 +3736,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3718,12 +3758,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -3735,9 +3777,9 @@
       "rear_delts"
     ],
     "secondaryMuscles": [
-      "biceps",
-      "lats",
-      "rhomboids"
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
     ],
     "defaultUnit": "kg"
   },
@@ -3749,10 +3791,10 @@
       "abs"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "hamstrings",
+      "obliques",
       "lats",
-      "front_delts"
+      "front_delts",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3771,11 +3813,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "mid_lower_chest",
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3809,12 +3854,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
       "hamstrings",
-      "spinal_erectors"
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -3823,12 +3870,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -3838,12 +3886,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -3867,12 +3916,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -3951,7 +4002,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3960,11 +4012,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest",
-      "triceps"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -3987,12 +4040,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "lats"
+      "lats",
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "mid_lower_chest",
-      "front_delts",
-      "triceps"
+      "triceps",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -4001,12 +4054,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
+      "lats",
       "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "lats",
-      "front_delts",
-      "triceps"
+      "triceps",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -4026,12 +4079,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "front_delts"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -4042,7 +4099,11 @@
     "primaryMuscles": [
       "rear_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -4065,14 +4126,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
+      "brachialis",
       "spinal_erectors",
-      "upper_traps",
-      "mid_lower_traps"
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -4082,11 +4145,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -4095,12 +4163,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "front_delts"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -4110,11 +4182,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -4221,11 +4298,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -4234,11 +4316,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -4247,12 +4331,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -4261,9 +4347,12 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
-      "abs"
+      "abs",
+      "obliques"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -4326,13 +4415,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "adductors",
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -4342,14 +4431,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
-      "adductors",
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -4359,14 +4447,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
-      "adductors",
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -4411,7 +4498,9 @@
       "glute_max"
     ],
     "secondaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -4420,9 +4509,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -4430,11 +4522,13 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -4458,8 +4552,8 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "biceps",
-      "brachialis"
+      "brachialis",
+      "biceps"
     ],
     "secondaryMuscles": [
       "forearms"
@@ -4472,7 +4566,7 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "adductors"
     ],
     "secondaryMuscles": [],
     "defaultUnit": "kg"
@@ -4556,6 +4650,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -4567,7 +4662,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -4588,8 +4685,9 @@
       "rear_delts"
     ],
     "secondaryMuscles": [
-      "biceps",
-      "rhomboids"
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
     ],
     "defaultUnit": "kg"
   },
@@ -4610,7 +4708,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -4621,7 +4721,6 @@
       "side_delts"
     ],
     "secondaryMuscles": [
-      "rhomboids",
       "upper_traps"
     ],
     "defaultUnit": "kg"
@@ -4631,10 +4730,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -4665,7 +4768,10 @@
     "primaryMuscles": [
       "upper_traps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "forearms",
+      "neck"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -4744,14 +4850,16 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
-      "hamstrings",
       "spinal_erectors",
-      "upper_traps"
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -4863,12 +4971,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -4981,12 +5090,13 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "lats"
+      "lats",
+      "biceps"
     ],
     "secondaryMuscles": [
-      "biceps",
+      "brachialis",
       "forearms",
-      "rhomboids"
+      "mid_lower_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -5042,15 +5152,16 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
       "spinal_erectors",
-      "rhomboids",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -5079,7 +5190,7 @@
     ],
     "secondaryMuscles": [
       "forearms",
-      "front_delts"
+      "neck"
     ],
     "defaultUnit": "kg"
   },
@@ -5146,7 +5257,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -5155,11 +5267,12 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "triceps"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "mid_lower_chest",
-      "front_delts"
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "videoUrl": "https://www.youtube.com/watch?v=XEnAUu6WtSw"
@@ -5186,6 +5299,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -5211,6 +5325,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -5224,8 +5339,9 @@
     ],
     "secondaryMuscles": [
       "biceps",
-      "rhomboids",
-      "front_delts"
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -5237,9 +5353,9 @@
       "triceps"
     ],
     "secondaryMuscles": [
-      "abs",
       "mid_lower_chest",
-      "front_delts"
+      "front_delts",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -5252,6 +5368,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -5292,6 +5409,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -5301,9 +5419,12 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
-      "abs"
+      "abs",
+      "obliques"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -5311,8 +5432,8 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "biceps",
-      "brachialis"
+      "brachialis",
+      "biceps"
     ],
     "secondaryMuscles": [
       "forearms"
@@ -5338,14 +5459,15 @@
     "category": "stretching",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "abs",
-      "glute_med_min",
-      "glute_max",
       "hamstrings",
-      "quads"
+      "adductors",
+      "glute_med_min",
+      "calves",
+      "obliques"
     ],
     "defaultUnit": "kg"
   },
@@ -5368,7 +5490,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -5378,7 +5502,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -5409,15 +5535,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
-      "hamstrings",
-      "rhomboids",
+      "spinal_erectors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -5426,15 +5553,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
-      "hamstrings",
-      "rhomboids",
+      "spinal_erectors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -5447,7 +5575,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -5471,7 +5600,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -5483,7 +5614,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -5525,9 +5657,11 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
     "defaultUnit": "kg"
   },
   {
@@ -5535,11 +5669,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -5550,7 +5685,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -5571,15 +5708,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
-      "hamstrings",
-      "rhomboids",
+      "spinal_erectors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -5636,8 +5774,7 @@
     ],
     "secondaryMuscles": [
       "mid_lower_chest",
-      "front_delts",
-      "abs"
+      "front_delts"
     ],
     "defaultUnit": "kg",
     "videoUrl": "https://www.youtube.com/watch?v=sM6XUdt1rm4"
@@ -5769,6 +5906,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -5794,6 +5932,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg",
@@ -5808,7 +5947,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -5843,13 +5983,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "forearms",
-      "lats",
-      "front_delts"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -5862,7 +6005,7 @@
       "front_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "upper_chest"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -5890,7 +6033,7 @@
       "side_delts"
     ],
     "secondaryMuscles": [
-      "rhomboids"
+      "upper_traps"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -5913,7 +6056,9 @@
     "primaryMuscles": [
       "side_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -5933,10 +6078,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -5960,8 +6109,9 @@
       "side_delts"
     ],
     "secondaryMuscles": [
-      "biceps",
       "upper_traps",
+      "biceps",
+      "forearms",
       "mid_lower_traps"
     ],
     "defaultUnit": "kg",
@@ -5974,7 +6124,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -5996,12 +6149,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -6061,13 +6216,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
-      "spinal_erectors"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -6077,13 +6232,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
-      "spinal_erectors"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -6144,7 +6299,8 @@
       "biceps"
     ],
     "secondaryMuscles": [
-      "brachialis"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "videoUrl": "https://www.youtube.com/watch?v=zG2xJ0Q5QtI"
@@ -6201,11 +6357,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -6214,11 +6373,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "lats"
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
     ],
     "secondaryMuscles": [
-      "rhomboids",
-      "upper_traps"
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -6243,7 +6407,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -6350,7 +6516,11 @@
     "primaryMuscles": [
       "mid_lower_chest"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -6380,7 +6550,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -6454,13 +6627,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "abs",
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -6469,12 +6642,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -6507,12 +6681,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -6521,12 +6697,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -6619,12 +6797,10 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "front_delts"
     ],
     "secondaryMuscles": [
-      "lats",
-      "front_delts",
-      "triceps"
+      "upper_chest"
     ],
     "defaultUnit": "kg"
   },
@@ -6636,9 +6812,10 @@
       "quads"
     ],
     "secondaryMuscles": [
-      "abs",
       "glute_max",
-      "hamstrings"
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -6675,8 +6852,9 @@
     ],
     "secondaryMuscles": [
       "biceps",
-      "rhomboids",
-      "front_delts"
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -6740,8 +6918,7 @@
       "abs"
     ],
     "secondaryMuscles": [
-      "biceps",
-      "lats"
+      "obliques"
     ],
     "defaultUnit": "kg"
   },
@@ -6774,7 +6951,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -6793,10 +6971,13 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -6936,7 +7117,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -7031,11 +7215,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
-    ],
-    "secondaryMuscles": [
+      "spinal_erectors",
       "glute_max",
       "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -7044,11 +7229,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
-    ],
-    "secondaryMuscles": [
+      "spinal_erectors",
       "glute_max",
       "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -7116,7 +7302,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -7141,7 +7328,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7167,7 +7355,8 @@
       "upper_chest"
     ],
     "secondaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "obliques"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7191,8 +7380,8 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "biceps",
-      "brachialis"
+      "brachialis",
+      "biceps"
     ],
     "secondaryMuscles": [
       "forearms"
@@ -7207,7 +7396,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -7215,11 +7407,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "upper_chest"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -7228,11 +7421,12 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "triceps"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "upper_chest",
-      "front_delts"
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -7241,11 +7435,12 @@
     "category": "bodyweight",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "upper_chest"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -7254,12 +7449,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "upper_chest"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "abs",
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -7268,12 +7463,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "upper_chest"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "abs",
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -7282,12 +7477,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "upper_chest"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "abs",
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -7326,11 +7521,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -7428,7 +7627,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -7438,7 +7639,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -7477,11 +7680,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "abs",
-      "calves"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -7524,10 +7729,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7585,11 +7794,16 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "spinal_erectors"
+      "spinal_erectors",
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7627,13 +7841,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
-      "front_delts"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7700,13 +7914,16 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
       "abs",
+      "obliques",
       "hamstrings",
-      "quads",
-      "triceps"
+      "triceps",
+      "rotator_cuff"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7716,14 +7933,16 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
       "abs",
-      "calves",
+      "obliques",
       "hamstrings",
-      "quads",
-      "triceps"
+      "triceps",
+      "rotator_cuff"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7831,9 +8050,12 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
-      "abs"
+      "abs",
+      "obliques"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -7861,11 +8083,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "lats"
+      "rear_delts",
+      "mid_lower_traps",
+      "rhomboids"
     ],
     "secondaryMuscles": [
+      "lats",
       "biceps",
-      "rhomboids"
+      "brachialis",
+      "forearms",
+      "upper_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -7884,12 +8111,13 @@
     "category": "strength",
     "muscleGroup": "glutes",
     "primaryMuscles": [
+      "quads",
       "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
       "hamstrings",
-      "quads"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -7898,11 +8126,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "lats"
+      "rear_delts",
+      "mid_lower_traps",
+      "rhomboids"
     ],
     "secondaryMuscles": [
+      "lats",
       "biceps",
-      "rhomboids"
+      "brachialis",
+      "forearms",
+      "upper_traps"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -7912,12 +8145,13 @@
     "category": "strength",
     "muscleGroup": "glutes",
     "primaryMuscles": [
+      "quads",
       "glute_max"
     ],
     "secondaryMuscles": [
-      "abs",
       "hamstrings",
-      "spinal_erectors"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -7926,12 +8160,12 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
+      "obliques",
       "abs"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "spinal_erectors",
-      "front_delts"
+      "front_delts",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -8007,7 +8241,9 @@
     "primaryMuscles": [
       "side_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8050,7 +8286,9 @@
     "primaryMuscles": [
       "quads"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8080,11 +8318,13 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -8093,11 +8333,16 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "hamstrings"
+      "spinal_erectors",
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -8110,7 +8355,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -8119,10 +8365,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "rear_delts",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
-      "lats"
+      "lats",
+      "biceps",
+      "brachialis",
+      "forearms",
+      "upper_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -8135,7 +8387,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -8144,11 +8397,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "lats"
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "rhomboids"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -8157,10 +8415,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -8172,7 +8434,8 @@
       "upper_traps"
     ],
     "secondaryMuscles": [
-      "forearms"
+      "forearms",
+      "neck"
     ],
     "defaultUnit": "kg"
   },
@@ -8266,7 +8529,7 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts"
@@ -8288,13 +8551,16 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "rear_delts",
+      "mid_lower_traps",
+      "rhomboids"
     ],
     "secondaryMuscles": [
+      "lats",
       "biceps",
-      "rhomboids",
-      "upper_traps",
-      "mid_lower_traps"
+      "brachialis",
+      "forearms",
+      "upper_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -8313,9 +8579,12 @@
     "category": "stretching",
     "muscleGroup": "core",
     "primaryMuscles": [
-      "abs"
+      "spinal_erectors"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8323,12 +8592,14 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "quads"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -8337,12 +8608,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -8363,7 +8636,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8371,13 +8647,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "upper_traps",
-      "mid_lower_traps"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -8388,7 +8666,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8486,7 +8767,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8496,7 +8780,10 @@
     "primaryMuscles": [
       "hamstrings"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8504,12 +8791,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -8520,7 +8808,9 @@
     "primaryMuscles": [
       "side_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -8541,7 +8831,11 @@
     "primaryMuscles": [
       "rear_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8551,7 +8845,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -8560,11 +8857,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -8587,7 +8888,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -8598,7 +8900,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8608,7 +8913,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8616,10 +8924,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -8651,10 +8963,10 @@
     "category": "bodyweight",
     "muscleGroup": "core",
     "primaryMuscles": [
-      "abs"
+      "obliques"
     ],
     "secondaryMuscles": [
-      "front_delts"
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -8677,9 +8989,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "rhomboids"
+      "upper_traps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "forearms",
+      "neck"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -8802,9 +9117,9 @@
       "quads"
     ],
     "secondaryMuscles": [
-      "calves",
       "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -8885,12 +9200,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -8919,12 +9235,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "front_delts"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -8936,7 +9256,9 @@
     "primaryMuscles": [
       "mid_lower_chest"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -8958,7 +9280,9 @@
     "primaryMuscles": [
       "side_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -9063,11 +9387,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9141,11 +9470,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9202,15 +9536,16 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "abs",
-      "calves",
-      "glute_max",
-      "hamstrings",
       "spinal_erectors",
-      "upper_traps"
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9220,9 +9555,11 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "side_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -9254,12 +9591,13 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "rhomboids"
+      "lats",
+      "biceps"
     ],
     "secondaryMuscles": [
-      "biceps",
+      "brachialis",
       "forearms",
-      "lats"
+      "mid_lower_traps"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9273,7 +9611,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9285,7 +9624,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -9312,7 +9654,9 @@
     ],
     "secondaryMuscles": [
       "biceps",
-      "rhomboids"
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9383,12 +9727,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -9429,7 +9775,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -9459,16 +9808,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "abs",
-      "calves",
-      "glute_max",
       "hamstrings",
-      "spinal_erectors",
-      "front_delts",
-      "triceps"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -9504,12 +9850,12 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
-      "abs"
+      "obliques"
     ],
     "secondaryMuscles": [
-      "mid_lower_chest",
-      "rotator_cuff",
-      "triceps"
+      "abs",
+      "front_delts",
+      "rotator_cuff"
     ],
     "defaultUnit": "kg"
   },
@@ -9560,9 +9906,13 @@
     "category": "stretching",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "glute_max"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -9593,7 +9943,9 @@
       "glute_max"
     ],
     "secondaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -9638,9 +9990,11 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
     "defaultUnit": "kg"
   },
   {
@@ -9660,13 +10014,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
+      "adductors",
+      "glute_max",
       "quads"
     ],
     "secondaryMuscles": [
-      "abs",
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9680,7 +10035,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -9694,7 +10050,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -9829,7 +10186,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -9837,6 +10197,7 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
+      "brachialis",
       "biceps"
     ],
     "secondaryMuscles": [
@@ -9853,9 +10214,7 @@
       "abs"
     ],
     "secondaryMuscles": [
-      "mid_lower_chest",
-      "front_delts",
-      "triceps"
+      "hip_flexors"
     ],
     "defaultUnit": "kg"
   },
@@ -9919,9 +10278,9 @@
       "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "abs",
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -9934,7 +10293,8 @@
     ],
     "secondaryMuscles": [
       "mid_lower_chest",
-      "front_delts"
+      "front_delts",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -9943,11 +10303,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -9956,11 +10317,13 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -9999,9 +10362,10 @@
       "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "abs",
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior",
+      "obliques"
     ],
     "defaultUnit": "kg"
   },
@@ -10014,7 +10378,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -10027,7 +10392,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -10152,14 +10518,12 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "triceps"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "mid_lower_chest",
-      "forearms",
-      "lats",
-      "rhomboids",
-      "front_delts"
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -10168,15 +10532,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
-      "adductors",
-      "calves",
-      "forearms",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -10186,15 +10548,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
-      "adductors",
-      "calves",
-      "glute_max",
-      "hamstrings",
-      "quads"
+      "spinal_erectors",
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -10203,14 +10566,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "adductors",
-      "calves",
-      "glute_max",
       "hamstrings",
-      "spinal_erectors"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -10219,17 +10581,17 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
-      "adductors",
-      "calves",
-      "forearms",
-      "glute_max",
       "spinal_erectors",
+      "adductors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -10241,6 +10603,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -10253,6 +10616,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -10265,6 +10629,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -10276,7 +10641,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -10304,12 +10671,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "front_delts"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -10328,11 +10699,11 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
+      "glute_max",
       "hamstrings"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max"
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -10354,6 +10725,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -10406,14 +10778,16 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
-      "hamstrings",
       "spinal_erectors",
-      "upper_traps"
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -10422,11 +10796,11 @@
     "category": "bodyweight",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "triceps"
+      "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "mid_lower_chest",
       "front_delts",
+      "triceps",
       "abs"
     ],
     "defaultUnit": "kg"
@@ -10473,12 +10847,13 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "spinal_erectors"
+      "spinal_erectors",
+      "adductors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -10487,13 +10862,13 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
       "spinal_erectors",
-      "upper_traps"
+      "adductors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -10519,7 +10894,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -10542,7 +10919,11 @@
     "primaryMuscles": [
       "lats"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "mid_lower_traps",
+      "triceps",
+      "abs"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -10627,11 +11008,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "upper_traps"
+      "lats",
+      "mid_lower_traps"
     ],
     "secondaryMuscles": [
-      "lats",
-      "rhomboids"
+      "rhomboids",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -10665,7 +11047,10 @@
     "primaryMuscles": [
       "hamstrings"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -10673,10 +11058,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -10685,9 +11074,11 @@
     "category": "strength",
     "muscleGroup": "core",
     "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
     "defaultUnit": "kg"
   },
   {
@@ -10708,7 +11099,11 @@
     "primaryMuscles": [
       "rear_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -10740,12 +11135,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "front_delts"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -10754,10 +11152,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -10791,7 +11193,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -10801,7 +11206,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -10812,7 +11220,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -10980,12 +11391,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "upper_traps"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -11027,7 +11441,9 @@
     "primaryMuscles": [
       "side_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -11068,11 +11484,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "lats"
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "rhomboids"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -11093,10 +11514,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -11108,7 +11533,7 @@
       "front_delts"
     ],
     "secondaryMuscles": [
-      "lats"
+      "upper_chest"
     ],
     "defaultUnit": "kg"
   },
@@ -11176,7 +11601,9 @@
     "primaryMuscles": [
       "side_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -11184,7 +11611,7 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "side_delts"
     ],
     "secondaryMuscles": [
       "upper_traps"
@@ -11285,9 +11712,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -11314,7 +11744,9 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -11338,11 +11770,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -11383,7 +11818,9 @@
     "primaryMuscles": [
       "quads"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "hip_flexors"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -11436,7 +11873,10 @@
       "glute_max"
     ],
     "secondaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -11526,9 +11966,13 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "rear_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "rhomboids",
+      "mid_lower_traps",
+      "rotator_cuff"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -11536,11 +11980,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -11580,7 +12028,8 @@
       "upper_traps"
     ],
     "secondaryMuscles": [
-      "front_delts"
+      "forearms",
+      "rhomboids"
     ],
     "defaultUnit": "kg"
   },
@@ -11589,12 +12038,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats",
-      "front_delts"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -11669,7 +12122,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -11678,12 +12132,12 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors"
     ],
     "defaultUnit": "kg"
   },
@@ -11695,8 +12149,9 @@
       "side_delts"
     ],
     "secondaryMuscles": [
-      "biceps",
       "upper_traps",
+      "biceps",
+      "forearms",
       "mid_lower_traps"
     ],
     "defaultUnit": "kg",
@@ -11707,10 +12162,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -11719,12 +12178,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -11743,12 +12204,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -11758,11 +12220,13 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "spinal_erectors"
+      "spinal_erectors",
+      "adductors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -11771,13 +12235,13 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "upper_traps"
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "mid_lower_traps",
+      "upper_traps",
       "biceps",
-      "rhomboids",
-      "side_delts"
+      "forearms",
+      "mid_lower_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -11786,12 +12250,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -11834,14 +12300,16 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "forearms",
-      "glute_max",
       "spinal_erectors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -11870,7 +12338,7 @@
     ],
     "secondaryMuscles": [
       "forearms",
-      "front_delts"
+      "neck"
     ],
     "defaultUnit": "kg"
   },
@@ -11908,12 +12376,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -12045,11 +12515,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -12072,14 +12545,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
-      "front_delts",
-      "triceps"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -12088,13 +12560,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "adductors",
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -12104,13 +12576,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "adductors",
-      "calves",
-      "glute_max",
       "hamstrings",
+      "adductors",
+      "abs",
       "spinal_erectors"
     ],
     "defaultUnit": "kg"
@@ -12120,14 +12592,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
+      "hamstrings",
       "adductors",
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -12226,7 +12697,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -12259,11 +12733,13 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
-      "mid_lower_chest"
+      "mid_lower_chest",
+      "upper_chest"
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -12309,6 +12785,7 @@
       "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg"
@@ -12342,10 +12819,11 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "biceps"
+      "brachialis",
+      "forearms"
     ],
     "secondaryMuscles": [
-      "forearms"
+      "biceps"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -12357,7 +12835,9 @@
     "primaryMuscles": [
       "front_delts"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "upper_chest"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -12377,12 +12857,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "upper_traps"
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "mid_lower_traps",
+      "upper_traps",
       "biceps",
-      "side_delts"
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -12458,7 +12938,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -12478,7 +12961,10 @@
     "primaryMuscles": [
       "hamstrings"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -12500,10 +12986,10 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "forearms"
+      "upper_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -12526,10 +13012,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -12552,7 +13042,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -12563,7 +13056,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
   },
@@ -12648,7 +13144,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -12716,11 +13214,15 @@
     "category": "strength",
     "muscleGroup": "glutes",
     "primaryMuscles": [
+      "quads",
       "glute_max"
     ],
     "secondaryMuscles": [
       "hamstrings",
-      "quads"
+      "adductors",
+      "glute_med_min",
+      "calves",
+      "hip_flexors"
     ],
     "defaultUnit": "kg"
   },
@@ -12743,11 +13245,13 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "spinal_erectors"
+      "spinal_erectors",
+      "adductors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -12756,11 +13260,13 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "spinal_erectors"
+      "spinal_erectors",
+      "adductors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -12770,11 +13276,13 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "spinal_erectors"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_max",
-      "hamstrings"
+      "spinal_erectors",
+      "adductors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -12793,12 +13301,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
+      "lats",
       "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "lats",
-      "front_delts",
-      "triceps"
+      "triceps",
+      "abs"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -12808,11 +13316,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -12824,7 +13336,7 @@
       "front_delts"
     ],
     "secondaryMuscles": [
-      "upper_traps"
+      "upper_chest"
     ],
     "defaultUnit": "kg"
   },
@@ -12833,10 +13345,10 @@
     "category": "bodyweight",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_med_min"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
       "adductors",
       "calves",
       "hamstrings"
@@ -12848,16 +13360,17 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "adductors",
-      "forearms",
-      "glute_max",
       "spinal_erectors",
-      "rhomboids",
+      "adductors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -12866,16 +13379,17 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "adductors",
-      "forearms",
-      "glute_max",
       "spinal_erectors",
-      "rhomboids",
+      "adductors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -12884,17 +13398,17 @@
     "category": "strength",
     "muscleGroup": "hamstrings",
     "primaryMuscles": [
-      "hamstrings"
+      "hamstrings",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
-      "adductors",
-      "forearms",
-      "glute_max",
       "spinal_erectors",
-      "rhomboids",
+      "adductors",
       "quads",
-      "upper_traps"
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -12976,7 +13490,9 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -12987,7 +13503,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -12995,11 +13513,15 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -13008,14 +13530,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "glute_med_min",
+      "hamstrings",
       "adductors",
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "glute_med_min",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -13024,11 +13546,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -13118,9 +13645,11 @@
     "category": "stretching",
     "muscleGroup": "core",
     "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
     "defaultUnit": "kg"
   },
   {
@@ -13220,7 +13749,9 @@
     "primaryMuscles": [
       "abs"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "obliques"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -13228,10 +13759,10 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "biceps",
-      "brachialis"
+      "biceps"
     ],
     "secondaryMuscles": [
+      "brachialis",
       "forearms"
     ],
     "defaultUnit": "kg",
@@ -13275,10 +13806,14 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "front_delts",
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "triceps"
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -13288,11 +13823,16 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
       "rhomboids"
     ],
     "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "lats"
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
     ],
     "defaultUnit": "kg",
     "weightEntry": "perSide"
@@ -13339,11 +13879,12 @@
     "category": "strength",
     "muscleGroup": "shoulders",
     "primaryMuscles": [
-      "front_delts"
+      "side_delts"
     ],
     "secondaryMuscles": [
       "upper_traps",
-      "mid_lower_traps"
+      "biceps",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -13352,11 +13893,13 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "upper_traps"
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "mid_lower_traps",
-      "front_delts"
+      "upper_traps",
+      "biceps",
+      "forearms",
+      "mid_lower_traps"
     ],
     "defaultUnit": "kg"
   },
@@ -13365,11 +13908,12 @@
     "category": "strength",
     "muscleGroup": "back",
     "primaryMuscles": [
-      "upper_traps"
+      "side_delts"
     ],
     "secondaryMuscles": [
-      "mid_lower_traps",
-      "side_delts"
+      "upper_traps",
+      "biceps",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -13395,8 +13939,9 @@
     ],
     "secondaryMuscles": [
       "biceps",
-      "rhomboids",
-      "front_delts"
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -13475,7 +14020,8 @@
     ],
     "secondaryMuscles": [
       "mid_lower_chest",
-      "front_delts"
+      "front_delts",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -13494,13 +14040,13 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
-      "spinal_erectors"
+      "adductors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -13525,9 +14071,9 @@
       "quads"
     ],
     "secondaryMuscles": [
-      "calves",
       "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "calves"
     ],
     "defaultUnit": "kg"
   },
@@ -13546,12 +14092,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
-      "hamstrings"
+      "hamstrings",
+      "adductors",
+      "abs",
+      "spinal_erectors"
     ],
     "defaultUnit": "kg"
   },
@@ -13564,7 +14112,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -13577,7 +14126,8 @@
     ],
     "secondaryMuscles": [
       "front_delts",
-      "triceps"
+      "triceps",
+      "serratus_anterior"
     ],
     "defaultUnit": "kg"
   },
@@ -13586,11 +14136,12 @@
     "category": "strength",
     "muscleGroup": "chest",
     "primaryMuscles": [
+      "lats",
       "mid_lower_chest"
     ],
     "secondaryMuscles": [
-      "front_delts",
-      "triceps"
+      "triceps",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -13602,9 +14153,11 @@
       "lats"
     ],
     "secondaryMuscles": [
-      "biceps",
+      "mid_lower_traps",
       "rhomboids",
-      "front_delts"
+      "biceps",
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -13616,9 +14169,11 @@
       "lats"
     ],
     "secondaryMuscles": [
-      "biceps",
+      "mid_lower_traps",
       "rhomboids",
-      "rear_delts"
+      "biceps",
+      "brachialis",
+      "forearms"
     ],
     "defaultUnit": "kg"
   },
@@ -13629,7 +14184,10 @@
     "primaryMuscles": [
       "biceps"
     ],
-    "secondaryMuscles": [],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
     "defaultUnit": "kg"
   },
   {
@@ -13637,13 +14195,14 @@
     "category": "strength",
     "muscleGroup": "quads",
     "primaryMuscles": [
-      "quads"
+      "quads",
+      "glute_max"
     ],
     "secondaryMuscles": [
-      "calves",
-      "glute_max",
       "hamstrings",
-      "spinal_erectors"
+      "adductors",
+      "spinal_erectors",
+      "abs"
     ],
     "defaultUnit": "kg"
   },
@@ -13768,11 +14327,11 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
-      "biceps",
-      "brachialis"
+      "brachialis",
+      "forearms"
     ],
     "secondaryMuscles": [
-      "forearms"
+      "biceps"
     ],
     "defaultUnit": "kg",
     "videoUrl": "https://www.youtube.com/watch?v=ZrpRBgswtHs"
@@ -13782,13 +14341,3551 @@
     "category": "strength",
     "muscleGroup": "arms",
     "primaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "secondaryMuscles": [
+      "biceps"
+    ],
+    "defaultUnit": "kg",
+    "videoUrl": "https://www.youtube.com/watch?v=prfNS4YiAqU"
+  },
+  {
+    "name": "Jefferson Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "spinal_erectors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cyclist Jefferson Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Zercher Squat",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "abs",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hatfield Squat",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Sissy Squat",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Nordic",
+    "category": "bodyweight",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.75
+  },
+  {
+    "name": "Poliquin Step-Up",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Peterson Step-Up",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Spanish Squat",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cyclist Hack Squat",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Heel-Elevated Smith Squat",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Sled Drag",
+    "category": "strength",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Front-Foot-Elevated Split Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "ATG Split Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cossack Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Skater Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Shrimp Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Belt Squat Good Morning",
+    "category": "strength",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jefferson Lunge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Zercher Reverse Lunge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Long-Stride Bulgarian Split Squat",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Deficit Reverse Lunge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Front-Foot-Elevated Reverse Lunge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "45\u00b0 Glute-Biased Back Extension",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Smith B-Stance Hip Thrust",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kas Glute Bridge",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Diagonal Kickback",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Hip Extension",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Hyper",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Deep Step-Up",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cross-Body Step-Up",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves",
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Leaning Cable Hip Abduction",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Behind-the-Body Cable Abduction",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cross-Body Cable Abduction",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Standing Cable Abduction",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Crossover Step-Up",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves",
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Lateral Step-Up",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Curtsy Squat",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max",
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "adductors",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Side-Lying Hip Abduction",
+    "category": "bodyweight",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.2
+  },
+  {
+    "name": "Single-Leg Leg Press \u2014 Abduction Bias",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_max",
+      "glute_med_min"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "adductors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Banded Hip Airplane",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_med_min",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jefferson RDL",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jefferson Deadlift",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "forearms",
+      "upper_traps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Zercher Cossack Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Copenhagen Plank",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "adductors",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.55
+  },
+  {
+    "name": "Copenhagen Hip Adduction",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.65
+  },
+  {
+    "name": "Lateral Lunge",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Deficit Sumo RDL",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Wide-Stance Leg Press",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "adductors",
+      "hamstrings"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Wide-Stance Hack Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "adductors",
+      "hamstrings"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Frog Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Jefferson Good Morning",
+    "category": "strength",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max",
+      "adductors"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Zercher RDL",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Zercher Good Morning",
+    "category": "strength",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "abs",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Nordic Curl",
+    "category": "bodyweight",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAssisted",
+    "bodyweightFactor": 0.85
+  },
+  {
+    "name": "Razor Curl",
+    "category": "bodyweight",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "calves",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAssisted",
+    "bodyweightFactor": 0.8
+  },
+  {
+    "name": "Sliding Leg Curl",
+    "category": "bodyweight",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "glute_max"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.7
+  },
+  {
+    "name": "Deficit RDL",
+    "category": "strength",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "B-Stance RDL",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Leg RDL",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "adductors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "45\u00b0 Hamstring Back Extension",
+    "category": "strength",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kelso Shrug",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "neck"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Chest-Supported Cable Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
       "biceps",
-      "brachialis"
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "One-Arm Cable Lat Pulldown",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Behind-the-Body Lat Pulldown",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis",
+      "mid_lower_traps",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bayesian Cable Pullover",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_traps",
+      "triceps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Pullover",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Seal Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Prone Incline Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "One-Arm Dead-Stop Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Gironda Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Pendlay Row",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_traps",
+      "rhomboids"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "biceps",
+      "brachialis",
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Snatch-Grip RDL",
+    "category": "strength",
+    "muscleGroup": "hamstrings",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Zercher Deadlift",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Snatch-Grip Shrug",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "neck"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Behind-the-Back Cable Shrug",
+    "category": "strength",
+    "muscleGroup": "back",
+    "primaryMuscles": [
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "rhomboids"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Trap-3 Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_traps",
+      "rear_delts",
+      "rotator_cuff",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Y-Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_traps",
+      "rear_delts",
+      "rotator_cuff",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Prone Y-Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_traps",
+      "rear_delts",
+      "rotator_cuff",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Zercher Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "upper_traps",
+      "forearms"
+    ],
+    "secondaryMuscles": [
+      "biceps",
+      "spinal_erectors",
+      "glute_max",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Farmer Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "forearms",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "obliques",
+      "spinal_erectors",
+      "calves"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Suitcase Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "obliques",
+      "forearms"
+    ],
+    "secondaryMuscles": [
+      "upper_traps",
+      "abs",
+      "spinal_erectors",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Overhead Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "front_delts",
+      "rotator_cuff",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "obliques",
+      "triceps",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Waiter's Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "rotator_cuff",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps",
+      "abs",
+      "obliques",
+      "triceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reeves Deadlift",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Snatch-Grip Deadlift",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "spinal_erectors",
+      "quads",
+      "upper_traps",
+      "lats",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Serratus Punch",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Push-Up Plus",
+    "category": "bodyweight",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "front_delts",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.64
+  },
+  {
+    "name": "Cable Bear-Hug",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "serratus_anterior",
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Serratus Wall Slide",
+    "category": "bodyweight",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "rotator_cuff",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.2
+  },
+  {
+    "name": "Foam-Roller Wall Slide",
+    "category": "bodyweight",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "rotator_cuff",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.2
+  },
+  {
+    "name": "Bottom-Up Kettlebell Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "rotator_cuff",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "side_delts",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Press-Around",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "serratus_anterior",
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Deficit Push-Up",
+    "category": "bodyweight",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.64
+  },
+  {
+    "name": "Ring Push-Up",
+    "category": "bodyweight",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.64
+  },
+  {
+    "name": "Guillotine Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse-Grip Bench Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse-Grip Smith Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hex Press",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "front_delts",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Deep Push-Up",
+    "category": "bodyweight",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.64
+  },
+  {
+    "name": "Cable Fly \u2014 Arm Behind Torso",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest",
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Arm Cable Fly",
+    "category": "strength",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest",
+      "upper_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Mechanical-Advantage Push-Up",
+    "category": "bodyweight",
+    "muscleGroup": "chest",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.64
+  },
+  {
+    "name": "Lean-Away Cable Lateral Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Behind-the-Body Cable Lateral Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cross-Body Cable Lateral Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bayesian Lateral Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable W-Raise",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "rotator_cuff"
+    ],
+    "secondaryMuscles": [
+      "rear_delts",
+      "mid_lower_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bradford Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Z-Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "abs",
+      "spinal_erectors",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Arm Landmine Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_chest",
+      "upper_traps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bayesian Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Behind-the-Body Cable Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Incline Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Gironda Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cross-Body Cable Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "High Cable Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bayesian Hammer Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "brachialis",
+      "biceps"
     ],
     "secondaryMuscles": [
       "forearms"
     ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse Bayesian Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Preacher Curl \u2014 Single Arm",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Lengthened Partial Cable Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "secondaryMuscles": [
+      "brachialis",
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "PJR Pullover",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "lats",
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Rolling Dumbbell Extension",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cross-Body Cable Extension",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Behind-the-Body Cable Extension",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Arm Overhead Cable Extension",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Skull Crusher",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Reverse-Grip Pressdown",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "California Press",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Elbows-Out Triceps Extension",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Deficit Close-Grip Push-Up",
+    "category": "bodyweight",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "front_delts",
+      "serratus_anterior",
+      "abs"
+    ],
     "defaultUnit": "kg",
-    "videoUrl": "https://www.youtube.com/watch?v=prfNS4YiAqU"
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.64
+  },
+  {
+    "name": "Offset Farmer Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "obliques",
+      "forearms"
+    ],
+    "secondaryMuscles": [
+      "upper_traps",
+      "abs",
+      "spinal_erectors",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "RKC Plank",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "glute_max",
+      "serratus_anterior",
+      "quads"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.65
+  },
+  {
+    "name": "Body Saw",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "front_delts",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.7
+  },
+  {
+    "name": "Dragon Flag",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "hip_flexors",
+      "lats",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.95
+  },
+  {
+    "name": "Ab Wheel",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "lats",
+      "front_delts",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.75
+  },
+  {
+    "name": "Garhammer Raise",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "hip_flexors",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.45
+  },
+  {
+    "name": "Bayesian Cable Crunch",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Dead Bug",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "hip_flexors",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Hanging Oblique Knee Raise",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques",
+      "hip_flexors"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "forearms"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.6
+  },
+  {
+    "name": "Landmine Rotation",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "front_delts",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Side Bend",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Donkey Calf Raise",
+    "category": "strength",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Deficit Single-Leg Calf Raise",
+    "category": "bodyweight",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Bent-Knee Calf Raise",
+    "category": "bodyweight",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Tibia-Forward Calf Raise",
+    "category": "bodyweight",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 0.85
+  },
+  {
+    "name": "Single-Leg Seated Calf Raise",
+    "category": "strength",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Calf Raise \u2014 Lengthened Partials",
+    "category": "strength",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Tibialis Raise",
+    "category": "bodyweight",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.2
+  },
+  {
+    "name": "Cable Dorsiflexion",
+    "category": "strength",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Single-Leg Tibialis Raise",
+    "category": "bodyweight",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.2
+  },
+  {
+    "name": "Heel Walks",
+    "category": "bodyweight",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "tibialis_anterior"
+    ],
+    "secondaryMuscles": [
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.25
+  },
+  {
+    "name": "Behind-the-Back Wrist Curl",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Towel Dead Hang",
+    "category": "bodyweight",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [
+      "lats",
+      "upper_traps",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Fat-Grip Dead Hang",
+    "category": "bodyweight",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [
+      "lats",
+      "upper_traps",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweightAdded",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Bottom-Up Kettlebell Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "forearms",
+      "rotator_cuff"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "upper_traps",
+      "abs",
+      "obliques"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Fingertip Push-Up",
+    "category": "bodyweight",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.64
+  },
+  {
+    "name": "Rice-Bucket Training",
+    "category": "strength",
+    "muscleGroup": "arms",
+    "primaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Hip Airplane",
+    "category": "strength",
+    "muscleGroup": "glutes",
+    "primaryMuscles": [
+      "glute_med_min",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Clean & Press",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "upper_traps",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "High Pull",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "upper_traps",
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "front_delts",
+      "forearms",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Snatch",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "upper_traps",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Clean & Press",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "upper_traps",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Clean & Push Press",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "quads",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "upper_traps",
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Push Jerk",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "calves",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Man Makers",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "mid_lower_chest",
+      "lats",
+      "abs",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "obliques",
+      "glute_max",
+      "quads"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Devil Press",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "mid_lower_chest",
+      "abs",
+      "upper_traps",
+      "calves"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Bear Complex",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "hamstrings",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "upper_traps",
+      "spinal_erectors",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cluster Complex",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "upper_traps",
+      "spinal_erectors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Dumbbell Complexes",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "front_delts",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "spinal_erectors",
+      "triceps",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Reverse Bear Crawl",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "obliques",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Lateral Bear Crawl",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "obliques",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Crab Walk",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "triceps",
+      "front_delts",
+      "glute_max",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "hamstrings"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Duck Walk",
+    "category": "bodyweight",
+    "muscleGroup": "quads",
+    "primaryMuscles": [
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "calves",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Sprawl",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "mid_lower_chest",
+      "triceps",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "calves",
+      "front_delts"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.85
+  },
+  {
+    "name": "Technical Stand-Up",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "obliques",
+      "glute_max",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Sit-Through",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "glute_max",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.75
+  },
+  {
+    "name": "Beast Reach",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "glute_max",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.65
+  },
+  {
+    "name": "Beast Crawl",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "front_delts",
+      "triceps",
+      "serratus_anterior"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "obliques",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Lateral Ape",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "front_delts",
+      "abs",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "obliques",
+      "glute_max"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Ape Walk",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "front_delts",
+      "abs",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "obliques",
+      "glute_max"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Frogger",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "abs",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "calves",
+      "triceps",
+      "glute_max"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.75
+  },
+  {
+    "name": "Cossack Walk",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors",
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Lateral Squat Walk",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Reverse Walking Lunge",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Walking Cossack Squat",
+    "category": "bodyweight",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Walking Spiderman",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "quads",
+      "serratus_anterior"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.85
+  },
+  {
+    "name": "Ground-to-Stand",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "front_delts",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Windmill",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "front_delts",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Around-the-World",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "obliques",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "side_delts",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Figure-8",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "obliques",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "forearms",
+      "quads"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "One-Arm Kettlebell Swing",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "abs",
+      "spinal_erectors",
+      "forearms",
+      "lats"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Snatch",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "front_delts",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "abs",
+      "triceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell Long Cycle",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "upper_traps",
+      "spinal_erectors",
+      "calves",
+      "forearms",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Kettlebell See-Saw Press",
+    "category": "strength",
+    "muscleGroup": "shoulders",
+    "primaryMuscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "upper_chest",
+      "abs",
+      "rotator_cuff"
+    ],
+    "defaultUnit": "kg",
+    "weightEntry": "perSide"
+  },
+  {
+    "name": "Kettlebell Front Rack Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "obliques",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "glute_max",
+      "calves",
+      "front_delts"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bottom-Up Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "forearms",
+      "rotator_cuff"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "upper_traps",
+      "abs",
+      "obliques",
+      "triceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cross-Body Carry",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "obliques",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "forearms",
+      "front_delts",
+      "spinal_erectors",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Landmine 180",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Landmine Clean & Press",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "upper_traps",
+      "front_delts",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "spinal_erectors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Landmine Squat-to-Press",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Landmine Reverse Lunge + Press",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "adductors",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Landmine Cossack Squat",
+    "category": "strength",
+    "muscleGroup": "quads/hamstrings/glutes",
+    "primaryMuscles": [
+      "adductors",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "calves"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Rotational Dumbbell Snatch",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Rotational Medicine Ball Throw",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Shot Put Throw",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "front_delts",
+      "triceps",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "upper_chest",
+      "abs",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Scoop Toss",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "obliques",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "front_delts",
+      "upper_traps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Medicine Ball Rotational Slam",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Lift",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "serratus_anterior",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Chop",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "serratus_anterior",
+      "glute_max"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Cable Rotational Row",
+    "category": "strength",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "abs",
+      "lats",
+      "rear_delts",
+      "biceps"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Ape Lateral",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "front_delts",
+      "abs",
+      "triceps"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "obliques",
+      "glute_max"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Crab Reach",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "front_delts",
+      "abs"
+    ],
+    "secondaryMuscles": [
+      "triceps",
+      "obliques",
+      "spinal_erectors"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.6
+  },
+  {
+    "name": "Lizard Crawl",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "quads",
+      "serratus_anterior",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Spiderman Crawl",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "hip_flexors",
+      "front_delts"
+    ],
+    "secondaryMuscles": [
+      "obliques",
+      "quads",
+      "serratus_anterior",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Beast Shoulder Tap",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "abs",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "serratus_anterior",
+      "triceps"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.7
+  },
+  {
+    "name": "Bear Crawl + Drag",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "front_delts",
+      "lats",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "forearms",
+      "triceps",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bear Crawl + Dumbbell Drag",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "abs",
+      "front_delts",
+      "lats",
+      "obliques"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "forearms",
+      "triceps",
+      "glute_med_min"
+    ],
+    "defaultUnit": "kg"
+  },
+  {
+    "name": "Bear Crawl + Push-Up",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "mid_lower_chest"
+    ],
+    "secondaryMuscles": [
+      "front_delts",
+      "triceps",
+      "serratus_anterior",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 0.8
+  },
+  {
+    "name": "Depth Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "calves",
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Drop Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "calves",
+      "quads",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Broad Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "quads",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Repeated Broad Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "quads",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Skater Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_med_min",
+      "glute_max",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "adductors",
+      "calves",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Single-Leg Bound",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "calves",
+      "quads"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "glute_med_min",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Tuck Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "hip_flexors",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Switch Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_max",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Pogo Jump",
+    "category": "bodyweight",
+    "muscleGroup": "calves",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "tibialis_anterior",
+      "quads"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Hurdle Hop",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "calves",
+      "glute_max"
+    ],
+    "secondaryMuscles": [
+      "hamstrings",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Lateral Hurdle Jump",
+    "category": "bodyweight",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "quads",
+      "glute_med_min",
+      "calves"
+    ],
+    "secondaryMuscles": [
+      "glute_max",
+      "adductors",
+      "abs"
+    ],
+    "defaultUnit": "kg",
+    "preferredLoadingMode": "bodyweight",
+    "bodyweightFactor": 1.0
+  },
+  {
+    "name": "Kettlebell Complex",
+    "category": "strength",
+    "muscleGroup": "full body/olympic",
+    "primaryMuscles": [
+      "glute_max",
+      "hamstrings",
+      "front_delts",
+      "upper_traps"
+    ],
+    "secondaryMuscles": [
+      "quads",
+      "spinal_erectors",
+      "forearms",
+      "abs",
+      "triceps"
+    ],
+    "defaultUnit": "kg"
   }
 ]

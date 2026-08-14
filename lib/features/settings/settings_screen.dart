@@ -8,13 +8,14 @@ import 'package:intl/intl.dart';
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/exercise_muscle_suggestion.dart';
+import '../../core/domain/exercise_name_matcher.dart';
 import '../../core/domain/muscle.dart';
-import '../../core/domain/muscle_bias.dart';
 import '../../core/domain/plate_math.dart';
 import '../../core/domain/streak.dart';
 import '../../core/domain/training_goal.dart';
 import '../../core/domain/strength_standards.dart';
 import '../../core/domain/workout_settings.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
@@ -146,220 +147,230 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _addExercise(BuildContext context, WidgetRef ref) async {
+    final existingNames = (await ref.read(exerciseRepositoryProvider).all())
+        .map((exercise) => exercise.name)
+        .toList(growable: false);
+    if (!context.mounted) return;
     final name = TextEditingController();
     final bodyweightFactor = TextEditingController(text: '1.0');
     final videoUrl = TextEditingController();
     var category = ExerciseCategory.strength;
     var primary = <MuscleId>{};
     var secondary = <MuscleId>{};
-    MuscleId? biasMuscleA;
-    MuscleId? biasMuscleB;
     var musclesTouched = false;
     var loadingMode = LoadingMode.external;
-    final shouldSave = await showDialog<bool>(
+    final shouldSave = await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-          contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-          title: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                foregroundColor: Theme.of(
-                  context,
-                ).colorScheme.onPrimaryContainer,
-                child: const Icon(AppIcons.add, size: 20),
+        builder: (context, setDialogState) {
+          final theme = Theme.of(context);
+          return SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              const SizedBox(width: 12),
-              const Text('Custom exercise'),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: name,
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      hintText: 'e.g. Cable Crossover',
-                    ),
-                    onChanged: (_) {
-                      if (!musclesTouched) {
-                        final suggestion = suggestMuscles(name.text);
-                        primary = suggestion.primary;
-                        secondary = suggestion.secondary;
-                        if (!primary.contains(biasMuscleA)) biasMuscleA = null;
-                        if (!primary.contains(biasMuscleB)) biasMuscleB = null;
-                      }
-                      setDialogState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  const _FieldLabel('Category'),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final item in ExerciseCategory.values)
-                        ChoiceChip(
-                          label: Text(_titleCase(item.name)),
-                          avatar: Icon(
-                            AppIcons.forCategoryName(item.name),
-                            size: 18,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            foregroundColor:
+                                theme.colorScheme.onPrimaryContainer,
+                            child: const Icon(AppIcons.add, size: 20),
                           ),
-                          selected: category == item,
-                          onSelected: (_) =>
-                              setDialogState(() => category = item),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Custom exercise',
+                            style: theme.textTheme.titleLarge,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              controller: name,
+                              autofocus: true,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                labelText: 'Name',
+                                hintText: 'e.g. Cable Crossover',
+                                errorText:
+                                    isDuplicateExerciseName(
+                                      name.text,
+                                      existingNames,
+                                    )
+                                    ? '"${name.text.trim()}" already exists'
+                                    : null,
+                              ),
+                              onChanged: (_) {
+                                if (!musclesTouched) {
+                                  final suggestion = suggestMuscles(name.text);
+                                  primary = suggestion.primary;
+                                  secondary = suggestion.secondary;
+                                }
+                                setDialogState(() {});
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            const _FieldLabel('Category'),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final item in ExerciseCategory.values)
+                                  ChoiceChip(
+                                    label: Text(_titleCase(item.name)),
+                                    avatar: Icon(
+                                      AppIcons.forCategoryName(item.name),
+                                      size: 18,
+                                    ),
+                                    selected: category == item,
+                                    onSelected: (_) =>
+                                        setDialogState(() => category = item),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            const _FieldLabel('Default load'),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final mode in LoadingMode.values)
+                                  ChoiceChip(
+                                    label: Text(mode.label),
+                                    selected: loadingMode == mode,
+                                    onSelected: (_) => setDialogState(
+                                      () => loadingMode = mode,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: bodyweightFactor,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: const InputDecoration(
+                                labelText: 'Bodyweight factor',
+                                helperText:
+                                    '1.0 = full bodyweight; use lower values for partial-body movements.',
+                              ),
+                              onChanged: (_) => setDialogState(() {}),
+                            ),
+                            const SizedBox(height: 20),
+                            const _FieldLabel('Muscles worked'),
+                            const SizedBox(height: 8),
+                            _MuscleSelectionField(
+                              label: 'Primary muscles',
+                              selected: primary,
+                              onTap: () async {
+                                musclesTouched = true;
+                                final value = await _showMusclePicker(
+                                  context,
+                                  title: 'Primary muscles',
+                                  selected: primary,
+                                );
+                                if (value == null) return;
+                                setDialogState(() {
+                                  primary = value;
+                                  secondary.removeAll(primary);
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            _MuscleSelectionField(
+                              label: 'Secondary muscles',
+                              selected: secondary,
+                              onTap: () async {
+                                musclesTouched = true;
+                                final value = await _showMusclePicker(
+                                  context,
+                                  title: 'Secondary muscles',
+                                  selected: secondary,
+                                  excluded: primary,
+                                );
+                                if (value == null) return;
+                                setDialogState(() => secondary = value);
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            TextField(
+                              controller: videoUrl,
+                              keyboardType: TextInputType.url,
+                              decoration: const InputDecoration(
+                                labelText: 'Video link (optional)',
+                                hintText: 'YouTube or any demo link',
+                              ),
+                              onTapOutside: (_) =>
+                                  FocusManager.instance.primaryFocus?.unfocus(),
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const _FieldLabel('Default load'),
-                  const SizedBox(height: 8),
-                  SegmentedButton<LoadingMode>(
-                    segments: const [
-                      ButtonSegment(
-                        value: LoadingMode.external,
-                        label: Text('Weight'),
                       ),
-                      ButtonSegment(
-                        value: LoadingMode.bodyweight,
-                        label: Text('Bodyweight'),
-                      ),
-                      ButtonSegment(
-                        value: LoadingMode.bodyweightAdded,
-                        label: Text('Added'),
-                      ),
-                      ButtonSegment(
-                        value: LoadingMode.bodyweightAssisted,
-                        label: Text('Assist'),
-                      ),
-                    ],
-                    selected: {loadingMode},
-                    onSelectionChanged: (value) =>
-                        setDialogState(() => loadingMode = value.single),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: bodyweightFactor,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Bodyweight factor',
-                      helperText:
-                          '1.0 = full bodyweight; use lower values for partial-body movements.',
-                    ),
-                    onChanged: (_) => setDialogState(() {}),
-                  ),
-                  const SizedBox(height: 20),
-                  const _FieldLabel('Muscles worked'),
-                  const SizedBox(height: 8),
-                  _MuscleSelectionField(
-                    label: 'Primary muscles',
-                    selected: primary,
-                    onTap: () async {
-                      musclesTouched = true;
-                      final value = await _showMusclePicker(
-                        context,
-                        title: 'Primary muscles',
-                        selected: primary,
-                      );
-                      if (value == null) return;
-                      setDialogState(() {
-                        primary = value;
-                        secondary.removeAll(primary);
-                        if (!primary.contains(biasMuscleA)) biasMuscleA = null;
-                        if (!primary.contains(biasMuscleB)) biasMuscleB = null;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _MuscleSelectionField(
-                    label: 'Secondary muscles',
-                    selected: secondary,
-                    onTap: () async {
-                      musclesTouched = true;
-                      final value = await _showMusclePicker(
-                        context,
-                        title: 'Secondary muscles',
-                        selected: secondary,
-                        excluded: primary,
-                      );
-                      if (value == null) return;
-                      setDialogState(() => secondary = value);
-                    },
-                  ),
-                  if (primary.length >= 2) ...[
-                    const SizedBox(height: 20),
-                    const _FieldLabel('Bias axis (optional)'),
-                    const SizedBox(height: 8),
-                    _BiasAxisField(
-                      label: 'Muscle A',
-                      options: primary,
-                      value: biasMuscleA,
-                      onChanged: (value) =>
-                          setDialogState(() => biasMuscleA = value),
-                    ),
-                    const SizedBox(height: 10),
-                    _BiasAxisField(
-                      label: 'Muscle B',
-                      options: primary,
-                      value: biasMuscleB,
-                      onChanged: (value) =>
-                          setDialogState(() => biasMuscleB = value),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed:
+                                  name.text.trim().isEmpty ||
+                                      primary.isEmpty ||
+                                      isDuplicateExerciseName(
+                                        name.text,
+                                        existingNames,
+                                      )
+                                  ? null
+                                  : () => Navigator.pop(context, true),
+                              child: const Text('Add'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: videoUrl,
-                    keyboardType: TextInputType.url,
-                    decoration: const InputDecoration(
-                      labelText: 'Video link (optional)',
-                      hintText: 'YouTube or any demo link',
-                    ),
-                    onTapOutside: (_) =>
-                        FocusManager.instance.primaryFocus?.unfocus(),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: name.text.trim().isEmpty || primary.isEmpty
-                  ? null
-                  : () => Navigator.pop(context, true),
-              child: const Text('Add'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
     if (shouldSave != true || name.text.trim().isEmpty) return;
     validateMuscleSelection(primary: primary, secondary: secondary);
-    final axis = normalizeBiasAxis(
-      biasMuscleA: biasMuscleA,
-      biasMuscleB: biasMuscleB,
-    );
-    validateBiasAxis(
-      primary: primary,
-      biasMuscleA: axis.biasMuscleA,
-      biasMuscleB: axis.biasMuscleB,
-    );
     final factor = (double.tryParse(bodyweightFactor.text) ?? 1.0).clamp(
       0.0,
       1.0,
@@ -376,8 +387,6 @@ class SettingsScreen extends ConsumerWidget {
             defaultUnit: const Value(WeightUnit.kg),
             preferredLoadingMode: Value(loadingMode),
             bodyweightFactor: Value(factor),
-            biasMuscleA: Value(axis.biasMuscleA?.id),
-            biasMuscleB: Value(axis.biasMuscleB?.id),
             videoUrl: Value(
               videoUrl.text.trim().isEmpty ? null : videoUrl.text.trim(),
             ),
@@ -399,8 +408,6 @@ class SettingsScreen extends ConsumerWidget {
   ) async {
     Set<MuscleId> primary;
     Set<MuscleId> secondary;
-    var biasMuscleA = _decodeMuscleIdOrNull(exercise.biasMuscleA);
-    var biasMuscleB = _decodeMuscleIdOrNull(exercise.biasMuscleB);
     try {
       primary = decodeMuscleIds(exercise.primaryMuscles).toSet();
       secondary = decodeMuscleIds(exercise.secondaryMuscles).toSet();
@@ -411,8 +418,6 @@ class SettingsScreen extends ConsumerWidget {
       primary = {};
       secondary = {};
     }
-    if (!primary.contains(biasMuscleA)) biasMuscleA = null;
-    if (!primary.contains(biasMuscleB)) biasMuscleB = null;
 
     final shouldSave = await showDialog<bool>(
       context: context,
@@ -435,8 +440,6 @@ class SettingsScreen extends ConsumerWidget {
                   setDialogState(() {
                     primary = value;
                     secondary.removeAll(primary);
-                    if (!primary.contains(biasMuscleA)) biasMuscleA = null;
-                    if (!primary.contains(biasMuscleB)) biasMuscleB = null;
                   });
                 },
               ),
@@ -455,26 +458,6 @@ class SettingsScreen extends ConsumerWidget {
                   setDialogState(() => secondary = value);
                 },
               ),
-              if (primary.length >= 2) ...[
-                const SizedBox(height: 16),
-                const _FieldLabel('Bias axis (optional)'),
-                const SizedBox(height: 8),
-                _BiasAxisField(
-                  label: 'Muscle A',
-                  options: primary,
-                  value: biasMuscleA,
-                  onChanged: (value) =>
-                      setDialogState(() => biasMuscleA = value),
-                ),
-                const SizedBox(height: 10),
-                _BiasAxisField(
-                  label: 'Muscle B',
-                  options: primary,
-                  value: biasMuscleB,
-                  onChanged: (value) =>
-                      setDialogState(() => biasMuscleB = value),
-                ),
-              ],
             ],
           ),
           actions: [
@@ -494,15 +477,6 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (shouldSave != true) return;
     validateMuscleSelection(primary: primary, secondary: secondary);
-    final axis = normalizeBiasAxis(
-      biasMuscleA: biasMuscleA,
-      biasMuscleB: biasMuscleB,
-    );
-    validateBiasAxis(
-      primary: primary,
-      biasMuscleA: axis.biasMuscleA,
-      biasMuscleB: axis.biasMuscleB,
-    );
     await ref
         .read(exerciseRepositoryProvider)
         .updateMuscles(
@@ -510,103 +484,140 @@ class SettingsScreen extends ConsumerWidget {
           primaryMuscles: encodeMuscleIds(primary),
           secondaryMuscles: encodeMuscleIds(secondary),
         );
-    await ref
-        .read(exerciseRepositoryProvider)
-        .updateBiasAxis(
-          exercise.id,
-          biasMuscleA: axis.biasMuscleA,
-          biasMuscleB: axis.biasMuscleB,
-        );
   }
 
   Future<void> _manageExercises(BuildContext context, WidgetRef ref) async {
     final all = await ref.read(exerciseRepositoryProvider).all();
     if (!context.mounted) return;
-    final custom = all.where((item) => item.isCustom).toList();
+    var query = '';
     await showModalBottomSheet(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
-        return SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
-                child: Text(
-                  'Custom exercises',
-                  style: theme.textTheme.titleLarge,
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final normalizedQuery = query.trim().toLowerCase();
+            final filtered = all.where((exercise) {
+              if (normalizedQuery.isEmpty) return true;
+              return exercise.name.toLowerCase().contains(normalizedQuery);
+            }).toList()..sort((a, b) => a.name.compareTo(b.name));
+            return SafeArea(
+              top: false,
+              child: Padding(
+                // showModalBottomSheet does not reserve space for the
+                // keyboard on its own — without this, a short sheet (few
+                // results) renders entirely behind the on-screen keyboard.
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(context).bottom,
                 ),
-              ),
-              if (custom.isEmpty)
-                const SizedBox(
-                  height: 260,
-                  child: EmptyState(
-                    icon: AppIcons.inventory,
-                    title: 'No custom exercises',
-                    message:
-                        'Exercises you add will appear here to archive or restore.',
-                  ),
-                )
-              else
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.only(bottom: 12),
-                    children: [
-                      for (final exercise in custom)
-                        ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor:
-                                theme.colorScheme.surfaceContainerHigh,
-                            foregroundColor: theme.colorScheme.primary,
-                            child: Icon(
-                              AppIcons.forCategoryName(exercise.category.name),
-                            ),
-                          ),
-                          title: Text(exercise.name),
-                          subtitle: Text(
-                            exercise.primaryMuscles == '[]'
-                                ? 'Tap to assign muscles'
-                                : exercise.isArchived
-                                ? 'Archived'
-                                : _titleCase(exercise.category.name),
-                          ),
-                          onTap: () async {
-                            Navigator.pop(sheetContext);
-                            await _editExerciseMuscles(context, ref, exercise);
-                          },
-                          trailing: IconButton(
-                            icon: Icon(
-                              exercise.isArchived
-                                  ? AppIcons.refresh
-                                  : AppIcons.archive,
-                            ),
-                            tooltip: exercise.isArchived
-                                ? 'Restore'
-                                : 'Archive',
-                            onPressed: () async {
-                              await ref
-                                  .read(exerciseRepositoryProvider)
-                                  .archive(
-                                    exercise.id,
-                                    archived: !exercise.isArchived,
-                                  );
-                              if (sheetContext.mounted) {
-                                Navigator.pop(sheetContext);
-                              }
-                            },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+                      child: Text(
+                        'All exercises',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                      child: TextField(
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Search exercises',
+                          prefixIcon: Icon(AppIcons.search),
+                        ),
+                        onChanged: (value) =>
+                            setSheetState(() => query = value),
+                      ),
+                    ),
+                    if (filtered.isEmpty)
+                      const Flexible(
+                        child: SizedBox(
+                          height: 260,
+                          child: EmptyState(
+                            icon: AppIcons.search,
+                            title: 'No matching exercises',
+                            message: 'Try a different search term.',
                           ),
                         ),
-                    ],
-                  ),
+                      )
+                    else
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.only(bottom: 12),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final exercise = filtered[index];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor:
+                                    theme.colorScheme.surfaceContainerHigh,
+                                foregroundColor: theme.colorScheme.primary,
+                                child: Icon(
+                                  AppIcons.forCategoryName(
+                                    exercise.category.name,
+                                  ),
+                                ),
+                              ),
+                              title: Text(exercise.name),
+                              subtitle: Text(
+                                exercise.primaryMuscles == '[]'
+                                    ? 'Tap to configure'
+                                    : exercise.isArchived
+                                    ? 'Archived'
+                                    : _titleCase(exercise.category.name),
+                              ),
+                              onTap: () async {
+                                Navigator.pop(sheetContext);
+                                await _editExerciseMuscles(
+                                  context,
+                                  ref,
+                                  exercise,
+                                );
+                              },
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (exercise.isCustom)
+                                    const Chip(label: Text('Custom')),
+                                  IconButton(
+                                    icon: Icon(
+                                      exercise.isArchived
+                                          ? AppIcons.refresh
+                                          : AppIcons.archive,
+                                    ),
+                                    tooltip: exercise.isArchived
+                                        ? 'Restore'
+                                        : 'Archive',
+                                    onPressed: () async {
+                                      await ref
+                                          .read(exerciseRepositoryProvider)
+                                          .archive(
+                                            exercise.id,
+                                            archived: !exercise.isArchived,
+                                          );
+                                      if (sheetContext.mounted) {
+                                        Navigator.pop(sheetContext);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -911,8 +922,9 @@ class SettingsScreen extends ConsumerWidget {
               const Divider(),
               _ActionTile(
                 icon: AppIcons.inventory,
-                title: 'Manage custom exercises',
-                subtitle: 'Archive or restore your exercises',
+                title: 'Manage exercises',
+                subtitle:
+                    'Set muscle bias, edit custom exercises, archive, or restore',
                 onTap: () => _manageExercises(context, ref),
               ),
             ],
@@ -1009,7 +1021,7 @@ class _ReminderSettingsCard extends StatelessWidget {
           if (preferences.enabled) ...[
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.schedule),
+              leading: const Icon(AppIcons.clock),
               title: const Text('Reminder time'),
               subtitle: Text(time),
               trailing: const Icon(AppIcons.chevronRight),
@@ -1260,46 +1272,6 @@ class _FieldLabel extends StatelessWidget {
 String _titleCase(String value) =>
     value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 
-MuscleId? _decodeMuscleIdOrNull(String? id) {
-  if (id == null) return null;
-  try {
-    return MuscleId.fromId(id);
-  } on ArgumentError {
-    return null;
-  }
-}
-
-class _BiasAxisField extends StatelessWidget {
-  const _BiasAxisField({
-    required this.label,
-    required this.options,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String label;
-  final Set<MuscleId> options;
-  final MuscleId? value;
-  final ValueChanged<MuscleId?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final sorted = options.toList()..sort((a, b) => a.label.compareTo(b.label));
-    return DropdownButtonFormField<MuscleId?>(
-      key: ValueKey('$label-${value?.id ?? 'none'}-${sorted.length}'),
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(labelText: label),
-      items: [
-        const DropdownMenuItem<MuscleId?>(value: null, child: Text('None')),
-        for (final muscle in sorted)
-          DropdownMenuItem<MuscleId?>(value: muscle, child: Text(muscle.label)),
-      ],
-      onChanged: onChanged,
-    );
-  }
-}
-
 class _MuscleSelectionField extends StatelessWidget {
   const _MuscleSelectionField({
     required this.label,
@@ -1357,7 +1329,7 @@ class _MuscleSelectionField extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
                     '$count',
@@ -1781,7 +1753,7 @@ class _ScheduleCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
@@ -1799,7 +1771,7 @@ class _ScheduleCard extends StatelessWidget {
                 onPressed: settings.weeklyGoal > 1
                     ? () => onGoalChanged(settings.weeklyGoal - 1)
                     : null,
-                icon: const Icon(Icons.remove, size: 18),
+                icon: const Icon(AppIcons.minus, size: 18),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1813,7 +1785,7 @@ class _ScheduleCard extends StatelessWidget {
                 onPressed: settings.weeklyGoal < 7
                     ? () => onGoalChanged(settings.weeklyGoal + 1)
                     : null,
-                icon: const Icon(Icons.add, size: 18),
+                icon: const Icon(AppIcons.add, size: 18),
               ),
             ],
           ),
@@ -2001,7 +1973,7 @@ class _InfoCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2044,7 +2016,7 @@ class _ActionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,

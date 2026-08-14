@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/muscle.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/exercise_picker.dart';
 import '../../data/database/app_database.dart';
@@ -273,7 +274,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(
                         color: theme.colorScheme.outlineVariant,
                       ),

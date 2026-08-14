@@ -80,6 +80,7 @@ List<PrEvent> recentPrs(List<WorkoutSetRecord> records, {int limit = 8}) {
   final best = <int, double>{}; // exerciseId -> best 1RM so far
   final events = <PrEvent>[];
   for (final r in records) {
+    if (r.weightKg <= 0) continue;
     final current = best[r.exerciseId] ?? 0;
     if (r.estimatedOneRepMaxKg > current + 0.001) {
       best[r.exerciseId] = r.estimatedOneRepMaxKg;

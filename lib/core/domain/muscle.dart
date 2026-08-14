@@ -47,18 +47,21 @@ enum MuscleId {
 String encodeMuscleIds(Iterable<MuscleId> muscles) =>
     jsonEncode([for (final muscle in muscles) muscle.id]);
 
+/// Decodes a stored muscle list, in order, with duplicates removed. A repeated
+/// id is a data defect, not a doubling instruction: it would double a muscle's
+/// set credit and give two bias sliders the same key.
 List<MuscleId> decodeMuscleIds(String encoded) {
   final value = jsonDecode(encoded);
   if (value is! List<dynamic>) {
     throw const FormatException('Muscle list must be a JSON array.');
   }
-  return [
+  return <MuscleId>{
     for (final item in value)
       if (item is String)
         MuscleId.fromId(item)
       else
         throw const FormatException('Muscle ids must be strings.'),
-  ];
+  }.toList(growable: false);
 }
 
 void validateMuscleSelection({

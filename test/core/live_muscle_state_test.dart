@@ -10,18 +10,14 @@ void main() {
     String exercise = 'Bench Press',
     List<MuscleId> primary = const [MuscleId.midLowerChest],
     List<MuscleId> secondary = const [MuscleId.frontDelts, MuscleId.triceps],
-    MuscleId? biasMuscleA,
-    MuscleId? biasMuscleB,
-    double? muscleBias,
+    Map<MuscleId, double>? muscleBiasWeights,
     bool isWarmup = false,
   }) => MuscleSetRecord(
     date: date,
     exerciseName: exercise,
     primaryMuscles: primary,
     secondaryMuscles: secondary,
-    biasMuscleA: biasMuscleA,
-    biasMuscleB: biasMuscleB,
-    muscleBias: muscleBias,
+    muscleBiasWeights: muscleBiasWeights,
     isWarmup: isWarmup,
   );
 
@@ -87,40 +83,49 @@ void main() {
     expect(state[MuscleId.midLowerChest]!.intensity, 1);
   });
 
-  test('bias reallocates only the axis muscles and defaults null to 50/50', () {
-    final state = buildLiveMuscleState([
-      record(
-        date: monday,
-        exercise: 'Leg Press',
-        primary: const [MuscleId.quads, MuscleId.gluteMax, MuscleId.hipFlexors],
-        secondary: const [MuscleId.hamstrings],
-        biasMuscleA: MuscleId.quads,
-        biasMuscleB: MuscleId.gluteMax,
-        muscleBias: -1,
-      ),
-      record(
-        date: monday,
-        exercise: 'Leg Press',
-        primary: const [MuscleId.quads, MuscleId.gluteMax, MuscleId.hipFlexors],
-        secondary: const [MuscleId.hamstrings],
-        biasMuscleA: MuscleId.quads,
-        biasMuscleB: MuscleId.gluteMax,
-        muscleBias: 0,
-      ),
-      record(
-        date: monday,
-        exercise: 'Leg Press',
-        primary: const [MuscleId.quads, MuscleId.gluteMax, MuscleId.hipFlexors],
-        secondary: const [MuscleId.hamstrings],
-        biasMuscleA: MuscleId.quads,
-        biasMuscleB: MuscleId.gluteMax,
-        muscleBias: null,
-      ),
-    ], today: monday);
+  test(
+    'weight maps can bias tracked primaries while absent muscles keep full default credit',
+    () {
+      final state = buildLiveMuscleState([
+        record(
+          date: monday,
+          exercise: 'Leg Press',
+          primary: const [
+            MuscleId.quads,
+            MuscleId.gluteMax,
+            MuscleId.hipFlexors,
+          ],
+          secondary: const [MuscleId.hamstrings],
+          muscleBiasWeights: const {MuscleId.quads: 2, MuscleId.gluteMax: 0},
+        ),
+        record(
+          date: monday,
+          exercise: 'Leg Press',
+          primary: const [
+            MuscleId.quads,
+            MuscleId.gluteMax,
+            MuscleId.hipFlexors,
+          ],
+          secondary: const [MuscleId.hamstrings],
+          muscleBiasWeights: const {MuscleId.quads: 1, MuscleId.gluteMax: 1},
+        ),
+        record(
+          date: monday,
+          exercise: 'Leg Press',
+          primary: const [
+            MuscleId.quads,
+            MuscleId.gluteMax,
+            MuscleId.hipFlexors,
+          ],
+          secondary: const [MuscleId.hamstrings],
+          muscleBiasWeights: const {MuscleId.quads: 1, MuscleId.gluteMax: 1},
+        ),
+      ], today: monday);
 
-    expect(state[MuscleId.quads]!.primarySets, 2);
-    expect(state[MuscleId.gluteMax]!.primarySets, 1);
-    expect(state[MuscleId.hipFlexors]!.primarySets, 3);
-    expect(state[MuscleId.hamstrings]!.secondarySets, 3);
-  });
+      expect(state[MuscleId.quads]!.primarySets, 4);
+      expect(state[MuscleId.gluteMax]!.primarySets, 2);
+      expect(state[MuscleId.hipFlexors]!.primarySets, 3);
+      expect(state[MuscleId.hamstrings]!.secondarySets, 3);
+    },
+  );
 }

@@ -10,6 +10,7 @@ import '../../core/domain/streak.dart';
 import '../../core/domain/workout_settings.dart';
 import '../../core/domain/training_goal.dart';
 import '../../core/domain/rank_events.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/providers.dart';
 import '../session/active_session_screen.dart';
@@ -81,6 +82,17 @@ class DashboardScreen extends ConsumerWidget {
       restDays: restDays,
       restWeekdays: settings.restWeekdays,
     );
+    final streak = computeStreak(
+      trainingDays: days,
+      restWeekdays: settings.restWeekdays,
+      loggedRestDays: restDays,
+      today: now,
+    );
+    final restToday = isRestDay(
+      now,
+      restWeekdays: settings.restWeekdays,
+      loggedRestDays: restDays.map(dateOnly).toSet(),
+    );
 
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -96,8 +108,8 @@ class DashboardScreen extends ConsumerWidget {
                 height: 26,
                 width: 26,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onPrimary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -155,6 +167,30 @@ class DashboardScreen extends ConsumerWidget {
                 onTap: () => Navigator.of(
                   context,
                 ).push(MaterialPageRoute(builder: (_) => const RanksScreen())),
+              ),
+              const SizedBox(height: 14),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: StreakCard(
+                        streak: streak,
+                        trainedToday: trainedToday(days, today: now),
+                        isRestToday: restToday,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: StatTile(
+                        label: 'This week',
+                        value: '$daysThisWeek',
+                        unit: '/ ${settings.weeklyGoal}',
+                        icon: AppIcons.target,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
               _NextFocusCard(summary: bodySummary.asData?.value),
@@ -246,10 +282,10 @@ class _BodyRankHero extends StatelessWidget {
     final trained = summary?.trainedMuscles ?? 0;
     return Material(
       color: theme.colorScheme.primaryContainer,
-      borderRadius: BorderRadius.circular(26),
+      borderRadius: BorderRadius.circular(AppRadius.card),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -318,7 +354,7 @@ class _NextFocusCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
@@ -371,66 +407,41 @@ class _SessionTile extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  height: 46,
-                  width: 46,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? theme.colorScheme.primaryContainer
-                        : theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    active ? AppIcons.play : AppIcons.dumbbell,
-                    color: active
-                        ? theme.colorScheme.onPrimaryContainer
-                        : theme.colorScheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        DateFormat.yMMMMEEEEd().format(date),
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      Text(
-                        active
-                            ? 'In progress · tap to resume'
-                            : DateFormat.jm().format(date),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: active
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  AppIcons.chevronRight,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
+      child: AppListCard(
+        onTap: onTap,
+        leading: Container(
+          height: 46,
+          width: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active
+                ? theme.colorScheme.primaryContainer
+                : theme.colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(AppRadius.control),
           ),
+          child: Icon(
+            active ? AppIcons.play : AppIcons.dumbbell,
+            color: active
+                ? theme.colorScheme.onPrimaryContainer
+                : theme.colorScheme.onSurfaceVariant,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          DateFormat.yMMMMEEEEd().format(date),
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          active ? 'In progress · tap to resume' : DateFormat.jm().format(date),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: active
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Icon(
+          AppIcons.chevronRight,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -450,7 +461,7 @@ class _EmptyRecent extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(

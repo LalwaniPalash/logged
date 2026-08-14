@@ -1,6 +1,10 @@
+import 'package:drift/drift.dart' show Value;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logged/core/domain/enums.dart';
 import 'package:logged/core/domain/muscle_map.dart';
 import 'package:logged/core/domain/progress_analytics.dart';
+import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/repositories/analytics_repository.dart';
 
 WorkoutSetRecord rec(
@@ -58,6 +62,161 @@ void main() {
       final current = stats.last; // most recent week
       expect(current.volumeKg, 500 + 500);
       expect(current.sessions, 1); // both sets share one session timestamp
+    });
+
+    test('repository output excludes warm-up volume', () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Bench Press',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+            ),
+          );
+      final sessionId = await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(
+              startedAt: monday,
+              endedAt: Value(monday.add(const Duration(hours: 1))),
+            ),
+          );
+      final linkId = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: exerciseId,
+              position: 0,
+            ),
+          );
+      await database
+          .into(database.setEntries)
+          .insert(
+            SetEntriesCompanion.insert(
+              sessionExerciseId: linkId,
+              setNumber: 1,
+              reps: const Value(5),
+              weightValue: const Value(50),
+              unit: const Value(WeightUnit.kg),
+              isWarmup: const Value(true),
+            ),
+          );
+      await database
+          .into(database.setEntries)
+          .insert(
+            SetEntriesCompanion.insert(
+              sessionExerciseId: linkId,
+              setNumber: 2,
+              reps: const Value(5),
+              weightValue: const Value(100),
+              unit: const Value(WeightUnit.kg),
+            ),
+          );
+
+      final records = await AnalyticsRepository(database).loadCompletedSets();
+      final stats = weeklyStats(records, weeks: 1, today: monday);
+      expect(stats.single.volumeKg, 500);
+      expect(stats.single.sessions, 1);
+    });
+
+    test(
+      'bodyweight-only sessions still count toward weekly sessions',
+      () async {
+        final database = AppDatabase(NativeDatabase.memory());
+        addTearDown(database.close);
+        final exerciseId = await database
+            .into(database.exercises)
+            .insert(
+              ExercisesCompanion.insert(
+                name: 'Pull-Up',
+                category: ExerciseCategory.bodyweight,
+                muscleGroup: 'back',
+              ),
+            );
+        final sessionId = await database
+            .into(database.sessions)
+            .insert(
+              SessionsCompanion.insert(
+                startedAt: monday,
+                endedAt: Value(monday.add(const Duration(hours: 1))),
+              ),
+            );
+        final linkId = await database
+            .into(database.sessionExercises)
+            .insert(
+              SessionExercisesCompanion.insert(
+                sessionId: sessionId,
+                exerciseId: exerciseId,
+                position: 0,
+              ),
+            );
+        await database
+            .into(database.setEntries)
+            .insert(
+              SetEntriesCompanion.insert(
+                sessionExerciseId: linkId,
+                setNumber: 1,
+                reps: const Value(8),
+                loadingMode: const Value(LoadingMode.bodyweight),
+              ),
+            );
+
+        final records = await AnalyticsRepository(database).loadCompletedSets();
+        final stats = weeklyStats(records, weeks: 1, today: monday);
+        expect(stats.single.volumeKg, 0);
+        expect(stats.single.sessions, 1);
+      },
+    );
+  });
+
+  group('repository-backed recentPrs', () {
+    test('bodyweight sets do not emit zero-kilogram PR events', () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Pull-Up',
+              category: ExerciseCategory.bodyweight,
+              muscleGroup: 'back',
+            ),
+          );
+      final sessionId = await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(
+              startedAt: monday,
+              endedAt: Value(monday.add(const Duration(hours: 1))),
+            ),
+          );
+      final linkId = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: exerciseId,
+              position: 0,
+            ),
+          );
+      await database
+          .into(database.setEntries)
+          .insert(
+            SetEntriesCompanion.insert(
+              sessionExerciseId: linkId,
+              setNumber: 1,
+              reps: const Value(10),
+              loadingMode: const Value(LoadingMode.bodyweight),
+            ),
+          );
+
+      final records = await AnalyticsRepository(database).loadCompletedSets();
+      expect(records.single.weightKg, 0);
+      expect(recentPrs(records), isEmpty);
     });
   });
 

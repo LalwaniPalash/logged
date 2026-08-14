@@ -14,9 +14,7 @@ class MuscleSetRecord {
     required this.exerciseName,
     required this.primaryMuscles,
     required this.secondaryMuscles,
-    required this.biasMuscleA,
-    required this.biasMuscleB,
-    required this.muscleBias,
+    required this.muscleBiasWeights,
     required this.isWarmup,
   });
 
@@ -24,9 +22,7 @@ class MuscleSetRecord {
   final String exerciseName;
   final List<MuscleId> primaryMuscles;
   final List<MuscleId> secondaryMuscles;
-  final MuscleId? biasMuscleA;
-  final MuscleId? biasMuscleB;
-  final double? muscleBias;
+  final Map<MuscleId, double>? muscleBiasWeights;
   final bool isWarmup;
 }
 
@@ -117,9 +113,7 @@ LiveMuscleState buildLiveMuscleState(
       final weight =
           primaryMuscleBiasWeight(
             muscle: muscle,
-            biasMuscleA: record.biasMuscleA,
-            biasMuscleB: record.biasMuscleB,
-            muscleBias: record.muscleBias,
+            weights: record.muscleBiasWeights,
           ) ??
           1.0;
       final load = mutable.putIfAbsent(muscle, () => _MutableLoad(muscle));

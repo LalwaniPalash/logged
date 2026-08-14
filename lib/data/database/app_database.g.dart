@@ -129,28 +129,6 @@ class $ExercisesTable extends Exercises
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _biasMuscleAMeta = const VerificationMeta(
-    'biasMuscleA',
-  );
-  @override
-  late final GeneratedColumn<String> biasMuscleA = GeneratedColumn<String>(
-    'bias_muscle_a',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _biasMuscleBMeta = const VerificationMeta(
-    'biasMuscleB',
-  );
-  @override
-  late final GeneratedColumn<String> biasMuscleB = GeneratedColumn<String>(
-    'bias_muscle_b',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _isCustomMeta = const VerificationMeta(
     'isCustom',
   );
@@ -206,8 +184,6 @@ class $ExercisesTable extends Exercises
     preferredLoadingMode,
     bodyweightFactor,
     videoUrl,
-    biasMuscleA,
-    biasMuscleB,
     isCustom,
     isArchived,
     createdAt,
@@ -277,24 +253,6 @@ class $ExercisesTable extends Exercises
       context.handle(
         _videoUrlMeta,
         videoUrl.isAcceptableOrUnknown(data['video_url']!, _videoUrlMeta),
-      );
-    }
-    if (data.containsKey('bias_muscle_a')) {
-      context.handle(
-        _biasMuscleAMeta,
-        biasMuscleA.isAcceptableOrUnknown(
-          data['bias_muscle_a']!,
-          _biasMuscleAMeta,
-        ),
-      );
-    }
-    if (data.containsKey('bias_muscle_b')) {
-      context.handle(
-        _biasMuscleBMeta,
-        biasMuscleB.isAcceptableOrUnknown(
-          data['bias_muscle_b']!,
-          _biasMuscleBMeta,
-        ),
       );
     }
     if (data.containsKey('is_custom')) {
@@ -377,14 +335,6 @@ class $ExercisesTable extends Exercises
         DriftSqlType.string,
         data['${effectivePrefix}video_url'],
       ),
-      biasMuscleA: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}bias_muscle_a'],
-      ),
-      biasMuscleB: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}bias_muscle_b'],
-      ),
       isCustom: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_custom'],
@@ -431,8 +381,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final LoadingMode preferredLoadingMode;
   final double bodyweightFactor;
   final String? videoUrl;
-  final String? biasMuscleA;
-  final String? biasMuscleB;
   final bool isCustom;
   final bool isArchived;
   final DateTime createdAt;
@@ -448,8 +396,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.preferredLoadingMode,
     required this.bodyweightFactor,
     this.videoUrl,
-    this.biasMuscleA,
-    this.biasMuscleB,
     required this.isCustom,
     required this.isArchived,
     required this.createdAt,
@@ -488,12 +434,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     if (!nullToAbsent || videoUrl != null) {
       map['video_url'] = Variable<String>(videoUrl);
     }
-    if (!nullToAbsent || biasMuscleA != null) {
-      map['bias_muscle_a'] = Variable<String>(biasMuscleA);
-    }
-    if (!nullToAbsent || biasMuscleB != null) {
-      map['bias_muscle_b'] = Variable<String>(biasMuscleB);
-    }
     map['is_custom'] = Variable<bool>(isCustom);
     map['is_archived'] = Variable<bool>(isArchived);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -515,12 +455,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       videoUrl: videoUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(videoUrl),
-      biasMuscleA: biasMuscleA == null && nullToAbsent
-          ? const Value.absent()
-          : Value(biasMuscleA),
-      biasMuscleB: biasMuscleB == null && nullToAbsent
-          ? const Value.absent()
-          : Value(biasMuscleB),
       isCustom: Value(isCustom),
       isArchived: Value(isArchived),
       createdAt: Value(createdAt),
@@ -551,8 +485,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           .fromJson(serializer.fromJson<String>(json['preferredLoadingMode'])),
       bodyweightFactor: serializer.fromJson<double>(json['bodyweightFactor']),
       videoUrl: serializer.fromJson<String?>(json['videoUrl']),
-      biasMuscleA: serializer.fromJson<String?>(json['biasMuscleA']),
-      biasMuscleB: serializer.fromJson<String?>(json['biasMuscleB']),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -583,8 +515,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       ),
       'bodyweightFactor': serializer.toJson<double>(bodyweightFactor),
       'videoUrl': serializer.toJson<String?>(videoUrl),
-      'biasMuscleA': serializer.toJson<String?>(biasMuscleA),
-      'biasMuscleB': serializer.toJson<String?>(biasMuscleB),
       'isCustom': serializer.toJson<bool>(isCustom),
       'isArchived': serializer.toJson<bool>(isArchived),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -603,8 +533,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     LoadingMode? preferredLoadingMode,
     double? bodyweightFactor,
     Value<String?> videoUrl = const Value.absent(),
-    Value<String?> biasMuscleA = const Value.absent(),
-    Value<String?> biasMuscleB = const Value.absent(),
     bool? isCustom,
     bool? isArchived,
     DateTime? createdAt,
@@ -620,8 +548,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     preferredLoadingMode: preferredLoadingMode ?? this.preferredLoadingMode,
     bodyweightFactor: bodyweightFactor ?? this.bodyweightFactor,
     videoUrl: videoUrl.present ? videoUrl.value : this.videoUrl,
-    biasMuscleA: biasMuscleA.present ? biasMuscleA.value : this.biasMuscleA,
-    biasMuscleB: biasMuscleB.present ? biasMuscleB.value : this.biasMuscleB,
     isCustom: isCustom ?? this.isCustom,
     isArchived: isArchived ?? this.isArchived,
     createdAt: createdAt ?? this.createdAt,
@@ -653,12 +579,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ? data.bodyweightFactor.value
           : this.bodyweightFactor,
       videoUrl: data.videoUrl.present ? data.videoUrl.value : this.videoUrl,
-      biasMuscleA: data.biasMuscleA.present
-          ? data.biasMuscleA.value
-          : this.biasMuscleA,
-      biasMuscleB: data.biasMuscleB.present
-          ? data.biasMuscleB.value
-          : this.biasMuscleB,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
       isArchived: data.isArchived.present
           ? data.isArchived.value
@@ -681,8 +601,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('preferredLoadingMode: $preferredLoadingMode, ')
           ..write('bodyweightFactor: $bodyweightFactor, ')
           ..write('videoUrl: $videoUrl, ')
-          ..write('biasMuscleA: $biasMuscleA, ')
-          ..write('biasMuscleB: $biasMuscleB, ')
           ..write('isCustom: $isCustom, ')
           ..write('isArchived: $isArchived, ')
           ..write('createdAt: $createdAt')
@@ -703,8 +621,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     preferredLoadingMode,
     bodyweightFactor,
     videoUrl,
-    biasMuscleA,
-    biasMuscleB,
     isCustom,
     isArchived,
     createdAt,
@@ -724,8 +640,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.preferredLoadingMode == this.preferredLoadingMode &&
           other.bodyweightFactor == this.bodyweightFactor &&
           other.videoUrl == this.videoUrl &&
-          other.biasMuscleA == this.biasMuscleA &&
-          other.biasMuscleB == this.biasMuscleB &&
           other.isCustom == this.isCustom &&
           other.isArchived == this.isArchived &&
           other.createdAt == this.createdAt);
@@ -743,8 +657,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<LoadingMode> preferredLoadingMode;
   final Value<double> bodyweightFactor;
   final Value<String?> videoUrl;
-  final Value<String?> biasMuscleA;
-  final Value<String?> biasMuscleB;
   final Value<bool> isCustom;
   final Value<bool> isArchived;
   final Value<DateTime> createdAt;
@@ -760,8 +672,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.preferredLoadingMode = const Value.absent(),
     this.bodyweightFactor = const Value.absent(),
     this.videoUrl = const Value.absent(),
-    this.biasMuscleA = const Value.absent(),
-    this.biasMuscleB = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isArchived = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -778,8 +688,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.preferredLoadingMode = const Value.absent(),
     this.bodyweightFactor = const Value.absent(),
     this.videoUrl = const Value.absent(),
-    this.biasMuscleA = const Value.absent(),
-    this.biasMuscleB = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isArchived = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -798,8 +706,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? preferredLoadingMode,
     Expression<double>? bodyweightFactor,
     Expression<String>? videoUrl,
-    Expression<String>? biasMuscleA,
-    Expression<String>? biasMuscleB,
     Expression<bool>? isCustom,
     Expression<bool>? isArchived,
     Expression<DateTime>? createdAt,
@@ -817,8 +723,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
         'preferred_loading_mode': preferredLoadingMode,
       if (bodyweightFactor != null) 'bodyweight_factor': bodyweightFactor,
       if (videoUrl != null) 'video_url': videoUrl,
-      if (biasMuscleA != null) 'bias_muscle_a': biasMuscleA,
-      if (biasMuscleB != null) 'bias_muscle_b': biasMuscleB,
       if (isCustom != null) 'is_custom': isCustom,
       if (isArchived != null) 'is_archived': isArchived,
       if (createdAt != null) 'created_at': createdAt,
@@ -837,8 +741,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<LoadingMode>? preferredLoadingMode,
     Value<double>? bodyweightFactor,
     Value<String?>? videoUrl,
-    Value<String?>? biasMuscleA,
-    Value<String?>? biasMuscleB,
     Value<bool>? isCustom,
     Value<bool>? isArchived,
     Value<DateTime>? createdAt,
@@ -855,8 +757,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       preferredLoadingMode: preferredLoadingMode ?? this.preferredLoadingMode,
       bodyweightFactor: bodyweightFactor ?? this.bodyweightFactor,
       videoUrl: videoUrl ?? this.videoUrl,
-      biasMuscleA: biasMuscleA ?? this.biasMuscleA,
-      biasMuscleB: biasMuscleB ?? this.biasMuscleB,
       isCustom: isCustom ?? this.isCustom,
       isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt ?? this.createdAt,
@@ -909,12 +809,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (videoUrl.present) {
       map['video_url'] = Variable<String>(videoUrl.value);
     }
-    if (biasMuscleA.present) {
-      map['bias_muscle_a'] = Variable<String>(biasMuscleA.value);
-    }
-    if (biasMuscleB.present) {
-      map['bias_muscle_b'] = Variable<String>(biasMuscleB.value);
-    }
     if (isCustom.present) {
       map['is_custom'] = Variable<bool>(isCustom.value);
     }
@@ -941,8 +835,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('preferredLoadingMode: $preferredLoadingMode, ')
           ..write('bodyweightFactor: $bodyweightFactor, ')
           ..write('videoUrl: $videoUrl, ')
-          ..write('biasMuscleA: $biasMuscleA, ')
-          ..write('biasMuscleB: $biasMuscleB, ')
           ..write('isCustom: $isCustom, ')
           ..write('isArchived: $isArchived, ')
           ..write('createdAt: $createdAt')
@@ -3798,17 +3690,18 @@ class $SetEntriesTable extends SetEntries
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _muscleBiasMeta = const VerificationMeta(
-    'muscleBias',
+  static const VerificationMeta _muscleBiasWeightsMeta = const VerificationMeta(
+    'muscleBiasWeights',
   );
   @override
-  late final GeneratedColumn<double> muscleBias = GeneratedColumn<double>(
-    'muscle_bias',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
+  late final GeneratedColumn<String> muscleBiasWeights =
+      GeneratedColumn<String>(
+        'muscle_bias_weights',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -3833,7 +3726,7 @@ class $SetEntriesTable extends SetEntries
     durationSec,
     isWarmup,
     rpe,
-    muscleBias,
+    muscleBiasWeights,
     notes,
   ];
   @override
@@ -3921,10 +3814,13 @@ class $SetEntriesTable extends SetEntries
         rpe.isAcceptableOrUnknown(data['rpe']!, _rpeMeta),
       );
     }
-    if (data.containsKey('muscle_bias')) {
+    if (data.containsKey('muscle_bias_weights')) {
       context.handle(
-        _muscleBiasMeta,
-        muscleBias.isAcceptableOrUnknown(data['muscle_bias']!, _muscleBiasMeta),
+        _muscleBiasWeightsMeta,
+        muscleBiasWeights.isAcceptableOrUnknown(
+          data['muscle_bias_weights']!,
+          _muscleBiasWeightsMeta,
+        ),
       );
     }
     if (data.containsKey('notes')) {
@@ -4000,9 +3896,9 @@ class $SetEntriesTable extends SetEntries
         DriftSqlType.double,
         data['${effectivePrefix}rpe'],
       ),
-      muscleBias: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}muscle_bias'],
+      muscleBiasWeights: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}muscle_bias_weights'],
       ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -4040,7 +3936,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
   final int? durationSec;
   final bool isWarmup;
   final double? rpe;
-  final double? muscleBias;
+  final String? muscleBiasWeights;
   final String? notes;
   const SetEntry({
     required this.id,
@@ -4056,7 +3952,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     this.durationSec,
     required this.isWarmup,
     this.rpe,
-    this.muscleBias,
+    this.muscleBiasWeights,
     this.notes,
   });
   @override
@@ -4097,8 +3993,8 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     if (!nullToAbsent || rpe != null) {
       map['rpe'] = Variable<double>(rpe);
     }
-    if (!nullToAbsent || muscleBias != null) {
-      map['muscle_bias'] = Variable<double>(muscleBias);
+    if (!nullToAbsent || muscleBiasWeights != null) {
+      map['muscle_bias_weights'] = Variable<String>(muscleBiasWeights);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -4127,9 +4023,9 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           : Value(durationSec),
       isWarmup: Value(isWarmup),
       rpe: rpe == null && nullToAbsent ? const Value.absent() : Value(rpe),
-      muscleBias: muscleBias == null && nullToAbsent
+      muscleBiasWeights: muscleBiasWeights == null && nullToAbsent
           ? const Value.absent()
-          : Value(muscleBias),
+          : Value(muscleBiasWeights),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -4161,7 +4057,9 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       durationSec: serializer.fromJson<int?>(json['durationSec']),
       isWarmup: serializer.fromJson<bool>(json['isWarmup']),
       rpe: serializer.fromJson<double?>(json['rpe']),
-      muscleBias: serializer.fromJson<double?>(json['muscleBias']),
+      muscleBiasWeights: serializer.fromJson<String?>(
+        json['muscleBiasWeights'],
+      ),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -4188,7 +4086,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       'durationSec': serializer.toJson<int?>(durationSec),
       'isWarmup': serializer.toJson<bool>(isWarmup),
       'rpe': serializer.toJson<double?>(rpe),
-      'muscleBias': serializer.toJson<double?>(muscleBias),
+      'muscleBiasWeights': serializer.toJson<String?>(muscleBiasWeights),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -4207,7 +4105,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     Value<int?> durationSec = const Value.absent(),
     bool? isWarmup,
     Value<double?> rpe = const Value.absent(),
-    Value<double?> muscleBias = const Value.absent(),
+    Value<String?> muscleBiasWeights = const Value.absent(),
     Value<String?> notes = const Value.absent(),
   }) => SetEntry(
     id: id ?? this.id,
@@ -4225,7 +4123,9 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     durationSec: durationSec.present ? durationSec.value : this.durationSec,
     isWarmup: isWarmup ?? this.isWarmup,
     rpe: rpe.present ? rpe.value : this.rpe,
-    muscleBias: muscleBias.present ? muscleBias.value : this.muscleBias,
+    muscleBiasWeights: muscleBiasWeights.present
+        ? muscleBiasWeights.value
+        : this.muscleBiasWeights,
     notes: notes.present ? notes.value : this.notes,
   );
   SetEntry copyWithCompanion(SetEntriesCompanion data) {
@@ -4255,9 +4155,9 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           : this.durationSec,
       isWarmup: data.isWarmup.present ? data.isWarmup.value : this.isWarmup,
       rpe: data.rpe.present ? data.rpe.value : this.rpe,
-      muscleBias: data.muscleBias.present
-          ? data.muscleBias.value
-          : this.muscleBias,
+      muscleBiasWeights: data.muscleBiasWeights.present
+          ? data.muscleBiasWeights.value
+          : this.muscleBiasWeights,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -4278,7 +4178,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           ..write('durationSec: $durationSec, ')
           ..write('isWarmup: $isWarmup, ')
           ..write('rpe: $rpe, ')
-          ..write('muscleBias: $muscleBias, ')
+          ..write('muscleBiasWeights: $muscleBiasWeights, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -4299,7 +4199,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     durationSec,
     isWarmup,
     rpe,
-    muscleBias,
+    muscleBiasWeights,
     notes,
   );
   @override
@@ -4319,7 +4219,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           other.durationSec == this.durationSec &&
           other.isWarmup == this.isWarmup &&
           other.rpe == this.rpe &&
-          other.muscleBias == this.muscleBias &&
+          other.muscleBiasWeights == this.muscleBiasWeights &&
           other.notes == this.notes);
 }
 
@@ -4337,7 +4237,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
   final Value<int?> durationSec;
   final Value<bool> isWarmup;
   final Value<double?> rpe;
-  final Value<double?> muscleBias;
+  final Value<String?> muscleBiasWeights;
   final Value<String?> notes;
   const SetEntriesCompanion({
     this.id = const Value.absent(),
@@ -4353,7 +4253,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     this.durationSec = const Value.absent(),
     this.isWarmup = const Value.absent(),
     this.rpe = const Value.absent(),
-    this.muscleBias = const Value.absent(),
+    this.muscleBiasWeights = const Value.absent(),
     this.notes = const Value.absent(),
   });
   SetEntriesCompanion.insert({
@@ -4370,7 +4270,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     this.durationSec = const Value.absent(),
     this.isWarmup = const Value.absent(),
     this.rpe = const Value.absent(),
-    this.muscleBias = const Value.absent(),
+    this.muscleBiasWeights = const Value.absent(),
     this.notes = const Value.absent(),
   }) : sessionExerciseId = Value(sessionExerciseId),
        setNumber = Value(setNumber);
@@ -4388,7 +4288,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     Expression<int>? durationSec,
     Expression<bool>? isWarmup,
     Expression<double>? rpe,
-    Expression<double>? muscleBias,
+    Expression<String>? muscleBiasWeights,
     Expression<String>? notes,
   }) {
     return RawValuesInsertable({
@@ -4405,7 +4305,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
       if (durationSec != null) 'duration_sec': durationSec,
       if (isWarmup != null) 'is_warmup': isWarmup,
       if (rpe != null) 'rpe': rpe,
-      if (muscleBias != null) 'muscle_bias': muscleBias,
+      if (muscleBiasWeights != null) 'muscle_bias_weights': muscleBiasWeights,
       if (notes != null) 'notes': notes,
     });
   }
@@ -4424,7 +4324,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     Value<int?>? durationSec,
     Value<bool>? isWarmup,
     Value<double?>? rpe,
-    Value<double?>? muscleBias,
+    Value<String?>? muscleBiasWeights,
     Value<String?>? notes,
   }) {
     return SetEntriesCompanion(
@@ -4441,7 +4341,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
       durationSec: durationSec ?? this.durationSec,
       isWarmup: isWarmup ?? this.isWarmup,
       rpe: rpe ?? this.rpe,
-      muscleBias: muscleBias ?? this.muscleBias,
+      muscleBiasWeights: muscleBiasWeights ?? this.muscleBiasWeights,
       notes: notes ?? this.notes,
     );
   }
@@ -4494,8 +4394,8 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     if (rpe.present) {
       map['rpe'] = Variable<double>(rpe.value);
     }
-    if (muscleBias.present) {
-      map['muscle_bias'] = Variable<double>(muscleBias.value);
+    if (muscleBiasWeights.present) {
+      map['muscle_bias_weights'] = Variable<String>(muscleBiasWeights.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -4519,7 +4419,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
           ..write('durationSec: $durationSec, ')
           ..write('isWarmup: $isWarmup, ')
           ..write('rpe: $rpe, ')
-          ..write('muscleBias: $muscleBias, ')
+          ..write('muscleBiasWeights: $muscleBiasWeights, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -5371,8 +5271,6 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<LoadingMode> preferredLoadingMode,
       Value<double> bodyweightFactor,
       Value<String?> videoUrl,
-      Value<String?> biasMuscleA,
-      Value<String?> biasMuscleB,
       Value<bool> isCustom,
       Value<bool> isArchived,
       Value<DateTime> createdAt,
@@ -5390,8 +5288,6 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<LoadingMode> preferredLoadingMode,
       Value<double> bodyweightFactor,
       Value<String?> videoUrl,
-      Value<String?> biasMuscleA,
-      Value<String?> biasMuscleB,
       Value<bool> isCustom,
       Value<bool> isArchived,
       Value<DateTime> createdAt,
@@ -5508,16 +5404,6 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<String> get videoUrl => $composableBuilder(
     column: $table.videoUrl,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get biasMuscleA => $composableBuilder(
-    column: $table.biasMuscleA,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get biasMuscleB => $composableBuilder(
-    column: $table.biasMuscleB,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5651,16 +5537,6 @@ class $$ExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get biasMuscleA => $composableBuilder(
-    column: $table.biasMuscleA,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get biasMuscleB => $composableBuilder(
-    column: $table.biasMuscleB,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get isCustom => $composableBuilder(
     column: $table.isCustom,
     builder: (column) => ColumnOrderings(column),
@@ -5735,16 +5611,6 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<String> get videoUrl =>
       $composableBuilder(column: $table.videoUrl, builder: (column) => column);
-
-  GeneratedColumn<String> get biasMuscleA => $composableBuilder(
-    column: $table.biasMuscleA,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get biasMuscleB => $composableBuilder(
-    column: $table.biasMuscleB,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<bool> get isCustom =>
       $composableBuilder(column: $table.isCustom, builder: (column) => column);
@@ -5851,8 +5717,6 @@ class $$ExercisesTableTableManager
                 Value<LoadingMode> preferredLoadingMode = const Value.absent(),
                 Value<double> bodyweightFactor = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
-                Value<String?> biasMuscleA = const Value.absent(),
-                Value<String?> biasMuscleB = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -5868,8 +5732,6 @@ class $$ExercisesTableTableManager
                 preferredLoadingMode: preferredLoadingMode,
                 bodyweightFactor: bodyweightFactor,
                 videoUrl: videoUrl,
-                biasMuscleA: biasMuscleA,
-                biasMuscleB: biasMuscleB,
                 isCustom: isCustom,
                 isArchived: isArchived,
                 createdAt: createdAt,
@@ -5887,8 +5749,6 @@ class $$ExercisesTableTableManager
                 Value<LoadingMode> preferredLoadingMode = const Value.absent(),
                 Value<double> bodyweightFactor = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
-                Value<String?> biasMuscleA = const Value.absent(),
-                Value<String?> biasMuscleB = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -5904,8 +5764,6 @@ class $$ExercisesTableTableManager
                 preferredLoadingMode: preferredLoadingMode,
                 bodyweightFactor: bodyweightFactor,
                 videoUrl: videoUrl,
-                biasMuscleA: biasMuscleA,
-                biasMuscleB: biasMuscleB,
                 isCustom: isCustom,
                 isArchived: isArchived,
                 createdAt: createdAt,
@@ -8218,7 +8076,7 @@ typedef $$SetEntriesTableCreateCompanionBuilder =
       Value<int?> durationSec,
       Value<bool> isWarmup,
       Value<double?> rpe,
-      Value<double?> muscleBias,
+      Value<String?> muscleBiasWeights,
       Value<String?> notes,
     });
 typedef $$SetEntriesTableUpdateCompanionBuilder =
@@ -8236,7 +8094,7 @@ typedef $$SetEntriesTableUpdateCompanionBuilder =
       Value<int?> durationSec,
       Value<bool> isWarmup,
       Value<double?> rpe,
-      Value<double?> muscleBias,
+      Value<String?> muscleBiasWeights,
       Value<String?> notes,
     });
 
@@ -8335,8 +8193,8 @@ class $$SetEntriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get muscleBias => $composableBuilder(
-    column: $table.muscleBias,
+  ColumnFilters<String> get muscleBiasWeights => $composableBuilder(
+    column: $table.muscleBiasWeights,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8438,8 +8296,8 @@ class $$SetEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get muscleBias => $composableBuilder(
-    column: $table.muscleBias,
+  ColumnOrderings<String> get muscleBiasWeights => $composableBuilder(
+    column: $table.muscleBiasWeights,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8529,8 +8387,8 @@ class $$SetEntriesTableAnnotationComposer
   GeneratedColumn<double> get rpe =>
       $composableBuilder(column: $table.rpe, builder: (column) => column);
 
-  GeneratedColumn<double> get muscleBias => $composableBuilder(
-    column: $table.muscleBias,
+  GeneratedColumn<String> get muscleBiasWeights => $composableBuilder(
+    column: $table.muscleBiasWeights,
     builder: (column) => column,
   );
 
@@ -8602,7 +8460,7 @@ class $$SetEntriesTableTableManager
                 Value<int?> durationSec = const Value.absent(),
                 Value<bool> isWarmup = const Value.absent(),
                 Value<double?> rpe = const Value.absent(),
-                Value<double?> muscleBias = const Value.absent(),
+                Value<String?> muscleBiasWeights = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
               }) => SetEntriesCompanion(
                 id: id,
@@ -8618,7 +8476,7 @@ class $$SetEntriesTableTableManager
                 durationSec: durationSec,
                 isWarmup: isWarmup,
                 rpe: rpe,
-                muscleBias: muscleBias,
+                muscleBiasWeights: muscleBiasWeights,
                 notes: notes,
               ),
           createCompanionCallback:
@@ -8636,7 +8494,7 @@ class $$SetEntriesTableTableManager
                 Value<int?> durationSec = const Value.absent(),
                 Value<bool> isWarmup = const Value.absent(),
                 Value<double?> rpe = const Value.absent(),
-                Value<double?> muscleBias = const Value.absent(),
+                Value<String?> muscleBiasWeights = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
               }) => SetEntriesCompanion.insert(
                 id: id,
@@ -8652,7 +8510,7 @@ class $$SetEntriesTableTableManager
                 durationSec: durationSec,
                 isWarmup: isWarmup,
                 rpe: rpe,
-                muscleBias: muscleBias,
+                muscleBiasWeights: muscleBiasWeights,
                 notes: notes,
               ),
           withReferenceMapper: (p0) => p0

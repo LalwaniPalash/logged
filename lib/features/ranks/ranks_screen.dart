@@ -8,6 +8,8 @@ import '../../core/domain/muscle.dart';
 import '../../core/domain/strength_standards.dart';
 import '../../core/domain/training_goal.dart';
 import '../../core/domain/workout_metrics.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_widgets.dart';
 import '../../data/providers.dart';
 import '../../data/repositories/analytics_repository.dart';
 import '../../data/repositories/settings_repository.dart';
@@ -52,7 +54,12 @@ class _RanksScreenState extends ConsumerState<RanksScreen> {
             onSelectionChanged: (value) =>
                 setState(() => _section = value.single),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          SectionHeader(
+            _section == _RanksSection.muscles
+                ? 'Your muscles'
+                : 'Strength standards',
+          ),
           if (_section == _RanksSection.muscles)
             progress.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -153,36 +160,77 @@ class _MuscleRanks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.extension<AppColors>()!;
     final rows = values.values.toList()
       ..sort((a, b) => b.rankScore.compareTo(a.rankScore));
     return Column(
       children: [
         for (final progress in rows)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          progress.muscle.label,
-                          style: Theme.of(context).textTheme.titleMedium,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: colors.streakContainer,
+                          foregroundColor: colors.streak,
+                          child: const Icon(AppIcons.trophy, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            progress.muscle.label,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Text(
+                            '${progress.rank.label} · ${goal.label}',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: LinearProgressIndicator(
+                        value: progress.rankProgress,
+                        minHeight: 8,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.primary,
                         ),
                       ),
-                      Text(
-                        '${progress.rank.label} · ${goal.label}',
-                        style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      rankExplainer(progress, goal),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(value: progress.rankProgress),
-                  const SizedBox(height: 8),
-                  Text(rankExplainer(progress, goal)),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -19,6 +19,7 @@ class AppIcons {
   static const play = PhosphorIconsFill.play;
   static const videoAdd = PhosphorIconsRegular.youtubeLogo;
   static const add = PhosphorIconsRegular.plus;
+  static const minus = PhosphorIconsRegular.minus;
   static const check = PhosphorIconsRegular.check;
   static const circle = PhosphorIconsRegular.circle;
   static const close = PhosphorIconsRegular.x;
@@ -39,6 +40,7 @@ class AppIcons {
   static const fire = PhosphorIconsFill.fire;
   static const bolt = PhosphorIconsRegular.lightning;
   static const target = PhosphorIconsRegular.target;
+  static const clock = PhosphorIconsRegular.clock;
   static const rest = PhosphorIconsRegular.bed;
   static const restFill = PhosphorIconsFill.bed;
   static const trophy = PhosphorIconsFill.trophy;

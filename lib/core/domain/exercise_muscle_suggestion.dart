@@ -37,8 +37,12 @@ _keywordSuggestions = {
     ],
   ),
   'landmine press': (
-    primary: [MuscleId.upperChest, MuscleId.frontDelts],
-    secondary: [MuscleId.triceps, MuscleId.serratusAnterior],
+    primary: [MuscleId.frontDelts, MuscleId.sideDelts],
+    secondary: [
+      MuscleId.triceps,
+      MuscleId.upperChest,
+      MuscleId.serratusAnterior,
+    ],
   ),
   'leg press': (
     primary: [MuscleId.quads, MuscleId.gluteMax],
@@ -103,8 +107,8 @@ _keywordSuggestions = {
     secondary: [MuscleId.forearms],
   ),
   'upright row': (
-    primary: [MuscleId.sideDelts, MuscleId.upperTraps],
-    secondary: [MuscleId.biceps, MuscleId.forearms],
+    primary: [MuscleId.sideDelts],
+    secondary: [MuscleId.upperTraps, MuscleId.biceps, MuscleId.forearms],
   ),
   'rear delt fly': (
     primary: [MuscleId.rearDelts],
@@ -126,6 +130,8 @@ _keywordSuggestions = {
     primary: [MuscleId.midLowerChest],
     secondary: [MuscleId.frontDelts],
   ),
+  'pec deck': (primary: [], secondary: []),
+  'cable crossover': (primary: [], secondary: []),
   'lateral raise': (
     primary: [MuscleId.sideDelts],
     secondary: [MuscleId.upperTraps],
@@ -178,14 +184,10 @@ _keywordSuggestions = {
     secondary: [MuscleId.triceps, MuscleId.abs],
   ),
   'pushdown': (primary: [MuscleId.triceps], secondary: [MuscleId.forearms]),
-  'push up': (
-    primary: [MuscleId.midLowerChest],
-    secondary: [
-      MuscleId.frontDelts,
-      MuscleId.triceps,
-      MuscleId.serratusAnterior,
-    ],
-  ),
+  'push up': (primary: [], secondary: []),
+  'pushup': (primary: [], secondary: []),
+  'push ups': (primary: [], secondary: []),
+  'pushups': (primary: [], secondary: []),
   'pull up': (
     primary: [MuscleId.lats],
     secondary: [
@@ -295,7 +297,7 @@ ExerciseMuscleSuggestion _dynamicSuggestionForMatch(
     case 'chest press':
     case 'press':
       return (
-        primary: {chestMuscleFromExerciseName(exerciseName)},
+        primary: chestPrimaryMusclesFromExerciseName(exerciseName),
         secondary: {
           MuscleId.frontDelts,
           MuscleId.triceps,
@@ -303,9 +305,23 @@ ExerciseMuscleSuggestion _dynamicSuggestionForMatch(
         },
       );
     case 'fly':
+    case 'pec deck':
+    case 'cable crossover':
       return (
-        primary: {chestMuscleFromExerciseName(exerciseName)},
+        primary: chestPrimaryMusclesFromExerciseName(exerciseName),
         secondary: {MuscleId.frontDelts},
+      );
+    case 'push up':
+    case 'pushup':
+    case 'push ups':
+    case 'pushups':
+      return (
+        primary: chestPrimaryMusclesFromExerciseName(exerciseName),
+        secondary: {
+          MuscleId.frontDelts,
+          MuscleId.triceps,
+          MuscleId.serratusAnterior,
+        },
       );
     case 'raise':
       return (

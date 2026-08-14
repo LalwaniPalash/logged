@@ -201,74 +201,56 @@ class TemplatesScreen extends ConsumerWidget {
                 Padding(
                   key: ValueKey(template.id),
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: Material(
-                    color: theme.colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(18),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              TemplateEditorScreen(template: template),
-                        ),
+                  child: AppListCard(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            TemplateEditorScreen(template: template),
                       ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant,
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor:
-                                  theme.colorScheme.primaryContainer,
-                              foregroundColor:
-                                  theme.colorScheme.onPrimaryContainer,
-                              child: const Icon(AppIcons.templates),
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      foregroundColor: theme.colorScheme.onPrimaryContainer,
+                      child: const Icon(AppIcons.templates),
+                    ),
+                    title: Text(
+                      template.name,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PopupMenuButton<String>(
+                          tooltip: 'Template actions',
+                          onSelected: (action) =>
+                              _handleAction(context, ref, template, action),
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'rename',
+                              child: Text('Rename'),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text(
-                                template.name,
-                                style: theme.textTheme.titleMedium,
-                              ),
+                            PopupMenuItem(
+                              value: 'duplicate',
+                              child: Text('Duplicate'),
                             ),
-                            PopupMenuButton<String>(
-                              tooltip: 'Template actions',
-                              onSelected: (action) =>
-                                  _handleAction(context, ref, template, action),
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'rename',
-                                  child: Text('Rename'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'duplicate',
-                                  child: Text('Duplicate'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text('Delete'),
-                                ),
-                              ],
-                            ),
-                            ReorderableDragStartListener(
-                              index: templates.indexOf(template),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Icon(
-                                  AppIcons.drag,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
                             ),
                           ],
                         ),
-                      ),
+                        ReorderableDragStartListener(
+                          index: templates.indexOf(template),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              AppIcons.drag,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

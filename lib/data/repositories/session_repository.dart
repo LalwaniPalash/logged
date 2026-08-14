@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/enums.dart';
+import '../../core/domain/muscle.dart';
+import '../../core/domain/muscle_bias.dart';
 import '../../core/domain/streak.dart';
 import '../../core/domain/workout_session_summary.dart';
 import '../database/app_database.dart';
@@ -27,7 +29,7 @@ class SetSeed {
     this.durationSec,
     this.distanceMeters,
     this.sideCount = 1,
-    this.muscleBias,
+    this.muscleBiasWeights,
   });
 
   factory SetSeed.fromSetEntry(SetEntry set) => SetSeed(
@@ -39,7 +41,7 @@ class SetSeed {
     durationSec: set.durationSec,
     distanceMeters: set.distanceMeters,
     sideCount: set.sideCount,
-    muscleBias: set.muscleBias,
+    muscleBiasWeights: decodeMuscleBiasWeights(set.muscleBiasWeights),
   );
 
   final int? reps;
@@ -50,7 +52,7 @@ class SetSeed {
   final int? durationSec;
   final double? distanceMeters;
   final int sideCount;
-  final double? muscleBias;
+  final Map<MuscleId, double>? muscleBiasWeights;
 
   SetSeed copyWith({
     int? reps,
@@ -61,7 +63,7 @@ class SetSeed {
     int? durationSec,
     double? distanceMeters,
     int? sideCount,
-    double? muscleBias,
+    Map<MuscleId, double>? muscleBiasWeights,
   }) => SetSeed(
     reps: reps ?? this.reps,
     weightValue: weightValue ?? this.weightValue,
@@ -71,7 +73,7 @@ class SetSeed {
     durationSec: durationSec ?? this.durationSec,
     distanceMeters: distanceMeters ?? this.distanceMeters,
     sideCount: sideCount ?? this.sideCount,
-    muscleBias: muscleBias ?? this.muscleBias,
+    muscleBiasWeights: muscleBiasWeights ?? this.muscleBiasWeights,
   );
 }
 
@@ -216,6 +218,40 @@ class SessionRepository {
     await (_database.update(_database.sessionExercises)
           ..where((row) => row.id.equals(sessionExerciseId)))
         .write(SessionExercisesCompanion(exerciseId: Value(exerciseId)));
+  });
+
+  /// Reorders the exercises within one active/completed session.
+  /// [orderedSessionExerciseIds] must contain exactly the session's current
+  /// `SessionExercises.id`s, each once — a partial or foreign list would
+  /// silently corrupt the other exercises' positions.
+  Future<void> reorderExercises(
+    int sessionId,
+    List<int> orderedSessionExerciseIds,
+  ) => _database.transaction(() async {
+    final existing = await (_database.select(
+      _database.sessionExercises,
+    )..where((row) => row.sessionId.equals(sessionId))).get();
+    final existingIds = existing.map((row) => row.id).toSet();
+    if (orderedSessionExerciseIds.toSet().length !=
+            orderedSessionExerciseIds.length ||
+        existingIds.difference(orderedSessionExerciseIds.toSet()).isNotEmpty ||
+        orderedSessionExerciseIds.toSet().difference(existingIds).isNotEmpty) {
+      throw ArgumentError.value(
+        orderedSessionExerciseIds,
+        'orderedSessionExerciseIds',
+        'must contain every exercise in this session exactly once',
+      );
+    }
+    for (
+      var position = 0;
+      position < orderedSessionExerciseIds.length;
+      position++
+    ) {
+      await (_database.update(
+            _database.sessionExercises,
+          )..where((row) => row.id.equals(orderedSessionExerciseIds[position])))
+          .write(SessionExercisesCompanion(position: Value(position)));
+    }
   });
 
   Future<void> startFromTemplate({

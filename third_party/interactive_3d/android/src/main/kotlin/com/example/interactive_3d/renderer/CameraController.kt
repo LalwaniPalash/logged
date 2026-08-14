@@ -58,6 +58,14 @@ internal class CameraController(
     var zoomLevel = 1.0f
         private set
 
+    // The zoom level to restore on resetOrbit(). Captured from the first
+    // setZoom() call after a fresh fitToBoundingBox() — mirrors iOS
+    // SceneManager's captureCurrentCameraResetState/shouldCaptureNextZoomAsResetBaseline
+    // pattern, so Reset restores the zoom the model actually loaded at
+    // instead of an unrelated hardcoded value.
+    private var resetZoomLevel = 1.0f
+    private var shouldCaptureNextZoomAsResetBaseline = true
+
     // Adaptive frame pacing
     var isInteracting = false
         private set
@@ -126,24 +134,31 @@ internal class CameraController(
 
         orbitAngleX = 0.0f
         orbitAngleY = 0.0f
+        shouldCaptureNextZoomAsResetBaseline = true
     }
 
     /**
-     * Restores the default orbit angles and default "no zoom" state while
-     * preserving the fitted orbit radius from the current model.
+     * Restores the default orbit angles and the zoom level the model was
+     * framed at on load (captured via [setZoom]), preserving the fitted
+     * orbit radius from the current model.
      */
     fun resetOrbit() {
         orbitAngleX = 0.0f
         orbitAngleY = 0.0f
-        zoomLevel = 1.0f
+        zoomLevel = resetZoomLevel
     }
 
     /**
-     * Sets the zoom level directly (e.g. from the public API).
+     * Sets the zoom level directly (e.g. from the public API). The first
+     * call after a fresh [fitToBoundingBox] is captured as the reset baseline.
      */
     fun setZoom(zoom: Float) {
         if (zoom <= 0) return
         zoomLevel = zoom
+        if (shouldCaptureNextZoomAsResetBaseline) {
+            resetZoomLevel = zoom
+            shouldCaptureNextZoomAsResetBaseline = false
+        }
     }
 
     /**

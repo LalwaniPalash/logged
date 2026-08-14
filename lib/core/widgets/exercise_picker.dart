@@ -53,56 +53,64 @@ class _ExercisePickerSheetState extends State<_ExercisePickerSheet> {
       expand: false,
       initialChildSize: 0.72,
       maxChildSize: 0.92,
-      builder: (context, controller) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(widget.title, style: theme.textTheme.titleLarge),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: TextField(
-              autofocus: true,
-              onChanged: (value) => setState(() => _query = value),
-              decoration: const InputDecoration(
-                hintText: 'Search by name or muscle group',
-                prefixIcon: Icon(AppIcons.search),
+      builder: (context, controller) => Padding(
+        // showModalBottomSheet does not reserve space for the keyboard on its
+        // own — without this, a short sheet (few/no results) renders entirely
+        // behind the on-screen keyboard instead of being pushed above it.
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(widget.title, style: theme.textTheme.titleLarge),
               ),
             ),
-          ),
-          Expanded(
-            child: filtered.isEmpty
-                ? const EmptyState(
-                    icon: AppIcons.search,
-                    title: 'No matches',
-                    message: 'Try a different search term.',
-                  )
-                : ListView.builder(
-                    controller: controller,
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final exercise = filtered[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              theme.colorScheme.surfaceContainerHigh,
-                          foregroundColor: theme.colorScheme.onSurfaceVariant,
-                          child: Icon(
-                            iconForCategoryName(exercise.category.name),
-                            size: 20,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: TextField(
+                autofocus: true,
+                onChanged: (value) => setState(() => _query = value),
+                decoration: const InputDecoration(
+                  hintText: 'Search by name or muscle group',
+                  prefixIcon: Icon(AppIcons.search),
+                ),
+              ),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? const EmptyState(
+                      icon: AppIcons.search,
+                      title: 'No matches',
+                      message: 'Try a different search term.',
+                    )
+                  : ListView.builder(
+                      controller: controller,
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final exercise = filtered[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerHigh,
+                            foregroundColor: theme.colorScheme.onSurfaceVariant,
+                            child: Icon(
+                              iconForCategoryName(exercise.category.name),
+                              size: 20,
+                            ),
                           ),
-                        ),
-                        title: Text(exercise.name),
-                        subtitle: Text(exercise.muscleGroup),
-                        onTap: () => Navigator.pop(context, exercise),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                          title: Text(exercise.name),
+                          subtitle: Text(exercise.muscleGroup),
+                          onTap: () => Navigator.pop(context, exercise),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

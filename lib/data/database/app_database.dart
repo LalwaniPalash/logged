@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import '../../core/domain/enums.dart';
+import '../../core/domain/muscle.dart';
+import '../../core/domain/muscle_bias.dart';
 
 part 'app_database.g.dart';
 
@@ -23,8 +25,6 @@ class Exercises extends Table {
   // itself, so it shows in any workout the exercise appears in. A per-template
   // override still lives on TemplateExercises/SessionExercises.formUrl.
   TextColumn get videoUrl => text().nullable()();
-  TextColumn get biasMuscleA => text().nullable()();
-  TextColumn get biasMuscleB => text().nullable()();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -102,7 +102,7 @@ class SetEntries extends Table {
   IntColumn get durationSec => integer().nullable()();
   BoolColumn get isWarmup => boolean().withDefault(const Constant(false))();
   RealColumn get rpe => real().nullable()();
-  RealColumn get muscleBias => real().nullable()();
+  TextColumn get muscleBiasWeights => text().nullable()();
   TextColumn get notes => text().nullable()();
 }
 
@@ -150,7 +150,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'logged'));
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -283,10 +283,44 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await migrator.addColumn(exercises, exercises.videoUrl);
       }
-      if (from < 8) {
-        await migrator.addColumn(exercises, exercises.biasMuscleA);
-        await migrator.addColumn(exercises, exercises.biasMuscleB);
-        await migrator.addColumn(setEntries, setEntries.muscleBias);
+      if (from < 10) {
+        await migrator.addColumn(setEntries, setEntries.muscleBiasWeights);
+      }
+      if (from >= 8 && from < 10) {
+        final legacyBiasRows = await customSelect(
+          'SELECT se.id AS set_id, se.muscle_bias AS muscle_bias, '
+          'e.bias_muscle_a AS bias_muscle_a, '
+          'e.bias_muscle_b AS bias_muscle_b '
+          'FROM set_entries se '
+          'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
+          'JOIN exercises e ON e.id = sx.exercise_id '
+          'WHERE se.muscle_bias IS NOT NULL',
+        ).get();
+        for (final row in legacyBiasRows) {
+          final encoded = _legacyMuscleBiasWeights(
+            bias: (row.data['muscle_bias'] as num?)?.toDouble(),
+            biasMuscleAId: row.data['bias_muscle_a'] as String?,
+            biasMuscleBId: row.data['bias_muscle_b'] as String?,
+          );
+          if (encoded == null) continue;
+          await customUpdate(
+            'UPDATE set_entries '
+            'SET muscle_bias_weights = ? '
+            'WHERE id = ?',
+            variables: [
+              Variable<String>(encoded),
+              Variable<int>(row.read<int>('set_id')),
+            ],
+            updates: {setEntries},
+            updateKind: UpdateKind.update,
+          );
+        }
+
+        await migrator.alterTable(TableMigration(setEntries));
+        await migrator.alterTable(TableMigration(exercises));
+      }
+      if (from < 11) {
+        await rescaleStoredMuscleBiasWeights(this);
       }
     },
     beforeOpen: (details) async {
@@ -305,4 +339,61 @@ class AppDatabase extends _$AppDatabase {
       );
     },
   );
+}
+
+Future<void> rescaleStoredMuscleBiasWeights(AppDatabase database) async {
+  final rows = await database
+      .customSelect(
+        'SELECT id AS set_id, muscle_bias_weights AS muscle_bias_weights '
+        'FROM set_entries '
+        'WHERE muscle_bias_weights IS NOT NULL',
+      )
+      .get();
+  for (final row in rows) {
+    final encoded = rescaleEncodedMuscleBiasWeightsToMeanOne(
+      row.data['muscle_bias_weights'] as String?,
+    );
+    if (encoded == null) continue;
+    await database.customUpdate(
+      'UPDATE set_entries '
+      'SET muscle_bias_weights = ? '
+      'WHERE id = ?',
+      variables: [
+        Variable<String>(encoded),
+        Variable<int>(row.read<int>('set_id')),
+      ],
+      updates: {database.setEntries},
+      updateKind: UpdateKind.update,
+    );
+  }
+}
+
+String? _legacyMuscleBiasWeights({
+  required double? bias,
+  required String? biasMuscleAId,
+  required String? biasMuscleBId,
+}) {
+  if (biasMuscleAId == null || biasMuscleBId == null) return null;
+
+  try {
+    final biasMuscleA = _decodeLegacyMuscle(biasMuscleAId);
+    final biasMuscleB = _decodeLegacyMuscle(biasMuscleBId);
+    if (biasMuscleA == biasMuscleB) return null;
+
+    final shares = resolveMuscleBiasShares(bias);
+    return encodeMuscleBiasWeights({
+      biasMuscleA: shares.shareA,
+      biasMuscleB: shares.shareB,
+    });
+  } on ArgumentError {
+    return null;
+  }
+}
+
+MuscleId _decodeLegacyMuscle(String value) {
+  try {
+    return MuscleId.fromId(value);
+  } on ArgumentError {
+    return MuscleId.values.byName(value);
+  }
 }

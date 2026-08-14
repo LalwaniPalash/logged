@@ -10,7 +10,54 @@ import '../../../core/domain/muscle.dart';
 import '../../../core/domain/muscle_map.dart';
 import '../../../core/domain/muscle_model.dart';
 import '../../../core/domain/volume_landmarks.dart';
+import '../../../core/theme/app_theme.dart';
 import 'muscle_heatmap.dart';
+
+/// Body-region groupings for the "browse all muscles" chip wall, so the
+/// untrained-muscle list reads as sections instead of one flat 20+ chip wall.
+const _muscleRegions = <(String, List<MuscleId>)>[
+  (
+    'Chest & shoulders',
+    [
+      MuscleId.upperChest,
+      MuscleId.midLowerChest,
+      MuscleId.serratusAnterior,
+      MuscleId.frontDelts,
+      MuscleId.sideDelts,
+      MuscleId.rearDelts,
+      MuscleId.rotatorCuff,
+    ],
+  ),
+  (
+    'Back',
+    [
+      MuscleId.lats,
+      MuscleId.upperTraps,
+      MuscleId.midLowerTraps,
+      MuscleId.rhomboids,
+      MuscleId.spinalErectors,
+    ],
+  ),
+  (
+    'Arms',
+    [MuscleId.biceps, MuscleId.brachialis, MuscleId.triceps, MuscleId.forearms],
+  ),
+  ('Core', [MuscleId.abs, MuscleId.obliques]),
+  (
+    'Legs & hips',
+    [
+      MuscleId.hipFlexors,
+      MuscleId.quads,
+      MuscleId.hamstrings,
+      MuscleId.gluteMax,
+      MuscleId.gluteMedMin,
+      MuscleId.adductors,
+      MuscleId.calves,
+      MuscleId.tibialisAnterior,
+    ],
+  ),
+  ('Neck', [MuscleId.neck]),
+];
 
 @visibleForTesting
 Future<void> resetMuscleModelView({
@@ -144,7 +191,7 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(99),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
                 'LIVE · MON–TODAY',
@@ -191,20 +238,46 @@ class _MuscleAnatomyViewState extends State<MuscleAnatomyView> {
             ),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: [
-              for (final muscle in displayedMuscles)
-                _MuscleChip(
-                  muscle: muscle,
-                  load: widget.state[muscle],
-                  landmarks: widget.landmarks[muscle]!,
-                  selected: _selectedMuscle == muscle,
-                  onTap: () => setState(() => _selectedMuscle = muscle),
+          if (_showAllMuscles) ...[
+            _MuscleChipWrap(
+              muscles: topLoads.map((load) => load.muscle).toList(),
+              state: widget.state,
+              landmarks: widget.landmarks,
+              selectedMuscle: _selectedMuscle,
+              onSelect: (muscle) => setState(() => _selectedMuscle = muscle),
+            ),
+            for (final region in _muscleRegions)
+              if (region.$2.any(inactiveMuscles.contains)) ...[
+                const SizedBox(height: 14),
+                // A region with exactly one muscle would show a header that
+                // just repeats the one chip's own label below it — skip it.
+                if (region.$2.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      region.$1,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                _MuscleChipWrap(
+                  muscles: region.$2.where(inactiveMuscles.contains).toList(),
+                  state: widget.state,
+                  landmarks: widget.landmarks,
+                  selectedMuscle: _selectedMuscle,
+                  onSelect: (muscle) =>
+                      setState(() => _selectedMuscle = muscle),
                 ),
-            ],
-          ),
+              ],
+          ] else
+            _MuscleChipWrap(
+              muscles: displayedMuscles,
+              state: widget.state,
+              landmarks: widget.landmarks,
+              selectedMuscle: _selectedMuscle,
+              onSelect: (muscle) => setState(() => _selectedMuscle = muscle),
+            ),
           const SizedBox(height: 8),
         ],
         Align(
@@ -292,7 +365,7 @@ class _ThreeDimensionalMuscleModel extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: background,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Interactive3d(
@@ -372,6 +445,40 @@ class _IntensityLegend extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _MuscleChipWrap extends StatelessWidget {
+  const _MuscleChipWrap({
+    required this.muscles,
+    required this.state,
+    required this.landmarks,
+    required this.selectedMuscle,
+    required this.onSelect,
+  });
+
+  final List<MuscleId> muscles;
+  final LiveMuscleState state;
+  final Map<MuscleId, VolumeLandmarks> landmarks;
+  final MuscleId? selectedMuscle;
+  final ValueChanged<MuscleId> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 7,
+      runSpacing: 7,
+      children: [
+        for (final muscle in muscles)
+          _MuscleChip(
+            muscle: muscle,
+            load: state[muscle],
+            landmarks: landmarks[muscle]!,
+            selected: selectedMuscle == muscle,
+            onTap: () => onSelect(muscle),
+          ),
+      ],
     );
   }
 }
@@ -710,21 +817,20 @@ List<MaterialOverride> _materialOverrides(
 }
 
 Color _zoneColor(ThemeData theme, VolumeZone zone, double intensity) {
-  final dark = theme.brightness == Brightness.dark;
+  final scheme = theme.colorScheme;
+  final appColors = theme.extension<AppColors>()!;
   final base = switch (zone) {
-    VolumeZone.belowMev =>
-      dark ? const Color(0xFF7D8791) : const Color(0xFF697783),
-    VolumeZone.developing =>
-      dark ? const Color(0xFF4DB6AC) : const Color(0xFF23877E),
-    VolumeZone.optimal =>
-      dark ? const Color(0xFF66BB6A) : const Color(0xFF388E3C),
-    VolumeZone.diminishing =>
-      dark ? const Color(0xFFFFB74D) : const Color(0xFFE08A17),
-    VolumeZone.overreaching =>
-      dark ? const Color(0xFFEF6C72) : const Color(0xFFC94149),
+    VolumeZone.belowMev => scheme.outline,
+    VolumeZone.developing => scheme.tertiary,
+    VolumeZone.optimal => appColors.success,
+    VolumeZone.diminishing => appColors.streak,
+    VolumeZone.overreaching => scheme.error,
   };
-  final surface = dark ? const Color(0xFF443F3B) : const Color(0xFFD1CBC5);
-  return Color.lerp(surface, base, (0.38 + intensity * 0.62).clamp(0, 1))!;
+  return Color.lerp(
+    scheme.surfaceContainerHighest,
+    base,
+    (0.38 + intensity * 0.62).clamp(0, 1),
+  )!;
 }
 
 String _sets(double value) => value == value.roundToDouble()

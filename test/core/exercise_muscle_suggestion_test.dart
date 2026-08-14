@@ -45,4 +45,33 @@ void main() {
       MuscleId.serratusAnterior,
     });
   });
+
+  test('widens ambiguous machine chest suggestions to both chest regions', () {
+    final suggestion = suggestMuscles('Pec Deck');
+
+    expect(suggestion.primary, {MuscleId.midLowerChest, MuscleId.upperChest});
+    expect(suggestion.secondary, {MuscleId.frontDelts});
+  });
+
+  test('applies push-up angle inversion in auto-suggest', () {
+    final suggestion = suggestMuscles('Decline Push-Up');
+
+    expect(suggestion.primary, {MuscleId.upperChest});
+    expect(suggestion.secondary, {
+      MuscleId.frontDelts,
+      MuscleId.triceps,
+      MuscleId.serratusAnterior,
+    });
+  });
+
+  test('treats landmine press as a shoulder press by default', () {
+    final suggestion = suggestMuscles('Landmine Press');
+
+    expect(suggestion.primary, {MuscleId.frontDelts, MuscleId.sideDelts});
+    expect(suggestion.secondary, {
+      MuscleId.triceps,
+      MuscleId.upperChest,
+      MuscleId.serratusAnterior,
+    });
+  });
 }

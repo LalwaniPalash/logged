@@ -7,6 +7,12 @@ class WorkoutTemplateSeedService {
 
   final AppDatabase _database;
 
+  /// Bumped whenever [_templates] changes so existing installs pick up the
+  /// new prescriptions on next launch (seeding is otherwise insert-only —
+  /// see [_shouldRefreshDefaultTemplate]).
+  static const _templatePlanVersion = 'v8';
+  static const _templatePlanVersionKey = 'templatePlanVersion';
+
   static final List<_TemplateSeed> _templates = [
     _TemplateSeed('Monday — Push A', [
       _p(
@@ -15,16 +21,23 @@ class WorkoutTemplateSeedService {
         5,
         8,
         180,
-        'Tempo 3-1-1-0 · challenging 5–8RM',
+        'Tempo 3-1-1-0 · challenging 5–8RM — you hit 55 kg×8 on Aug 6',
       ),
-      _p('Pec Deck', 4, 10, 15, 75, 'Highest angle · tempo 2-0-1-1 · ~25 kg'),
+      _p(
+        'Pec Deck',
+        2,
+        10,
+        15,
+        75,
+        'Highest angle · tempo 2-0-1-1 · ~27 kg · full stretch, squeeze 1s',
+      ),
       _p(
         'Cable Crossover - Low Pulley',
-        3,
+        2,
         12,
         15,
         75,
-        'Low-to-high · tempo 2-0-1-1 · 7.5–10 kg/side',
+        'Low-to-high · tempo 2-0-1-1 · 8–11 kg/side · targets lower sternal fibres',
       ),
       _p(
         'Barbell Overhead Press',
@@ -32,35 +45,75 @@ class WorkoutTemplateSeedService {
         6,
         8,
         150,
-        'Tempo 2-1-1-0 · challenging 6–8RM',
+        'Tempo 2-1-1-0 · challenging 6–8RM · no barbell OHP logged yet — let week 1 set the real number (~30–35 kg first guess)',
       ),
       _p(
         'Dumbbell Lateral Raise',
-        4,
+        2,
         15,
         20,
         60,
-        'Strict · tempo 3-0-1-0 · 4–5 kg/hand',
+        'Strict · tempo 3-0-1-0 · 4.5–6 kg/hand',
       ),
       _p(
-        'Cable Lateral Raise',
-        3,
+        'Lean-Away Cable Lateral Raise',
+        2,
         15,
-        null,
+        20,
         60,
-        '15/side · tempo 2-0-1-2 · 5–7.5 kg',
+        'Bayesian — lean away from the stack · tempo 2-0-1-2 · 5–7.5 kg',
       ),
       _p(
-        'Overhead Cable Tricep Extension',
-        4,
+        'JM Press',
+        3,
+        8,
         10,
-        12,
+        120,
+        'Tempo 2-1-1-0 · start bar + 5–10 kg/side, learn the bar path light first',
+      ),
+      _p(
+        'Tate Press',
+        2,
+        10,
+        15,
         75,
-        'Rope, low pulley · tempo 3-1-1-0 · 10–15 kg',
+        'Elbows flared out to the sides · tempo 2-1-1-0 · 8–12 kg/hand',
+      ),
+      _p(
+        'Cable Pullover',
+        2,
+        10,
+        15,
+        75,
+        'Or Dumbbell Pullover · tempo 3-0-1-1 · 10–15 kg cable (12–16 kg single DB) · elbows nearly locked, deep lat/rib stretch',
+      ),
+      _p(
+        'Cable Serratus Punch',
+        2,
+        12,
+        15,
+        45,
+        'Or Push-Up Plus · tempo 2-0-2-0 · light, 5–10 kg · extra protraction at full extension',
+      ),
+      _p(
+        'Face Pull',
+        2,
+        15,
+        20,
+        60,
+        'Cable rope · tempo 2-0-1-2 · 20–32 kg — closes the Push A rear-delt gap',
+      ),
+      _p(
+        'External Rotation with Cable',
+        2,
+        12,
+        15,
+        45,
+        'Elbow pinned to ribs · tempo 2-0-2-0 · 2.5–5 kg — stays light permanently, never to failure',
       ),
       _p('Dead Bug', 3, 8, null, 60, '8/side · tempo 3-1-3-0 · bodyweight'),
       _p('Hanging Knee Raise', 3, 12, 15, 60, 'Tempo 2-0-1-1 · bodyweight'),
-      ..._allStretches,
+      ..._pushStretches,
     ]),
     _TemplateSeed('Tuesday — Pull A', [
       _p(
@@ -69,42 +122,50 @@ class WorkoutTemplateSeedService {
         6,
         8,
         180,
-        'Landmine row · tempo 2-1-1-0 · challenging 6–8RM',
+        'Landmine row · tempo 2-1-1-0 · challenging 6–8RM — you\'re at 50 kg×8, near the old ceiling',
       ),
       _p(
         'Wide-Grip Lat Pulldown',
-        4,
-        8,
+        3,
         10,
+        15,
         120,
-        'Wide overhand · tempo 2-1-1-0 · 35–45 kg',
+        'Wide overhand · tempo 2-1-1-0 · 35–45 kg — depress scapulae before pulling',
       ),
       _p(
         'Straight-Arm Pulldown',
-        3,
+        2,
         12,
         15,
         75,
-        'Cable · tempo 2-0-1-1 · 15–22 kg',
+        'Tempo 2-0-1-1 · 20–30 kg · the only lat exercise with zero bicep involvement',
       ),
       _p(
         'Reverse Pec Deck',
-        5,
-        15,
-        null,
-        75,
-        'Rear delt machine · tempo 2-0-1-2 · 15–20 kg',
-      ),
-      _p('Face Pull', 3, 15, 20, 60, 'Cable rope · tempo 2-0-1-2 · 10–15 kg'),
-      _p(
-        'EZ Bar Curl',
         3,
-        8,
-        12,
+        10,
+        15,
         75,
-        'Strict standing · tempo 2-0-1-1 · 15–22 kg total',
+        'Rear delt machine · tempo 2-0-1-2 · 18–22 kg · 2s hold at full extension',
       ),
-      _p('Incline Dumbbell Curl', 3, 10, 12, 75, 'Tempo 2-0-1-1 · 6–8 kg/hand'),
+      _p('Face Pull', 2, 15, 20, 60, 'Cable rope · tempo 2-0-1-2 · 20–32 kg'),
+      _p(
+        'Spider Curl',
+        2,
+        10,
+        14,
+        75,
+        'Incline bench, face-down · tempo 2-0-2-0 · 10–14 kg total — strictest curl, no body English possible',
+      ),
+      _p('Incline Dumbbell Curl', 2, 10, 12, 75, 'Tempo 2-0-1-1 · 6–9 kg/hand'),
+      _p(
+        'Bird Dog',
+        2,
+        8,
+        null,
+        45,
+        '8/side · 2s hold each rep · bodyweight — never to failure, stop when form breaks',
+      ),
       _duration(
         'Stationary Bike',
         1,
@@ -112,7 +173,7 @@ class WorkoutTemplateSeedService {
         null,
         'Zone 2 · HR 99–118 bpm · 25 min from week 4',
       ),
-      ..._allStretches,
+      ..._pullStretches,
     ]),
     _TemplateSeed('Wednesday — Legs A', [
       _p(
@@ -121,7 +182,15 @@ class WorkoutTemplateSeedService {
         5,
         8,
         180,
-        'Tempo 3-1-1-0 · challenging 5–8RM',
+        '"Week A" · tempo 3-1-1-0 · challenging 5–8RM — alternates weekly with Zercher Squat (swap manually every other week)',
+      ),
+      _p(
+        'Nordic Hamstring Curl',
+        2,
+        5,
+        null,
+        120,
+        'As slow as controllable · bodyweight, hand-assisted at the bottom for the first 4–6 weeks — never to failure, ~50% hamstring injury risk reduction',
       ),
       _p(
         'Barbell Romanian Deadlift',
@@ -129,24 +198,47 @@ class WorkoutTemplateSeedService {
         8,
         10,
         120,
-        'Tempo 3-0-1-0 · 40–70 kg barbell',
+        '"Week A" · tempo 3-0-1-0 · 40–70 kg — alternates weekly with B-Stance RDL (swap manually every other week)',
       ),
-      _p('Leg Press', 3, 10, 12, 90, 'Bilateral · tempo 3-1-1-0 · 80–140 kg'),
+      _p(
+        'Cossack Squat',
+        3,
+        8,
+        10,
+        90,
+        'Bodyweight to start, progress to a goblet-held dumbbell · tempo 3-1-1-0 · 8–10/side',
+      ),
+      _p(
+        'Hip Airplane',
+        2,
+        6,
+        8,
+        60,
+        'Slow and controlled · bodyweight · 6–8/side — single-leg hip control',
+      ),
+      _p(
+        'Leg Press',
+        3,
+        10,
+        12,
+        90,
+        'Bilateral · tempo 3-1-1-0 · 140–190 kg — knee to 90° max, no deeper on the operated side',
+      ),
       _p(
         'Leg Extension',
-        3,
+        2,
         12,
         15,
         75,
-        'Tempo 2-0-1-2 · progress from rehab weight',
+        'Tempo 2-0-1-2 · 75–85 kg · 2s hold at full extension',
       ),
       _p(
-        'Hip Abduction',
-        3,
-        15,
-        20,
-        60,
-        'Cable ankle cuff · 15–20/side · tempo 2-0-1-2 · 5–15 kg',
+        'Copenhagen Plank',
+        2,
+        null,
+        null,
+        45,
+        '20–30s/side static hold · bent-knee first, progress to straight-leg · bodyweight',
       ),
       _p(
         'Tibialis Anterior Raise',
@@ -154,15 +246,15 @@ class WorkoutTemplateSeedService {
         15,
         20,
         60,
-        'Tempo 2-0-1-2 · bodyweight or light ankle weight',
+        'Cable, low pulley · tempo 2-0-1-2 · 18–36 kg',
       ),
       _p(
         'Standing Calf Raise',
-        4,
-        12,
+        3,
+        10,
         15,
         60,
-        'Tempo 2-1-2-1 · bodyweight + 20–40 kg or machine',
+        'Hack squat machine · tempo 2-1-2-1 · knees near-locked, full stretch at bottom',
       ),
       _p(
         'Ab Wheel Rollout',
@@ -172,59 +264,74 @@ class WorkoutTemplateSeedService {
         75,
         'From knees · tempo 3-1-1-0 · bodyweight',
       ),
-      ..._allStretches,
+      ..._legStretches,
     ]),
     _TemplateSeed('Thursday — Push B', [
       _p(
-        'Incline Dumbbell Bench Press',
-        4,
-        8,
+        'Incline Dumbbell Press',
+        3,
         10,
+        15,
         120,
-        '45° · tempo 3-0-1-0 · progress from last session',
+        '45° · tempo 3-0-1-0 · ~16 kg/hand',
       ),
       _p(
-        'Decline Bench Press',
-        4,
+        'Dumbbell Decline Bench Press',
+        3,
         10,
-        12,
+        15,
         90,
-        'Dumbbell decline · tempo 3-0-1-0 · 12–16 kg/hand',
+        'Tempo 3-0-1-0 · 12–16 kg/hand — or barbell decline ~35 kg, interchangeable',
       ),
       _p(
         'Cable Crossover - Mid Pulley',
-        3,
+        2,
         12,
         15,
         75,
-        'Standing cable fly · tempo 2-0-1-2 · 7.5–10 kg/side',
+        'Standing, both pulleys at chest height · tempo 2-0-1-2 · 7.5–10 kg/side · peaks at midline',
       ),
-      _p('Pec Deck', 3, 12, 15, 75, 'Flat setting · tempo 2-0-1-1 · 25–30 kg'),
-      _p('Arnold Press', 4, 10, 12, 90, 'Tempo 2-0-1-0 · 8–10 kg/hand'),
+      _p(
+        'Pec Deck',
+        2,
+        10,
+        15,
+        75,
+        'Flat setting · tempo 2-0-1-1 · 25–30 kg · peaks at stretch',
+      ),
+      _p('Arnold Press', 3, 10, 15, 90, 'Tempo 2-0-1-0 · ~18 kg/hand'),
       _p(
         'Dumbbell Lateral Raise',
-        3,
+        2,
         15,
         20,
         60,
-        'Strict · tempo 3-0-1-0 · 4–5 kg/hand',
+        'Strict · tempo 3-0-1-0 · 4.5–6 kg/hand — second weekly hit',
       ),
-      _p('Face Pull', 3, 15, 20, 60, 'Cable rope · tempo 2-0-1-2 · 10–15 kg'),
+      _p('Face Pull', 2, 15, 20, 60, 'Cable rope · tempo 2-0-1-2 · 20–32 kg'),
       _p(
-        'Dumbbell Tricep Extension',
-        4,
+        'Cable Y-Raise',
+        2,
         12,
         15,
+        60,
+        'Incline bench, face-down, thumbs up · tempo 2-0-1-1 · 2–4 kg/hand, dead light — lower-trap posture work',
+      ),
+      _p(
+        'PJR Pullover',
+        2,
+        10,
+        15,
         75,
-        'Overhead single DB · tempo 2-1-1-0 · 14–18 kg',
+        'Tempo 3-1-1-0 · 10–14 kg single DB — triceps long head at deepest stretch, upper arms stay still',
       ),
       _p(
         'Cable Tricep Pushdown',
-        3,
+        2,
         12,
         15,
         75,
-        'Straight bar · tempo 2-0-1-2 · 20–30 kg',
+        'Straight bar · tempo 2-0-1-2 · 20–30 kg — lateral + medial heads',
       ),
       _p(
         'Pallof Press',
@@ -232,7 +339,7 @@ class WorkoutTemplateSeedService {
         10,
         null,
         60,
-        'Seated cable · 10/side · tempo 2-2-2-0 · 5–8 kg',
+        'Seated cable · 10/side · tempo 2-2-2-0 · 10–15 kg',
       ),
       _p(
         'Paused Bottom-Half Dumbbell Press',
@@ -240,9 +347,9 @@ class WorkoutTemplateSeedService {
         8,
         null,
         75,
-        'Shoulder weak point · tempo 2-2-1-0 · 50–60% Arnold press load',
+        'Shoulder weak point · tempo 2-2-1-0 · 50–60% of Arnold press working weight — run after Arnold press',
       ),
-      ..._allStretches,
+      ..._pushStretches,
     ]),
     _TemplateSeed('Friday — Pull B', [
       _p(
@@ -251,55 +358,79 @@ class WorkoutTemplateSeedService {
         3,
         5,
         210,
-        'Plus 1 warm-up @ 60% · tempo 1-0-1-0 · challenging 3–5RM',
+        'Conventional · plus 1 warm-up @ 60% · tempo 1-0-1-0 · challenging 3–5RM — you pulled 110 kg×2 on Aug 7, true working weight is likely ~95–102 kg now',
       ),
       _p(
         'Neutral-Grip Lat Pulldown',
-        4,
-        8,
+        3,
         10,
+        15,
         120,
-        'Close neutral · tempo 2-1-1-0 · 37–47 kg',
+        'Close neutral grip · tempo 2-1-1-0 · 37–47 kg — wide overhand (Tue) + close neutral (Fri) = complete lat development',
       ),
       _p(
         'Chest-Supported Row',
-        4,
+        3,
         10,
         12,
         90,
         'Incline DB row, wide elbows · tempo 2-0-1-1 · 10–16 kg/hand',
       ),
       _p(
-        'Dumbbell Single-Arm Row',
+        'Meadows Row',
         3,
         10,
         12,
         90,
-        '10–12/side · tempo 2-0-1-1 · 20–32 kg',
+        'Landmine, 10–12/side, finish one side then switch · tempo 2-0-1-1 · start ~20–30 kg — heaviest at the bottom stretch',
+      ),
+      _p(
+        'Kelso Shrug',
+        2,
+        12,
+        15,
+        60,
+        'Pull shoulder blades back and together, not up · tempo 2-0-2-0 · 10–16 kg/hand',
       ),
       _p(
         'Reverse Pec Deck',
-        4,
+        3,
+        10,
         15,
-        null,
         75,
-        'Rear delt machine · tempo 2-0-1-2 · 15–22 kg',
+        'Rear delt machine · tempo 2-0-1-2 · 18–22 kg — fourth weekly rear-delt session',
+      ),
+      _p(
+        'Side Plank',
+        2,
+        null,
+        null,
+        45,
+        '30–45s/side static hold · bodyweight — stop when form breaks, don\'t grind to failure',
       ),
       _p(
         'EZ-Bar Preacher Curl',
-        3,
+        2,
         10,
         12,
         75,
-        'Tempo 2-0-1-2 · 10–16 kg EZ bar',
+        'Tempo 2-0-1-2 · 15–16 kg EZ bar',
       ),
       _p(
         'Hammer Curl',
-        3,
+        2,
         12,
         null,
         60,
-        '12/side alternating · tempo 2-0-1-0 · 8–12 kg/hand',
+        '12/side alternating · tempo 2-0-1-0 · 8–14 kg/hand',
+      ),
+      _p(
+        'Suitcase Carry',
+        3,
+        null,
+        null,
+        90,
+        'Static hold version · 30–40s/side · heaviest DB you can hold without your torso tilting toward the weight',
       ),
       _duration(
         'Stationary Bike',
@@ -308,34 +439,72 @@ class WorkoutTemplateSeedService {
         null,
         'Zone 2 · HR 99–118 bpm · 25 min from week 4',
       ),
-      ..._allStretches,
+      ..._pullStretches,
     ]),
     _TemplateSeed('Saturday — Legs B', [
-      _p('Leg Press', 4, 10, 12, 120, 'Bilateral · tempo 3-1-1-0 · 100–160 kg'),
       _p(
-        'Dumbbell Bulgarian Split Squat',
+        'Leg Press',
+        4,
+        10,
+        12,
+        120,
+        'Bilateral · tempo 3-1-1-0 · 140–190 kg — heavier than Wednesday, you\'re warmer and deadlift isn\'t ahead of you',
+      ),
+      _p(
+        'ATG Split Squat',
         3,
         8,
         10,
         120,
-        '8–10/leg · tempo 3-1-1-0 · 8–14 kg/hand or bodyweight',
+        'Replaces Bulgarian split squat · tempo 3-1-1-0 · 8–10/side · start at your current Bulgarian load (~9 kg/hand), moderate depth — weeks 1–4 are depth-finding, not load-finding',
       ),
-      _p('Lying Leg Curl', 4, 10, 12, 75, 'Tempo 2-0-1-2 · 25–45 kg'),
+      _p(
+        'Cossack Squat',
+        3,
+        8,
+        10,
+        90,
+        'Tempo 3-1-1-0 · 8–10/side — second weekly frontal-plane hip session, progress load from Wednesday',
+      ),
+      _p(
+        'Reverse Nordic',
+        2,
+        8,
+        10,
+        60,
+        'The lengthened-position quad exercise the programme was missing · as slow as controllable · bodyweight',
+      ),
+      _p(
+        'Poliquin Step-Up',
+        2,
+        10,
+        12,
+        75,
+        'Heel-elevated reverse step-up on a box · tempo 2-1-1-0 · 10–12/side · light DBs or bodyweight, free leg never bears weight',
+      ),
+      _p(
+        'Lying Leg Curl',
+        2,
+        10,
+        12,
+        75,
+        'Tempo 2-0-1-2 · 45–60 kg · 2s hold at full contraction',
+      ),
       _p(
         'Leg Extension',
-        3,
+        2,
         12,
         15,
         75,
-        'Tempo 2-0-1-2 · progress from Wednesday',
+        'Tempo 2-0-1-2 · 75–85 kg — second weekly quad isolation hit, progress from Wednesday',
       ),
       _p(
-        'Hip Abduction',
+        'Spanish Squat',
         3,
+        12,
         15,
-        20,
-        60,
-        'Cable ankle cuff · 15–20/side · tempo 2-0-1-2 · 5–15 kg',
+        90,
+        'Best-evidenced patellar tendon exercise, no elastic band needed · tempo 3-1-1-0 · bodyweight to start, hold a light-moderate DB/plate at chest once easy',
       ),
       _p(
         'Tibialis Anterior Raise',
@@ -343,16 +512,23 @@ class WorkoutTemplateSeedService {
         15,
         20,
         60,
-        'Tempo 2-0-1-2 · bodyweight or ankle weight',
+        'Cable, low pulley · tempo 2-0-1-2 · 18–36 kg — second weekly hit, progress from Wednesday',
       ),
-      _p('Seated Calf Raise', 4, 15, 20, 60, 'Tempo 2-1-2-1 · 20–40 kg'),
+      _p(
+        'Seated Calf Raise',
+        3,
+        10,
+        15,
+        60,
+        'Barbell on knees · tempo 2-1-2-1 · 20–36 kg',
+      ),
       _p(
         'Hanging Leg Raise',
         3,
         8,
         12,
         75,
-        'Straight-leg raise · tempo 2-0-1-1 · bodyweight',
+        'Straight-leg raise, or lying leg raise if grip/shoulder is the limiter · tempo 2-0-1-1 · bodyweight',
       ),
       _p(
         'Plank',
@@ -360,54 +536,75 @@ class WorkoutTemplateSeedService {
         null,
         null,
         90,
-        'Forearm plank · max hold to form failure · bodyweight',
+        'Forearm plank · max hold to form failure · bodyweight — log time every set, beat last week',
       ),
-      ..._allStretches,
+      ..._legStretches,
     ]),
   ];
 
-  static const List<_PrescriptionSeed> _allStretches = [
-    _PrescriptionSeed(
-      'Hip Flexor Stretch',
-      targetSets: 1,
-      sidesPerSet: 2,
-      targetDurationSec: 40,
-      prescriptionNotes: '40s each side',
-    ),
-    _PrescriptionSeed(
-      'Doorway Chest Stretch',
-      targetSets: 1,
-      targetDurationSec: 40,
-      prescriptionNotes: '40s · doorway or wall',
-    ),
-    _PrescriptionSeed(
-      'Hamstring Stretch',
-      targetSets: 1,
-      sidesPerSet: 2,
-      targetDurationSec: 40,
-      prescriptionNotes: '40s/side · standing on bench',
-    ),
-    _PrescriptionSeed(
-      'Standing Calf Stretch',
-      targetSets: 1,
-      sidesPerSet: 2,
-      targetDurationSec: 40,
-      prescriptionNotes: '40s/side · step edge',
-    ),
-    _PrescriptionSeed(
-      'Cross-Body Shoulder Stretch',
-      targetSets: 1,
-      sidesPerSet: 2,
-      targetDurationSec: 30,
-      prescriptionNotes: '30s/side',
-    ),
-    _PrescriptionSeed(
-      '90/90 Hip Switch',
-      targetSets: 1,
-      sidesPerSet: 2,
-      targetDurationSec: 45,
-      prescriptionNotes: '45s/side',
-    ),
+  /// Post-workout stretching (unchanged from v7): the hip flexor stretch runs
+  /// every training day, the rest vary by day type per the plan's stretching
+  /// table — Push/Pull/Legs each get a different subset, not all six.
+  static const _hipFlexorStretch = _PrescriptionSeed(
+    'Hip Flexor Stretch',
+    targetSets: 1,
+    sidesPerSet: 2,
+    targetDurationSec: 40,
+    prescriptionNotes: '40s each side — reduces anterior pelvic tilt',
+  );
+  static const _doorwayChestStretch = _PrescriptionSeed(
+    'Doorway Chest Stretch',
+    targetSets: 1,
+    targetDurationSec: 40,
+    prescriptionNotes:
+        '40s · doorway or wall — counters internal rotation from pressing volume',
+  );
+  static const _hamstringStretch = _PrescriptionSeed(
+    'Hamstring Stretch',
+    targetSets: 1,
+    sidesPerSet: 2,
+    targetDurationSec: 40,
+    prescriptionNotes:
+        '40s/side · standing on bench — post-RDL/squat maintenance',
+  );
+  static const _calfStretch = _PrescriptionSeed(
+    'Standing Calf Stretch',
+    targetSets: 1,
+    sidesPerSet: 2,
+    targetDurationSec: 40,
+    prescriptionNotes:
+        '40s/side · step edge — maintains dorsiflexion for squat depth',
+  );
+  static const _shoulderStretch = _PrescriptionSeed(
+    'Cross-Body Shoulder Stretch',
+    targetSets: 1,
+    sidesPerSet: 2,
+    targetDurationSec: 30,
+    prescriptionNotes: '30s/side — rear delt/posterior capsule maintenance',
+  );
+  static const _hip9090Stretch = _PrescriptionSeed(
+    '90/90 Hip Switch',
+    targetSets: 1,
+    sidesPerSet: 2,
+    targetDurationSec: 45,
+    prescriptionNotes: '45s/side — hip rotation for squat mechanics',
+  );
+
+  static const List<_PrescriptionSeed> _pushStretches = [
+    _hipFlexorStretch,
+    _doorwayChestStretch,
+    _shoulderStretch,
+  ];
+  static const List<_PrescriptionSeed> _pullStretches = [
+    _hipFlexorStretch,
+    _hamstringStretch,
+    _shoulderStretch,
+  ];
+  static const List<_PrescriptionSeed> _legStretches = [
+    _hipFlexorStretch,
+    _hamstringStretch,
+    _calfStretch,
+    _hip9090Stretch,
   ];
 
   Future<void> seedIfEmpty() async {
@@ -417,6 +614,12 @@ class WorkoutTemplateSeedService {
     final exerciseIds = {
       for (final exercise in exerciseRows) exercise.name: exercise.id,
     };
+
+    final storedVersion =
+        await (_database.select(_database.appSettings)
+              ..where((row) => row.key.equals(_templatePlanVersionKey)))
+            .getSingleOrNull();
+    final needsPlanUpgrade = storedVersion?.value != _templatePlanVersion;
 
     await _database.transaction(() async {
       for (
@@ -440,6 +643,7 @@ class WorkoutTemplateSeedService {
                 );
 
         if (existingTemplate != null &&
+            !needsPlanUpgrade &&
             !await _shouldRefreshDefaultTemplate(existingTemplate.id)) {
           continue;
         }
@@ -449,6 +653,17 @@ class WorkoutTemplateSeedService {
           template: template,
           exerciseIds: exerciseIds,
         );
+      }
+
+      if (needsPlanUpgrade) {
+        await _database
+            .into(_database.appSettings)
+            .insertOnConflictUpdate(
+              AppSettingsCompanion.insert(
+                key: _templatePlanVersionKey,
+                value: _templatePlanVersion,
+              ),
+            );
       }
     });
   }

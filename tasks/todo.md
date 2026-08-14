@@ -1,3 +1,55 @@
+# tasks/todo.md — current state
+
+> **Status as of 2026-08-14.** The T1→T3 spec below (2026-07-23) is **shipped and historical** —
+> keep it for context on why the architecture looks the way it does, but it is not the active
+> work item.
+
+## ACTIVE WORK
+
+| File | What it is |
+|---|---|
+| **`tasks/spec-audit-fixes.md`** | **The active implementation spec.** Phased, standalone, written for Codex. Start here. |
+| `tasks/audit-2026-08-14.md` | Full audit: 50+ findings across 6 rounds, with evidence and file:line references. The spec's reasoning lives here. |
+| `tasks/lessons.md` | Read before touching anything. |
+| `tasks/spec-set-logging.md` | Earlier set-logging spec (historical). |
+
+## Where the audit came from
+
+A full-app UX + logic audit on 2026-08-14 against a baseline of `flutter analyze` clean and
+`flutter test` 230/230 green. **Every finding survived that green suite.** The audit ran in six
+rounds; each later round was prompted by the previous one missing something, which is itself the
+main lesson (see `lessons.md` 2026-08-14).
+
+## The five that matter most
+
+1. **G1 — muscle bias halves logged volume.** The set editor persists weights normalised to *sum*
+   1.0; the domain reads them as *multipliers* where null means 1.0 **per muscle**. Opening the set
+   sheet on a 2-primary exercise halves its credited volume. Using the feature can only ever reduce
+   volume, never increase it. Drives rank, MEV/MAV zones, and the deload trigger.
+2. **K1 — progression is permanently stalled for anyone who does not log RPE.** `increaseAllowed`
+   requires `topSet.rpe != null`, so the weight never increases; the fall-through then suggests the
+   exact rep count already performed, with the rationale "add one rep toward the top of the range".
+3. **F1 — a custom exercise cannot be marked as timed.** User-reported: Copenhagen planks had to be
+   logged as 30 reps/side instead of 30 seconds/side. Timed-ness is inferred from history, so a new
+   exercise can never have any. Every escape hatch (stretching, cardio, CSV import) is a trap.
+4. **Deload has never been able to fire.** Of three signals, one needs RPE data that does not exist
+   and one compares a *partial* current week against a full-week MRV. Two of three are required.
+5. **A1/A2 — weekly volume is wrong in two directions.** `_query` in `analytics_repository.dart`
+   has no `is_warmup = 0` filter and excludes `weight_value IS NULL`, so warm-ups inflate the number
+   and bodyweight-only sessions read as zero. One query, three surfaces: Progress screen, PR list,
+   and the home-screen widget.
+
+## Schema version budget
+
+`schemaVersion` is **10** today. The spec allocates:
+- **11** → Phase 1.1 (rescale `muscle_bias_weights` from share to multiplier semantics)
+- **12** → Phase 3.1 (`Exercises.isTimed`, `Exercises.tracksDistance`)
+
+Both also bump `_schemaVersion` in `lib/data/services/backup_service.dart` and extend
+`_supportedSchemaVersions`. **Do not do these phases out of order.**
+
+---
+
 # IMPLEMENTATION SPEC — "Coach, not just a tracker" (T1→T3, for Codex) (2026-07-23)
 
 > **Read this as a standalone brief.** You (Codex) have NO prior conversation context. Everything
@@ -1317,4 +1369,383 @@ Rules:
 - Commit style (if committing): `feat:`, `fix:`, `refactor:` etc. (Git attribution disabled globally.)
 
 ---
+
+# Feature — Custom exercise muscle suggestion + per-set muscle bias + exercise library expansion (2026-08-08, COMPLETED 2026-08-09)
+
+Full plan written to `/Users/palashlalwani/.claude/plans/fluffy-nibbling-russell.md`. Implemented by
+codex across three commits: `14b7ed9` (suggest), `d2bb149` (bias v8), `f1ce9a6` (library expansion).
+Reviewed manually (codex Mode B hit its usage limit mid-review) against the 5 highest-risk areas:
+schema v8 migration + backup version bump, `primarySets` int→double fallout, the bias-weight math in
+`lib/core/domain/muscle_bias.dart`, the exercemus dedup, and the both-null-or-both-set axis invariant.
+All clean. `flutter analyze` clean, 205 tests green.
+
+- [x] **Part 1 — Local muscle suggestion for custom exercise names.** No network call (app is local-only). New `lib/core/domain/exercise_muscle_suggestion.dart`: keyword-token map mined once from `assets/data/exercise_library.json`, prefills primary/secondary in the Add Custom Exercise dialog (`settings_screen.dart` `_addExercise`) until the user manually touches the picker.
+  - **Verify**: add a custom exercise named "Barbell Bench Press" → chest/delts/triceps prefill without touching the picker.
+
+- [x] **Part 2 — Per-set muscle bias (schema v8).** Bias is a **two-different-muscles tradeoff only** (e.g. quads↔glutes on Leg Press stance width) — NOT laterality/unilateral bias (B-stance RDL etc. stay out of scope; confirmed with Palash the 3D model `assets/models/muscular.glb` has 47 fused meshes, no left/right geometry, so a left/right `MuscleId` split would have zero visual payoff on the signature 3D view).
+  - `Exercises` gets nullable `biasMuscleA`/`biasMuscleB` (single `MuscleId.id` strings); `SetEntries` gets nullable `muscleBias` (-1..1). Bump `schemaVersion` to 8, add migration, bump `backup_service.dart` `_schemaVersion`/`_supportedSchemaVersions`.
+  - Bias formula: `t=(bias+1)/2; shareA=1-t; shareB=t`. Only reweights the two axis muscles — everything else on the exercise keeps full credit as today.
+  - Touches: `muscle_progress.dart` and `live_muscle_state.dart` (`primarySets` becomes `double`, not `int` — secondary stays `int`), `muscle_anatomy_view.dart` (format the now-fractional counters, 4 call sites), `analytics_repository.dart` (3 `customSelect` queries need the new columns joined in), `exercise_repository.dart` (`updateBiasAxis`), `set_repository.dart` (`add`/`edit` gain `muscleBias`), `settings_screen.dart` (bias-axis dropdown pickers in the custom exercise dialogs), `set_editor_sheet.dart` (bias slider, only rendered when the exercise has an axis), `active_session_screen.dart` (wiring).
+  - Seed `biasMuscleA`/`biasMuscleB` for **Leg Press** and **Barbell Squat** only (quads/glute_max) in `exercise_library.json`, synced via the existing `ExerciseAnatomyService.enrichBundledExercises`.
+  - **Verify**: Leg Press set editor shows the slider; dragging it toward Quads and saving shows up in the muscle detail / heatmap; old (pre-v8) backups still import; new bias fields round-trip through export/import.
+
+- [x] **Part 3 — Expand bundled exercise library from `exercemus/exercises` (MIT license).** One-time offline script (not shipped) appends ~834 net-new exercises (after exact-name dedup against the current 213) to `assets/data/exercise_library.json` in the existing shape — no runtime code changes, `enrichBundledExercises` already syncs new asset rows on launch. Solves the named gaps (Smith Machine variants, Behind-the-Neck Press).
+  - Coarse→fine muscle crosswalk: most of the 19 source labels map 1:1 (quads, hamstrings, calves, forearms, biceps, brachialis, triceps, abs, adductors, lats, neck, traps→upperTraps, abductors→gluteMedMin, middle back→rhomboids, lower back→spinalErectors). Three ambiguous ones (chest, shoulders, glutes — ~300 of the 834 rows) use the same keyword rules as Part 1's suggester (incline/decline, lateral/rear/rotation, abduction-vs-thrust) to pick the specific muscle.
+  - This is a lossy, best-effort import for the ambiguous third — every row stays editable through the existing muscle picker, same as any exercise today. Spot-check chest/shoulder/glute entries after import.
+  - **Verify**: exercise picker search for "smith" and "behind the neck" returns the previously-missing exercises with sane muscle assignments.
+  - Result: bundled library is now **1047 rows** (213 original + 834 net-new, 38 exact-name overlaps
+    skipped). Importer stats: 510 rows hit an ambiguous source label, 44 resolved via keyword rule,
+    466 took the default (chest 18/119 keyword/default, shoulders 26/294, glutes 0/233).
+
+# Fix — 3D muscle view: "Reset view" no-op + some muscles not tappable (2026-08-09, `3f10522` + `25915fd`)
+Two bugs in the vendored `third_party/interactive_3d` plugin (path dependency, not pub.dev), root-caused
+by reading the plugin source directly, then fixed by codex and independently verified (including a full
+iOS archive build, which codex's own environment cannot do — no Xcode there).
+
+- [x] **Reset view was a complete no-op on iOS.** `SceneManager.cameraNode` was declared but NEVER
+      assigned anywhere in the pre-fix code, so `setCameraZoomLevel`'s `guard let cam = cameraNode`
+      silently failed on every single call — reset did nothing, not even zoom. On Android, `CameraController
+      .setZoom()` only ever touched `zoomLevel`, never the `orbitAngleX`/`orbitAngleY` that pan gestures
+      mutate. Fix: iOS now creates and owns a real camera node (`configureCamera`), captures its post-framing
+      transform as a reset baseline, and a new `resetCamera()` restores rotation + zoom together on both
+      platforms — plumbed end-to-end through `platform_interface.dart` → `method_channel.dart`/`widget.dart`
+      → `controller.dart` → `muscle_anatomy_view.dart _resetModelView()`.
+- [x] **Some muscles never registered a tap, Android only.** 39 of the 47 muscle meshes in
+      `assets/models/muscular.glb` are multi-primitive (2–4 primitives each). Filament/gltfio only
+      propagates the glTF node name to one primitive's renderable entity; `SelectionManager.notifySelectionChanged`
+      silently dropped any selected entity whose name didn't resolve, so tapping a muscle's other primitive(s)
+      visually flickered but never reached Dart. iOS already handled the equivalent problem (unnamed child
+      geometry) by walking up to the nearest named ancestor; Android had no such fallback. Fix: new
+      `EntityNameResolver` walks the Filament `TransformManager` hierarchy the same way, built into a
+      entity→name map at model-load time, used everywhere tap/selection resolves a name.
+- [x] Verified: `flutter analyze` clean, 206 Dart tests green, 2 new Kotlin unit tests green
+      (`CameraControllerTest`, `EntityNameResolverTest`), Kotlin compiles (`gradlew testDebugUnitTest`),
+      Swift compiles (`flutter build ipa --no-codesign` archives clean — confirmed independently after
+      codex's report, since codex has no macOS/Xcode).
+- Not verified (needs a real device pass): actual rotate/tap feel in-hand on iOS or Android.
+- Release artifacts: `dist/logged-1.0.0-3d-view-fixes.apk`, `dist/logged-1.0.0-3d-view-fixes-unsigned.ipa`.
+
+# Fix — Android reset-view zoom mismatch (2026-08-09, uncommitted)
+User: "reset view" on Android made the muscle model dramatically smaller than on first load instead
+of restoring the original framing.
+- Root cause: `CameraController.kt`'s `resetOrbit()` hardcoded `zoomLevel = 1.0f`, ignoring the
+  `defaultZoom = 3.0` Dart sends via `setZoom()` right after every load. iOS never had this bug —
+  `SceneManager.swift` captures a reset baseline the first time `setCameraZoomLevel` runs after load.
+- [x] Ported the same capture-on-first-zoom-after-load pattern to Android: `resetZoomLevel` +
+      `shouldCaptureNextZoomAsResetBaseline`, captured in `setZoom()`, consumed in `resetOrbit()`.
+- [x] 2 unit tests in `CameraControllerTest.kt` (existing default-state case + a new case proving
+      reset restores the load-time zoom, not a hardcoded value). Both pass via
+      `./gradlew :interactive_3d:testDebugUnitTest` (the plugin only builds through the app module,
+      no standalone `gradle.properties`).
+
+# Feature — Muscle bias axis settable on ANY exercise (2026-08-09, uncommitted, codex gpt-5.4 medium
+reasoning implemented, manually reviewed)
+User: wanted the bias slider (previously only Leg Press/Barbell Back Squat + hand-made custom
+exercises) available from "the list of exercises," for any of the ~1047 bundled exercises too.
+- Schema **v9**: new `Exercises.biasAxisUserSet` bool (default false, no backfill needed).
+- [x] `exercise_anatomy_service.dart`'s `enrichBundledExercises()` — which re-syncs `biasMuscleA/B`
+      from the asset on EVERY launch for non-custom rows — now skips that sync for any row with
+      `biasAxisUserSet=true`. Without this, a user's bias choice on a bundled exercise would have
+      silently reverted on next launch (found before shipping, see tasks/lessons.md).
+- [x] `updateBiasAxis()` always sets `biasAxisUserSet=true` on both the "set axis" and "clear axis"
+      paths — clearing is also a deliberate user choice.
+- [x] Settings → "Manage exercises" (renamed from "Manage custom exercises") now lists ALL exercises
+      with a live search field, not just custom ones. Custom rows still open the full muscle editor;
+      bundled rows open a new bias-axis-only dialog (`_editBundledExerciseBias`) — primary muscles
+      shown read-only, no primary/secondary editing for bundled rows (same overwrite trap, kept out of
+      scope). List uses `ListView.builder` (not eager `ListView`) — 1047 rows would jank the sheet
+      otherwise; caught and fixed in review of codex's diff.
+- [x] Backup export/import round-trips `biasAxisUserSet`; old backups without the key import with
+      `false` (tolerant, no crash) — `_schemaVersion` bumped 8→9 alongside it.
+- [x] New/extended tests: v8→v9 migration, anatomy-service protected-vs-synced-row behavior, repo
+      sets-the-flag-on-both-paths, old-backup-compat. `flutter analyze` clean, 209/209 green, debug
+      APK builds.
+
+# Feature — Global swipe-to-dismiss-keyboard (2026-08-09, uncommitted)
+User: wanted every text field (exercise search, etc.) dismissible by dragging, so search results
+aren't hidden behind the keyboard.
+- [x] Found Flutter's actual ambient hook instead of touching ~25 scrollable call sites:
+      `ScrollView.keyboardDismissBehavior` falls back to `ScrollBehavior.getKeyboardDismissBehavior`
+      via the `ScrollConfiguration` `MaterialApp` installs around its whole `Navigator` (dialogs/sheets
+      included). One override point covers the entire app, present and future screens alike.
+- [x] Added `lib/core/keyboard_dismiss_scroll_behavior.dart`
+      (`KeyboardDismissScrollBehavior extends MaterialScrollBehavior`, overrides
+      `getKeyboardDismissBehavior` → always `.onDrag`), wired into `MaterialApp.scrollBehavior` in
+      `main.dart`. Confirmed platform-agnostic (plain Dart in `scroll_view.dart`, no native
+      plugin/platform channel involved) — works identically on iOS and Android.
+- [x] Left the 2 pre-existing explicit per-widget overrides (`plate_calculator_sheet.dart`,
+      `set_editor_sheet.dart`) in place — redundant now, harmless.
+- [x] `flutter analyze` clean, **210/210 tests green** (added a widget test asserting the resolved
+      behavior is `.onDrag`), debug APK builds.
+
+# Investigation — "new IPA killed all my data, no templates, muscle view won't load" (2026-08-09)
+User installed the `design-polish` IPA and reported data loss + broken templates/muscle view. Pulled
+the real on-device database (`devicectl device copy from`) and found **nothing was lost**: 216
+exercises, 7 templates, 13 sessions, 320 sets, last written that day — a completely different failure
+mode from the actual July 26 data-wipe (see that dated entry above; this was not a repeat).
+- Migration v7→v9 (the device was still on v7) was probed by running it against a COPY of the real
+  pulled database via a throwaway test — completed cleanly, all rows intact. Not a migration bug.
+- Real root cause: the `design-polish` redesign moved Templates from wherever it used to live to a
+  small unlabeled icon (top-right of Dashboard) — the user hadn't found it. Confirmed by loading a copy
+  of the real database into a simulator: the icon opens the templates correctly (Monday—Push A, etc.).
+  User separately confirmed the 3D muscle view also loads fine. No code was broken; nothing to fix.
+- Note for future sessions: simulator UI automation (cliclick + AppleScript window activation) is
+  unreliable while the user is actively using other apps on the same Mac — `System Events` reported
+  Simulator as frontmost, then the very next click landed on Brave/Sublime instead, twice. Don't burn
+  time chasing coordinate-precision when this happens; confirm frontmost app with `osascript -e 'tell
+  application "System Events" to get name of first application process whose frontmost is true'`
+  immediately before AND after every click, and treat rapid drift as a sign to stop and ask the user to
+  interact directly rather than keep retrying.
+
+# Feature — Reorder exercises in an active workout (2026-08-09, uncommitted)
+User wanted to drag-reorder exercises mid-session (already existed for Templates via T1.5; sessions
+never got the same treatment). `SessionExercises.position` already existed — no schema change.
+- [x] `SessionRepository.reorderExercises(sessionId, orderedIds)` — mirrors `TemplateRepository.reorder`'s
+      validation (no duplicates, no missing/foreign ids) but scoped to one session's own exercises;
+      writes to positions in a transaction.
+- [x] `active_session_screen.dart`: swapped the flat `ListView` for a `CustomScrollView` +
+      `SliverReorderableList` (exercise cards) + a footer sliver (Finish button) — needed because
+      `ReorderableListView` would have made the Finish button itself draggable if left in the same list.
+      Each `_ExerciseCard` gained a drag handle icon (`ReorderableDragStartListener`) next to the
+      existing remove button; hidden once the workout is completed (`reorderable: !completed`).
+- [x] Tests: `reorderExercises persists the new position order` and a rejection test for an id from a
+      different session (mirrors the template repository's cross-collection validation tests).
+- [x] `flutter analyze` clean, **229 tests green** (was 210 for lib/ + new tests here).
+
+## Release artifacts — 2026-08-09 (`reorder-exercises`, uncommitted tree)
+- `dist/logged-1.0.0-reorder-exercises.apk` (99 MB, release)
+- `dist/logged-1.0.0-reorder-exercises-unsigned.ipa` (27.8 MB, release, UNSIGNED)
+- Full `flutter clean` before building — a simulator debug build ran earlier this session for the data
+  investigation above, and per the dated lesson two sections up, a stray simulator build silently
+  poisons `build/native_assets/ios/` for the next device build. Verified this did NOT happen:
+  `vtool -show-build` on both `objective_c` and `sqlite3` in the shipped archive reports `platform IOS`,
+  `lipo -archs` shows `arm64` only (no `x86_64`). This is the same check that would have caught the
+  July 26 incident before it shipped.
+- Old `dist/logged-1.0.0-design-polish*` artifacts deleted per user request (they were not actually
+  faulty — see the investigation above — but the user asked for a fresh build regardless).
+
+# Current state (2026-08-09, end of session)
+Branch `feat/set-editor-backup-ux`, still no git remote — all commits local-only, and **everything
+above (reset-view fix, bias-axis-on-any-exercise, global keyboard dismiss, session exercise reorder)
+is uncommitted** in the working tree as of this entry. `flutter analyze` clean, **229 tests green**.
+Schema is still **v9** (no schema change for the reorder feature — `SessionExercises.position` already
+existed). Bundled exercise library is **1047 rows**. `dist/` holds only the latest release pair
+(`logged-1.0.0-reorder-exercises.apk` + `-unsigned.ipa`).
+
+## Machine/toolchain notes (2026-08-09)
+- **`third_party/interactive_3d` is a vendored path dependency**, not the pub.dev `interactive_3d`
+  package (see `pubspec.yaml`) — Kotlin under `android/src/main/kotlin/com/example/interactive_3d/`,
+  Swift under `ios/Classes/`. Edit the vendored copy, not anything from `.pub-cache`.
+- **Unsigned IPA packaging recipe** (still true): `flutter build ipa --no-codesign` stops at
+  `build/ios/archive/Runner.xcarchive` and does not emit an .ipa. Package by hand:
+  `mkdir Payload && cp -R Runner.xcarchive/Products/Applications/Runner.app Payload/ && zip -r out.ipa Payload`.
+- **Xcode auto-updates can silently break device archives.** Xcode went 26.4→26.6 between sessions;
+  `flutter build ipa` started failing with "iOS 26.5 is not installed" until
+  `xcodebuild -downloadPlatform iOS` ran. Never pipe that command through `head` — it sends SIGPIPE
+  and kills the download mid-transfer with a misleading exit 0.
+- **This machine's disk fills up.** Hit 1.1GB free (of 460GB) mid-session, which is what actually broke
+  the iOS platform download, not a genuine missing-component problem. Biggest recoverable offenders
+  found here: stale `CoreSimulator` runtimes (~50GB for versions Xcode no longer needs), Docker Desktop
+  VM data (`~/Library/Containers/com.docker.docker`, doesn't shrink via `docker system prune` alone —
+  delete directly if Docker isn't running), `.gradle/caches`, `~/.npm/_cacache`, browser/tool caches
+  under `~/Library/Caches`, and old `dist/` build artifacts.
+- **Files >30MB can't go through `SendUserFile`.** For an APK on the go, drop it into a synced cloud
+  folder (`~/Library/CloudStorage/GoogleDrive-.../My Drive/` here) instead — syncs to the phone
+  automatically if the Drive app is signed in.
+- **Codex has a usage limit that can trip mid-session** (resets on a schedule, e.g. "Aug 11"). When
+  Mode B review fails this way, don't skip review — do it manually against the same risk areas the
+  codex prompt would have flagged, reading the actual diff rather than trusting green tests alone.
+
+---
+
+# Feature — N-muscle bias (replaces 2-muscle axis) + bundled-exercise muscle editing + keyboard-overlap fix (2026-08-09)
+
+User found the 2-muscle bias axis (`biasMuscleA`/`biasMuscleB`, schema v9) unintentionally reachable
+on ANY exercise with 2+ primary muscles (256/1278 bundled exercises qualify, not just squats/legs —
+`Barbell Bent-Over Row`, `Dumbbell Pullover`, etc.), because `settings_screen.dart` gates the picker on
+`primary.length >= 2` with no exercise-type restriction. Rather than restrict it, the user wants it
+**widened**: bias should support N muscles (e.g. Zercher Squats — quads/glutes/hams — biasing all
+three, or just two of them, or 100% into one). Decision: no restriction at all, arbitrary weight
+distribution across an exercise's tagged primary muscles.
+
+**Design** (superseding the `logged-pending-muscle-bias-feature` memory's 2-muscle-only scoping —
+that memory is now stale, update it after this ships):
+- Drop the pre-configured exercise-level "bias axis" entirely (no more picking a fixed pair in
+  Settings). Bias becomes a live, per-SET weight distribution over whichever primary muscles the
+  exercise currently has (2+) — chosen at set-log time in `set_editor_sheet.dart`, not pre-wired.
+- Schema v9→v10: `SetEntries.muscleBias` (real, -1..1) → `SetEntries.muscleBiasWeights` (text,
+  nullable JSON map `{"quads":0.6,"glute_max":0.4}`). Migrate existing non-null rows using the
+  exercise's `biasMuscleA`/`biasMuscleB` + old `resolveMuscleBiasShares` math into a 2-key map so
+  historical analytics are unaffected. Drop `Exercises.biasMuscleA`/`biasMuscleB`/`biasAxisUserSet`
+  columns (no longer needed — nothing to pre-configure).
+- `lib/core/domain/muscle_bias.dart`: replace the A/B pair functions with an N-muscle weight-map
+  resolver. Preserve today's default: a primary muscle with no explicit weight entry still gets full
+  `1.0` credit in `muscle_progress.dart`'s `primaryMuscleBiasWeight(...) ?? 1.0` call site — do not
+  regress existing unbias'd analytics.
+  - `muscle_progress.dart`, `live_muscle_state.dart`, `analytics_repository.dart` (raw SQL currently
+    selects `bias_muscle_a`/`bias_muscle_b`/`muscle_bias` columns — update the queries), and
+    `backup_service.dart` (JSON export/import + `_schemaVersion`) all consume the old A/B shape and
+    need updating together.
+- `set_editor_sheet.dart`: `SetEditorSheet` takes `primaryMuscles: List<MuscleId>` (not
+  `biasMuscleA`/`biasMuscleB`) from `active_session_screen.dart`; the bias section renders one
+  row/slider per primary muscle (only shown when length >= 2), renormalizing to 100% on change,
+  defaulting to an even split. `SetEditorResult.muscleBias` (double?) → `muscleBiasWeights`
+  (`Map<MuscleId,double>?`).
+- `settings_screen.dart`: delete `_editBundledExerciseBias` and the bias-axis portion of
+  `_editExerciseMuscles`/`_BiasAxisField` (no more exercise-level config). Separately, unify
+  `_manageExercises`'s onTap (currently `if (exercise.isCustom) → _editExerciseMuscles else →
+  _editBundledExerciseBias`, line ~767) so BUNDLED exercises get the same full primary/secondary
+  muscle editor as custom ones — `exercise_repository.dart`'s `updateMuscles` already works
+  identically on any exercise row (custom is just a bool flag), no repository change needed for this
+  part. This is what lets a user actually add `glute_max`/`hamstrings` as primary on Zercher Squats
+  (today it ships with only `quads`).
+- `exercise_repository.dart`: remove `updateBiasAxis` (tied to the deleted A/B columns).
+- Tests to update/add: `test/data/database_migration_test.dart` (v9→v10 migration preserves existing
+  bias data), `test/core/muscle_bias_test.dart`, `test/data/session_repository_test.dart`,
+  `test/data/exercise_repository_test.dart`, `test/data/backup_service_test.dart` (round-trip the new
+  field). Cover: N=2 unchanged default behavior, N=3 (Zercher-style) distribution, migration fidelity,
+  bundled-exercise muscle edit path.
+
+**Separately — keyboard-overlap bug (small, fixed directly, not delegated):** exercise search bottom
+sheets don't reserve space for the keyboard. `showModalBottomSheet` does NOT auto-pad for
+`viewInsets` (verified against Flutter SDK source, `bottom_sheet.dart` — no `viewInsets` reference in
+the framework's own layout code; the caller must add it, which `set_editor_sheet.dart` already does
+correctly at line ~261 as the reference pattern). Two sheets are missing it:
+- `lib/core/widgets/exercise_picker.dart` (`_ExercisePickerSheet`, the shared search used from
+  session/progress/template/import screens) — `DraggableScrollableSheet` sizes against full screen
+  height regardless of keyboard.
+- `lib/features/settings/settings_screen.dart` `_manageExercises` (line ~692) — `Column(mainAxisSize:
+  MainAxisSize.min)` content is bottom-anchored with no keyboard padding; when results are few, total
+  content height < keyboard height, so the ENTIRE sheet (including the search field) renders behind
+  the on-screen keyboard. This is exactly the "vanishes behind the keyboard" symptom — reproduces most
+  visibly with few/zero results because the sheet is short.
+- Fix: wrap both sheets' content in `Padding(padding: EdgeInsets.only(bottom:
+  MediaQuery.viewInsetsOf(context).bottom))`.
+
+Sequencing to avoid concurrent edits to the same file: keyboard fix done directly first (small, 2
+files), THEN the N-muscle bias rewrite dispatched to Codex (touches settings_screen.dart too, among
+5+ other files — per the Codex delegation rule for heavy/multi-file work), reviewed (Mode B) before
+being called done.
+
+**Implementation record — completed 2026-08-09 (uncommitted)**
+- Schema v9→v10: `SetEntries.muscleBias` (real) → `muscleBiasWeights` (text/JSON weight map);
+  `Exercises.biasMuscleA`/`biasMuscleB`/`biasAxisUserSet` dropped. Migration converts existing
+  non-null legacy bias rows via the preserved `resolveMuscleBiasShares` formula; verified by a new
+  v9→v10 test that checks the exact converted weights (0.25 legacy bias → `{quads:0.375,
+  glute_max:0.625}`), not just presence/absence.
+- `muscle_bias.dart`: `primaryMuscleBiasWeight` now takes a `Map<MuscleId,double>?` and returns
+  `weights?[muscle]`, preserving every existing `?? 1.0` default-credit call site unchanged.
+- `set_editor_sheet.dart`: one slider per primary muscle (`_showsMuscleBias` when 2+), proportional
+  redistribution on drag, percentages always sum to exactly 100 (last muscle absorbs rounding
+  remainder) — verified by reading `_normalizeBiasWeights`/`_setBiasShare`/`_biasPercentages` by hand.
+- `settings_screen.dart`: `_editBundledExerciseBias` and all bias-axis config UI deleted;
+  `_manageExercises`'s onTap no longer branches on `isCustom` — every exercise opens the full
+  primary/secondary muscle editor, so bundled exercises (e.g. Zercher Squats, shipped with only
+  `quads` primary) can have muscles added.
+- `analytics_repository.dart` raw SQL, `backup_service.dart` export/import, `session_repository.dart`,
+  `set_repository.dart`, `active_session_screen.dart` all updated to the new shape — grepped for
+  dangling `biasMuscleA`/`biasMuscleB`/`bias_muscle_a`/`bias_muscle_b`/`updateBiasAxis` references
+  after the fact; every remaining hit is legacy-migration/legacy-backup-import code that's supposed to
+  still reference the old shape, none are live call sites.
+- Keyboard-overlap fix (done directly, not via Codex): `exercise_picker.dart` and
+  `settings_screen.dart`'s `_manageExercises` now wrap sheet content in
+  `Padding(bottom: MediaQuery.viewInsetsOf(context).bottom)` — previously neither reserved space for
+  the keyboard, so a short sheet (few/no results) rendered entirely behind it.
+- **Verified:** `flutter analyze` clean, `flutter test` green (222 tests, up from 193). Codex did the
+  N-muscle rewrite (Mode A); Mode B review done by hand against the 5 highest-risk areas above, not
+  just green tests.
+
+---
+
+# Feature — Workout plan v8 templates + stretching-by-day-type fix + IPA/APK (2026-08-09)
+
+Source: `/Users/palashlalwani/life/fitness/workout_plan_v8.docx` (read via pandoc). Rewrote
+`lib/data/services/workout_template_seed_service.dart`'s `_templates` (all 6 days) to match v8's
+exact sets/reps/tempo/rest/load notes. Every exercise name in the plan already existed in the 1278-row
+library under some name (no new library rows needed) — cross-checked every name against
+`assets/data/exercise_library.json` before writing the seed, including non-obvious aliases (Cable
+External Rotation → `External Rotation with Cable`, Suitcase Hold → `Suitcase Carry`, Pec Fly Machine →
+`Pec Deck`, B-Stance Romanian Deadlift → `B-Stance RDL`, Lean-Away (Bayesian) Lateral Raise →
+`Lean-Away Cable Lateral Raise`, Reverse Nordic Curl → `Reverse Nordic`).
+
+**Real bug found and fixed, unrelated to v8 content**: `_allStretches` was a single flat list spread
+into ALL 6 templates identically — every day got all 6 stretches, when the plan's own stretching table
+(unchanged since v7) explicitly varies by day type (Push/Pull/Legs each get a different 3–4-stretch
+subset, not all 6). Split into `_pushStretches`/`_pullStretches`/`_legStretches`. Hip flexor lunge is
+the only stretch that's genuinely on all 6 days.
+
+**Propagation gap, same pattern as the muscle-anatomy backfill earlier**: `seedIfEmpty()` only ever
+inserts a template if the NAME doesn't exist yet, and only refreshes an existing one if it has zero
+prescription data (`_shouldRefreshDefaultTemplate`) — a template that already has full v7 prescriptions
+(which Palash's live app does) would never pick up v8 changes. Added a version gate:
+`_templatePlanVersion = 'v8'` stored in `app_settings` under `templatePlanVersion`; when the stored
+version doesn't match, every template's exercises get replaced regardless of existing prescription
+completeness, then the version is bumped. This is what actually gets v8 onto the phone — editing the
+Dart list alone would not have.
+
+**Real limitation, flagged not hidden**: v8 alternates Barbell Back Squat ↔ Zercher Squat and Barbell
+RDL ↔ B-Stance RDL weekly on Legs A (same slot, different exercise every other week). The app has no
+"alternate weekly" template mechanic — Wednesday's template shows the Week-A exercise as the fixed row,
+with a prescriptionNotes line stating the alternation and instructing a manual swap via the exercise
+row's existing swap feature every other week. This is a real capability gap, not a data-entry choice —
+worth a proper feature if it comes up again.
+
+Per explicit instruction, stripped every "NEW v8"/"UPDATED v8" label from user-facing
+`prescriptionNotes` (was useful in the planning doc, not in the app) — capitalized the now-first-word of
+every note that used to start after that prefix. The internal `_templatePlanVersion` constant/app_settings
+key stayed (plumbing, not user-facing).
+
+**Tests**: updated `test/data/exercise_library_asset_test.dart`'s hardcoded Monday row count (15→17,
+Push A gained JM Press/Tate Press/Cable Pullover/Cable Serratus Punch/External Rotation as new rows).
+Added a new test proving the version-gated upgrade actually fires on a template with COMPLETE stale
+prescriptions (the exact scenario `_shouldRefreshDefaultTemplate` alone would skip) and is idempotent on
+a second run.
+- **Verified:** `flutter analyze` clean, `flutter test` green (230 tests).
+
+**Builds**: `dist/logged-1.0.0-workout-plan-v8.apk` (99MB, copied to Google Drive `My Drive/` for phone
+sync — too big for direct chat delivery) + `...-workout-plan-v8-unsigned.ipa` (27.8MB, sent directly).
+IPA verified `platform IOS`, `arm64`-only via `vtool`/`lipo` per the July 26 incident lesson. Old
+`dist/logged-1.0.0-reorder-exercises*` artifacts left in place (not asked to clean up).
+
+---
 See `tasks/lessons.md` for the non-negotiable units rule.
+
+---
+
+## Audit remediation — PHASE 1 (spec: `tasks/spec-audit-fixes.md`) — 2026-08-14
+
+Implemented by Codex, reviewed and corrected here. All five items landed as specified:
+
+- [x] **1.1 G1** — bias weights normalize to MEAN 1.0 (sum = N), not sum 1.0. Percentages still shown
+      in the sheet; schemaVersion 10 → 11 with an `onUpgrade` rescale, mirrored in
+      `BackupService.replaceFromPayload` for backups written at ≤ 10 via the shared
+      `rescaleStoredMuscleBiasWeights`. Seam test asserts an untouched sheet save credits exactly
+      what `muscleBiasWeights: null` credits.
+- [x] **1.2 K1** — RPE enhances, never gates. Rep range alone drives double progression; RPE only
+      vetoes. Rationale strings no longer name RPE when it played no part, and the "add one rep"
+      string no longer fires when the suggestion repeats last time.
+- [x] **1.3 A1+A2** — `_query` filters `is_warmup = 0` and no longer requires a non-null
+      `weight_value`; `recentPrs` skips `weightKg <= 0`. Bodyweight sessions now count toward sessions
+      and sets, still 0 tonnage (`TODO(A2b)` records the limitation).
+- [x] **1.4 A4** — reps-branch performance signal uses the entered value and drops `* sides`.
+      Duration/distance branches keep `* sides`.
+- [x] **1.5 G2** — `loadDeloadData` applies `primaryMuscleBiasWeight`, matching `buildMuscleProgress`.
+
+### Review corrections applied on top
+
+1. `_resistedMassKg` took the entered value only for `LoadingMode.external`; added/assisted plates
+   logged "per hand" still doubled into the 1RM proxy. Now all branches share one `external` value.
+   Regression test: `muscle_progress_test.dart` "added load logged per hand is not doubled…".
+2. The backup rescale ran after the import transaction — moved inside it (crash in the gap would have
+   stranded share-scale weights permanently).
+3. Stale doc comments claiming `completedSetsProvider` holds "weighted sets" and that `_query` drops
+   bodyweight sets (`providers.dart`, `analytics_repository.dart`) rewritten to match the new
+   behaviour.
+4. `decodeMuscleIds` now drops duplicate ids. A repeated primary muscle would have double-credited
+   sets and given two bias sliders the same `ValueKey`.
+
+- **Verified:** `flutter analyze` clean, `flutter test` green (242 tests, up from 230 baseline).
+- **NOT done:** the spec's manual on-device check — log two sets of a 2-primary exercise on a real DB,
+  confirm weekly muscle balance reads 2.0 sets per muscle, and `sqlite3` the v10 → v11 rescale.
+- **NOT done:** ground rule 8 — no baseline commit was taken before Phase 1, so these changes sit in
+  the working tree mixed with the earlier uncommitted N-muscle bias work. Commit before Phase 2.

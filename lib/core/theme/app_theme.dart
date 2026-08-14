@@ -85,6 +85,23 @@ class AppColors extends ThemeExtension<AppColors> {
   }
 }
 
+/// Shared corner-radius roles. Use these instead of raw `circular(N)`
+/// literals so cards/controls/pills stay visually consistent across screens.
+class AppRadius {
+  const AppRadius._();
+
+  /// Full tappable cards and list tiles. Matches [CardThemeData].
+  static const card = 22.0;
+
+  /// Inline badges, steppers, and inputs nested inside a card. Matches
+  /// [InputDecorationTheme].
+  static const control = 16.0;
+
+  /// Fully rounded pills/chips. Prefer [StadiumBorder] where the widget
+  /// supports it instead of this numeric radius.
+  static const pill = 999.0;
+}
+
 /// The "warm earth" design system: terracotta primary, sage accents, and warm
 /// cream/charcoal neutrals — deliberately avoiding the cold indigo/violet defaults.
 class AppTheme {

@@ -10,6 +10,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../database/app_database.dart';
 import '../../core/domain/enums.dart';
+import '../../core/domain/muscle.dart';
+import '../../core/domain/muscle_bias.dart';
 import '../../core/domain/workout_metrics.dart';
 import 'exercise_anatomy_service.dart';
 
@@ -21,8 +23,20 @@ class BackupService {
   final ExerciseAnatomyService _anatomyService;
 
   /// Schema versions this build can read. The current writer is [_schemaVersion].
-  static const Set<int> _supportedSchemaVersions = {1, 2, 3, 4, 5, 6, 7, 8};
-  static const int _schemaVersion = 8;
+  static const Set<int> _supportedSchemaVersions = {
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+  };
+  static const int _schemaVersion = 11;
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';
@@ -254,18 +268,18 @@ class BackupService {
         'weightEntry': source['weightEntry'] ?? 'total',
         'preferredLoadingMode': source['preferredLoadingMode'] ?? 'external',
         'bodyweightFactor': source['bodyweightFactor'] ?? 1.0,
-        'biasMuscleA': source['biasMuscleA'],
-        'biasMuscleB': source['biasMuscleB'],
       });
 
-  SetEntry _setEntryFromBackup(Map<String, dynamic> source) =>
-      SetEntry.fromJson({
-        ...source,
-        'weightEntry': source['weightEntry'] ?? 'total',
-        'sideCount': source['sideCount'] ?? 1,
-        'loadingMode': source['loadingMode'] ?? 'external',
-        'muscleBias': source['muscleBias'],
-      });
+  SetEntry _setEntryFromBackup(
+    Map<String, dynamic> source, {
+    String? legacyMuscleBiasWeights,
+  }) => SetEntry.fromJson({
+    ...source,
+    'weightEntry': source['weightEntry'] ?? 'total',
+    'sideCount': source['sideCount'] ?? 1,
+    'loadingMode': source['loadingMode'] ?? 'external',
+    'muscleBiasWeights': source['muscleBiasWeights'] ?? legacyMuscleBiasWeights,
+  });
 
   TemplateExercise _templateExerciseFromBackup(Map<String, dynamic> source) =>
       TemplateExercise.fromJson({
@@ -304,6 +318,13 @@ class BackupService {
       });
 
   Future<void> replaceFromPayload(Map<String, dynamic> source) async {
+    final exerciseRows = _rows(source, 'exercises');
+    final sessionExerciseRows = _rows(source, 'sessionExercises');
+    final setRows = _rows(source, 'setEntries');
+    final exercisesById = _rowsById(exerciseRows);
+    final sessionExercisesById = _rowsById(sessionExerciseRows);
+    final version = source['schemaVersion'] as int? ?? 1;
+
     await _database.transaction(() async {
       await _database.delete(_database.setEntries).go();
       await _database.delete(_database.bodyweightEntries).go();
@@ -317,7 +338,7 @@ class BackupService {
       await _database.batch((batch) {
         batch.insertAll(
           _database.exercises,
-          _rows(source, 'exercises').map(_exerciseFromBackup).toList(),
+          exerciseRows.map(_exerciseFromBackup).toList(),
           mode: InsertMode.insertOrReplace,
         );
         batch.insertAll(
@@ -340,15 +361,22 @@ class BackupService {
         );
         batch.insertAll(
           _database.sessionExercises,
-          _rows(
-            source,
-            'sessionExercises',
-          ).map(_sessionExerciseFromBackup).toList(),
+          sessionExerciseRows.map(_sessionExerciseFromBackup).toList(),
           mode: InsertMode.insertOrReplace,
         );
         batch.insertAll(
           _database.setEntries,
-          _rows(source, 'setEntries').map(_setEntryFromBackup).toList(),
+          setRows.map((row) {
+            final legacyWeights = _legacyMuscleBiasWeightsFromBackup(
+              row,
+              exercisesById: exercisesById,
+              sessionExercisesById: sessionExercisesById,
+            );
+            return _setEntryFromBackup(
+              row,
+              legacyMuscleBiasWeights: legacyWeights,
+            );
+          }).toList(),
           mode: InsertMode.insertOrReplace,
         );
         batch.insertAll(
@@ -373,10 +401,65 @@ class BackupService {
           mode: InsertMode.insertOrReplace,
         );
       });
+      // Inside the transaction on purpose. The imported rows are already at
+      // v11 schema, so a crash between the commit and a later rescale would
+      // strand share-scale weights that no migration would ever fix again.
+      if (version < 11) {
+        await rescaleStoredMuscleBiasWeights(_database);
+      }
     });
-    final version = source['schemaVersion'] as int? ?? 1;
     if (version < 8) {
       await _anatomyService.enrichBundledExercises();
+    }
+  }
+
+  Map<int, Map<String, dynamic>> _rowsById(List<Map<String, dynamic>> rows) => {
+    for (final row in rows)
+      if (row['id'] case final num id) id.toInt(): row,
+  };
+
+  String? _legacyMuscleBiasWeightsFromBackup(
+    Map<String, dynamic> setRow, {
+    required Map<int, Map<String, dynamic>> exercisesById,
+    required Map<int, Map<String, dynamic>> sessionExercisesById,
+  }) {
+    if (setRow['muscleBiasWeights'] != null) {
+      return setRow['muscleBiasWeights'] as String?;
+    }
+    final legacyBias = (setRow['muscleBias'] as num?)?.toDouble();
+    if (legacyBias == null) return null;
+
+    final sessionExerciseId = (setRow['sessionExerciseId'] as num?)?.toInt();
+    final sessionExercise = sessionExerciseId == null
+        ? null
+        : sessionExercisesById[sessionExerciseId];
+    final exerciseId = (sessionExercise?['exerciseId'] as num?)?.toInt();
+    final exercise = exerciseId == null ? null : exercisesById[exerciseId];
+    if (exercise == null) return null;
+
+    final biasMuscleAId = exercise['biasMuscleA'] as String?;
+    final biasMuscleBId = exercise['biasMuscleB'] as String?;
+    if (biasMuscleAId == null || biasMuscleBId == null) return null;
+
+    try {
+      final biasMuscleA = _decodeLegacyMuscle(biasMuscleAId);
+      final biasMuscleB = _decodeLegacyMuscle(biasMuscleBId);
+      if (biasMuscleA == biasMuscleB) return null;
+      final shares = resolveMuscleBiasShares(legacyBias);
+      return encodeMuscleBiasWeights({
+        biasMuscleA: shares.shareA,
+        biasMuscleB: shares.shareB,
+      });
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  MuscleId _decodeLegacyMuscle(String value) {
+    try {
+      return MuscleId.fromId(value);
+    } on ArgumentError {
+      return MuscleId.values.byName(value);
     }
   }
 }

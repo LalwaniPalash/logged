@@ -4,6 +4,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
+import 'package:logged/core/domain/muscle.dart';
+import 'package:logged/core/domain/muscle_bias.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/services/backup_service.dart';
 import 'package:logged/data/services/exercise_anatomy_service.dart';
@@ -26,8 +28,6 @@ void main() {
             defaultUnit: const Value(WeightUnit.kg),
             weightEntry: const Value(WeightEntry.perSide),
             videoUrl: const Value('https://youtu.be/demo'),
-            biasMuscleA: const Value('mid_lower_chest'),
-            biasMuscleB: const Value('front_delts'),
             isCustom: const Value(false),
             isArchived: const Value(false),
           ),
@@ -60,7 +60,12 @@ void main() {
             unit: const Value(WeightUnit.kg),
             weightEntry: const Value(WeightEntry.perSide),
             sideCount: const Value(2),
-            muscleBias: const Value(0.4),
+            muscleBiasWeights: Value(
+              encodeMuscleBiasWeights(const {
+                MuscleId.midLowerChest: 0.7,
+                MuscleId.frontDelts: 0.3,
+              }),
+            ),
           ),
         );
     await source
@@ -73,13 +78,11 @@ void main() {
           ),
         );
     final payload = await BackupService(source).exportPayload();
-    expect(payload['schemaVersion'], 8);
+    expect(payload['schemaVersion'], 11);
     await BackupService(target).replaceFromPayload(payload);
     final exercises = await target.select(target.exercises).get();
     expect(exercises, hasLength(1));
     expect(exercises.single.videoUrl, 'https://youtu.be/demo');
-    expect(exercises.single.biasMuscleA, 'mid_lower_chest');
-    expect(exercises.single.biasMuscleB, 'front_delts');
     expect(jsonDecode(exercises.single.primaryMuscles), ['mid_lower_chest']);
     expect(jsonDecode(exercises.single.secondaryMuscles), [
       'front_delts',
@@ -93,7 +96,10 @@ void main() {
     expect(sets.single.weightEntry, WeightEntry.perSide);
     expect(sets.single.sideCount, 2);
     expect(sets.single.loadingMode, LoadingMode.external);
-    expect(sets.single.muscleBias, 0.4);
+    expect(decodeMuscleBiasWeights(sets.single.muscleBiasWeights), const {
+      MuscleId.midLowerChest: 0.7,
+      MuscleId.frontDelts: 0.3,
+    });
     final bodyweights = await target.select(target.bodyweightEntries).get();
     expect(bodyweights, hasLength(1));
     expect(bodyweights.single.value, 80);
@@ -143,92 +149,77 @@ void main() {
     expect(jsonDecode(exercise.secondaryMuscles), ['upper_traps']);
   });
 
-  test(
-    'v7 backup imports cleanly and rehydrates bundled bias metadata',
-    () async {
-      final source = AppDatabase(NativeDatabase.memory());
-      final target = AppDatabase(NativeDatabase.memory());
-      addTearDown(source.close);
-      addTearDown(target.close);
+  test('legacy bias backups import and convert set weights', () async {
+    final source = AppDatabase(NativeDatabase.memory());
+    final target = AppDatabase(NativeDatabase.memory());
+    addTearDown(source.close);
+    addTearDown(target.close);
 
-      final exerciseId = await source
-          .into(source.exercises)
-          .insert(
-            ExercisesCompanion.insert(
-              name: 'Leg Press',
-              category: ExerciseCategory.strength,
-              muscleGroup: 'legs',
-              primaryMuscles: const Value('["quads","glute_max"]'),
-              secondaryMuscles: const Value('["hamstrings","adductors"]'),
-            ),
-          );
-      final sessionId = await source
-          .into(source.sessions)
-          .insert(
-            SessionsCompanion.insert(
-              startedAt: DateTime.utc(2026, 7, 20),
-              endedAt: Value(DateTime.utc(2026, 7, 20, 12)),
-            ),
-          );
-      final linkId = await source
-          .into(source.sessionExercises)
-          .insert(
-            SessionExercisesCompanion.insert(
-              sessionId: sessionId,
-              exerciseId: exerciseId,
-              position: 0,
-            ),
-          );
-      await source
-          .into(source.setEntries)
-          .insert(
-            SetEntriesCompanion.insert(
-              sessionExerciseId: linkId,
-              setNumber: 1,
-              reps: const Value(10),
-              weightValue: const Value(180),
-              unit: const Value(WeightUnit.lb),
-            ),
-          );
+    final exerciseId = await source
+        .into(source.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Leg Press',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'legs',
+            primaryMuscles: const Value('["quads","glute_max"]'),
+            secondaryMuscles: const Value('["hamstrings","adductors"]'),
+          ),
+        );
+    final sessionId = await source
+        .into(source.sessions)
+        .insert(
+          SessionsCompanion.insert(
+            startedAt: DateTime.utc(2026, 7, 20),
+            endedAt: Value(DateTime.utc(2026, 7, 20, 12)),
+          ),
+        );
+    final linkId = await source
+        .into(source.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+    await source
+        .into(source.setEntries)
+        .insert(
+          SetEntriesCompanion.insert(
+            sessionExerciseId: linkId,
+            setNumber: 1,
+            reps: const Value(10),
+            weightValue: const Value(180),
+            unit: const Value(WeightUnit.lb),
+          ),
+        );
 
-      final payload = await BackupService(source).exportPayload();
-      payload['schemaVersion'] = 7;
-      for (final exercise
-          in (payload['exercises'] as List<dynamic>)
-              .cast<Map<String, dynamic>>()) {
-        exercise.remove('biasMuscleA');
-        exercise.remove('biasMuscleB');
-      }
-      for (final set
-          in (payload['setEntries'] as List<dynamic>)
-              .cast<Map<String, dynamic>>()) {
-        set.remove('muscleBias');
-      }
+    final payload = await BackupService(source).exportPayload();
+    payload['schemaVersion'] = 9;
+    for (final exercise
+        in (payload['exercises'] as List<dynamic>)
+            .cast<Map<String, dynamic>>()) {
+      exercise['biasMuscleA'] = 'quads';
+      exercise['biasMuscleB'] = 'glute_max';
+    }
+    for (final set
+        in (payload['setEntries'] as List<dynamic>)
+            .cast<Map<String, dynamic>>()) {
+      set.remove('muscleBiasWeights');
+      set['muscleBias'] = 0.25;
+    }
 
-      final anatomyService = ExerciseAnatomyService(
-        target,
-        loadAsset: () async => jsonEncode([
-          {
-            'name': 'Leg Press',
-            'primaryMuscles': ['quads', 'glute_max'],
-            'secondaryMuscles': ['hamstrings', 'adductors'],
-            'biasMuscleA': 'quads',
-            'biasMuscleB': 'glute_max',
-          },
-        ]),
-      );
-      await BackupService(
-        target,
-        anatomyService: anatomyService,
-      ).replaceFromPayload(payload);
+    await BackupService(target).replaceFromPayload(payload);
 
-      final exercise = await target.select(target.exercises).getSingle();
-      final set = await target.select(target.setEntries).getSingle();
-      expect(exercise.biasMuscleA, 'quads');
-      expect(exercise.biasMuscleB, 'glute_max');
-      expect(set.muscleBias, isNull);
-    },
-  );
+    final exercise = await target.select(target.exercises).getSingle();
+    final set = await target.select(target.setEntries).getSingle();
+    expect(jsonDecode(exercise.primaryMuscles), ['quads', 'glute_max']);
+    expect(decodeMuscleBiasWeights(set.muscleBiasWeights), const {
+      MuscleId.quads: 0.75,
+      MuscleId.gluteMax: 1.25,
+    });
+  });
 
   test('CSV set history flattens per-hand and each-side into volume', () async {
     final db = AppDatabase(NativeDatabase.memory());

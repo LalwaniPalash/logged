@@ -57,9 +57,7 @@ class MusclePerformanceRecord {
     required this.primaryMuscles,
     required this.secondaryMuscles,
     required this.loadingMode,
-    this.biasMuscleA,
-    this.biasMuscleB,
-    this.muscleBias,
+    this.muscleBiasWeights,
     this.reps,
     this.weightValue,
     this.unit,
@@ -77,9 +75,7 @@ class MusclePerformanceRecord {
   final List<MuscleId> primaryMuscles;
   final List<MuscleId> secondaryMuscles;
   final LoadingMode loadingMode;
-  final MuscleId? biasMuscleA;
-  final MuscleId? biasMuscleB;
-  final double? muscleBias;
+  final Map<MuscleId, double>? muscleBiasWeights;
   final int? reps;
   final double? weightValue;
   final WeightUnit? unit;
@@ -264,9 +260,7 @@ Map<MuscleId, MuscleProgress> buildMuscleProgress({
       final weight =
           primaryMuscleBiasWeight(
             muscle: muscle,
-            biasMuscleA: record.biasMuscleA,
-            biasMuscleB: record.biasMuscleB,
-            muscleBias: record.muscleBias,
+            weights: record.muscleBiasWeights,
           ) ??
           1.0;
       final acc = accumulators[muscle]!;
@@ -342,11 +336,11 @@ _ExerciseObservation? _performanceSignal(
 ) {
   final sides = record.sideCount.clamp(1, 999);
   if (record.reps != null && record.reps! > 0) {
-    final load = _resistedMassKg(record, bodyweights);
+    final load = _resistedMassKg(record, bodyweights, countImplements: false);
     if (load != null && load > 0) {
       return _ExerciseObservation(
         record: record,
-        value: load * sides * (1 + record.reps! / 30),
+        value: load * (1 + record.reps! / 30),
         lowerPrecision: false,
       );
     }
@@ -376,15 +370,21 @@ _ExerciseObservation? _performanceSignal(
 
 double? _resistedMassKg(
   MusclePerformanceRecord record,
-  List<BodyweightEntry> bodyweights,
-) {
+  List<BodyweightEntry> bodyweights, {
+  bool countImplements = true,
+}) {
+  // A per-hand entry is two implements of the same load. Volume-like signals
+  // want both (countImplements), a 1RM proxy wants the entered value only —
+  // and that holds for added/assisted plates too, not just external ones.
   final external = record.weightValue == null
       ? null
-      : totalLoadKg(
+      : countImplements
+      ? totalLoadKg(
           record.weightValue!,
           record.unit ?? WeightUnit.kg,
           record.weightEntry,
-        );
+        )
+      : weightKg(record.weightValue!, record.unit ?? WeightUnit.kg);
   final bodyweight = _bodyweightOnOrBefore(record.date, bodyweights);
   final factor = record.bodyweightFactor.clamp(0.0, 1.0);
 

@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/live_muscle_state.dart';
 import '../../core/domain/muscle.dart';
+import '../../core/domain/muscle_bias.dart';
 import '../../core/domain/muscle_progress.dart' as progress;
 import '../../core/domain/streak.dart';
 import '../../core/domain/training_goal.dart';
@@ -22,6 +23,7 @@ class WorkoutSetRecord {
     required this.exerciseName,
     required this.weightKg,
     required this.reps,
+    this.loadingMode = LoadingMode.external,
     this.weightEntry = WeightEntry.total,
     this.sideCount = 1,
   });
@@ -32,9 +34,13 @@ class WorkoutSetRecord {
   final String exerciseName;
   final double weightKg;
   final int reps;
+  final LoadingMode loadingMode;
   final WeightEntry weightEntry;
   final int sideCount;
 
+  // TODO(A2b): Bodyweight-only sets still report zero tonnage here because this
+  // record does not carry the dated bodyweight history needed to fold resisted
+  // mass into weekly volume.
   double get volumeKg => weightKg * weightEntry.implements * reps * sideCount;
   double get estimatedOneRepMaxKg => weightKg * (1 + reps / 30);
 }
@@ -97,23 +103,23 @@ class AnalyticsRepository {
   static const _query =
       'SELECT s.started_at AS started, e.muscle_group AS mg, e.id AS eid, '
       'e.name AS ename, se.weight_value AS wv, se.unit AS unit, '
+      'se.loading_mode AS loading_mode, '
       'se.weight_entry AS weight_entry, se.side_count AS side_count, '
       'se.reps AS reps '
       'FROM set_entries se '
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
       'JOIN sessions s ON s.id = sx.session_id '
       'JOIN exercises e ON e.id = sx.exercise_id '
-      'WHERE s.ended_at IS NOT NULL AND se.weight_value IS NOT NULL '
+      'WHERE s.ended_at IS NOT NULL '
       'AND se.reps IS NOT NULL AND se.reps > 0 '
+      'AND se.is_warmup = 0 '
       'ORDER BY s.started_at';
 
   static const _liveMuscleQuery =
       'SELECT s.started_at AS started, e.name AS ename, '
       'e.primary_muscles AS primary_muscles, '
       'e.secondary_muscles AS secondary_muscles, '
-      'e.bias_muscle_a AS bias_muscle_a, '
-      'e.bias_muscle_b AS bias_muscle_b, '
-      'se.muscle_bias AS muscle_bias, '
+      'se.muscle_bias_weights AS muscle_bias_weights, '
       'se.is_warmup AS is_warmup '
       'FROM set_entries se '
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
@@ -125,14 +131,12 @@ class AnalyticsRepository {
       'SELECT s.started_at AS started, e.id AS eid, e.name AS ename, '
       'e.primary_muscles AS primary_muscles, '
       'e.secondary_muscles AS secondary_muscles, '
-      'e.bias_muscle_a AS bias_muscle_a, '
-      'e.bias_muscle_b AS bias_muscle_b, '
       'e.bodyweight_factor AS bodyweight_factor, '
       'se.loading_mode AS loading_mode, se.weight_value AS weight_value, '
       'se.unit AS unit, se.weight_entry AS weight_entry, '
       'se.side_count AS side_count, se.reps AS reps, '
       'se.duration_sec AS duration_sec, se.distance_meters AS distance_meters, '
-      'se.muscle_bias AS muscle_bias, '
+      'se.muscle_bias_weights AS muscle_bias_weights, '
       'se.is_warmup AS is_warmup '
       'FROM set_entries se '
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
@@ -146,7 +150,8 @@ class AnalyticsRepository {
       'e.secondary_muscles AS secondary_muscles, '
       'se.weight_value AS weight_value, se.unit AS unit, '
       'se.loading_mode AS loading_mode, '
-      'se.reps AS reps, se.rpe AS rpe, se.is_warmup AS is_warmup '
+      'se.reps AS reps, se.rpe AS rpe, se.is_warmup AS is_warmup, '
+      'se.muscle_bias_weights AS muscle_bias_weights '
       'FROM set_entries se '
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
       'JOIN sessions s ON s.id = sx.session_id '
@@ -154,8 +159,9 @@ class AnalyticsRepository {
       'WHERE s.ended_at IS NOT NULL '
       'ORDER BY s.started_at, se.id';
 
-  // Benchmark lifts for strength standards. Unlike [_query] this keeps
-  // bodyweight sets (weight_value NULL) so strict pull-ups still count.
+  // Benchmark lifts for strength standards. Unlike [_query] this carries the
+  // exercise bodyweight factor, so a strict pull-up scores its resisted mass
+  // instead of the 0 kg a null weight_value gives [_query].
   static const _benchmarkQuery =
       'SELECT e.name AS ename, e.bodyweight_factor AS bodyweight_factor, '
       'se.loading_mode AS loading_mode, se.weight_value AS weight_value, '
@@ -203,7 +209,8 @@ class AnalyticsRepository {
       ),
   ];
 
-  /// All completed, weighted sets in chronological order.
+  /// All completed working sets in chronological order. Warm-ups are excluded;
+  /// bodyweight sets are included with `weightKg == 0`.
   Future<List<WorkoutSetRecord>> loadCompletedSets() async =>
       _map(await _database.customSelect(_query).get());
 
@@ -294,8 +301,14 @@ class AnalyticsRepository {
           row.data['secondary_muscles'],
           'deload assessment',
         ).toSet().difference(primary);
+        final weights = _decodeMuscleBiasWeights(
+          row.data['muscle_bias_weights'],
+          exerciseName: 'deload assessment',
+          columnName: 'muscle_bias_weights',
+        );
         for (final muscle in primary) {
-          weekly[muscle]![weekIndex] += 1;
+          weekly[muscle]![weekIndex] +=
+              primaryMuscleBiasWeight(muscle: muscle, weights: weights) ?? 1.0;
         }
         for (final muscle in secondary) {
           weekly[muscle]![weekIndex] += secondaryMuscleSetWeight;
@@ -358,11 +371,17 @@ class AnalyticsRepository {
         muscleGroup: row.data['mg'] as String? ?? '',
         exerciseId: row.data['eid'] as int,
         exerciseName: row.data['ename'] as String? ?? '',
-        weightKg: weightKg(
-          (row.data['wv'] as num).toDouble(),
-          WeightUnit.values.byName(row.data['unit'] as String? ?? 'kg'),
-        ),
+        weightKg: switch (row.data['wv']) {
+          final num value => weightKg(
+            value.toDouble(),
+            WeightUnit.values.byName(row.data['unit'] as String? ?? 'kg'),
+          ),
+          _ => 0,
+        },
         reps: row.data['reps'] as int,
+        loadingMode: LoadingMode.values.byName(
+          row.data['loading_mode'] as String? ?? 'external',
+        ),
         weightEntry: WeightEntry.values.byName(
           row.data['weight_entry'] as String? ?? 'total',
         ),
@@ -383,17 +402,11 @@ class AnalyticsRepository {
           row.data['secondary_muscles'],
           row.data['ename'] as String? ?? '',
         ),
-        biasMuscleA: _decodeMuscleOrNull(
-          row.data['bias_muscle_a'],
+        muscleBiasWeights: _decodeMuscleBiasWeights(
+          row.data['muscle_bias_weights'],
           exerciseName: row.data['ename'] as String? ?? '',
-          columnName: 'bias_muscle_a',
+          columnName: 'muscle_bias_weights',
         ),
-        biasMuscleB: _decodeMuscleOrNull(
-          row.data['bias_muscle_b'],
-          exerciseName: row.data['ename'] as String? ?? '',
-          columnName: 'bias_muscle_b',
-        ),
-        muscleBias: (row.data['muscle_bias'] as num?)?.toDouble(),
         isWarmup: switch (row.data['is_warmup']) {
           final bool value => value,
           final num value => value != 0,
@@ -418,17 +431,11 @@ class AnalyticsRepository {
           row.data['secondary_muscles'],
           row.data['ename'] as String? ?? '',
         ),
-        biasMuscleA: _decodeMuscleOrNull(
-          row.data['bias_muscle_a'],
+        muscleBiasWeights: _decodeMuscleBiasWeights(
+          row.data['muscle_bias_weights'],
           exerciseName: row.data['ename'] as String? ?? '',
-          columnName: 'bias_muscle_a',
+          columnName: 'muscle_bias_weights',
         ),
-        biasMuscleB: _decodeMuscleOrNull(
-          row.data['bias_muscle_b'],
-          exerciseName: row.data['ename'] as String? ?? '',
-          columnName: 'bias_muscle_b',
-        ),
-        muscleBias: (row.data['muscle_bias'] as num?)?.toDouble(),
         loadingMode: LoadingMode.values.byName(
           row.data['loading_mode'] as String? ?? 'external',
         ),
@@ -484,14 +491,22 @@ class AnalyticsRepository {
     }
   }
 
-  MuscleId? _decodeMuscleOrNull(
+  Map<MuscleId, double>? _decodeMuscleBiasWeights(
     Object? value, {
     required String exerciseName,
     required String columnName,
   }) {
     if (value == null) return null;
     try {
-      return MuscleId.fromId(value as String);
+      return decodeMuscleBiasWeights(value as String);
+    } on FormatException catch (error, stackTrace) {
+      developer.log(
+        'Ignoring malformed $columnName metadata for $exerciseName',
+        name: 'logged.analytics',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
     } on ArgumentError catch (error, stackTrace) {
       developer.log(
         'Ignoring unknown $columnName metadata for $exerciseName',

@@ -24,7 +24,7 @@ void main() {
     loadingMode: mode,
     isWarmup: warmup,
     rpe: rpe,
-    muscleBias: null,
+    muscleBiasWeights: null,
   );
 
   group('double progression matrix', () {
@@ -93,7 +93,7 @@ void main() {
       )!;
       expect(result.weightValue, 80);
       expect(result.reps, 7);
-      expect(result.rationale, contains('Match last time'));
+      expect(result.rationale, 'Match last time; add a rep range to progress.');
     });
 
     test('warmups are ignored and mixed units are converted', () {
@@ -110,6 +110,54 @@ void main() {
       )!;
       expect(result.weightValue, closeTo(100, 0.001));
       expect(result.reps, 9);
+    });
+
+    test('rep range alone progresses at the top without any RPE data', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [set(reps: 10, rpe: null), set(reps: 10, rpe: null)],
+        minReps: 6,
+        maxReps: 10,
+        targetRpe: null,
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+      )!;
+      expect(result.weightValue, 82.5);
+      expect(result.reps, 6);
+      expect(
+        result.rationale,
+        'Top of the range on every set; add one kg increment.',
+      );
+    });
+
+    test('an earlier set below the top rep range holds the load', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [set(reps: 8, rpe: null), set(reps: 10, rpe: null)],
+        minReps: 6,
+        maxReps: 10,
+        targetRpe: null,
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+      )!;
+      expect(result.weightValue, 80);
+      expect(result.reps, 10);
+      expect(result.rationale, 'Hold this and repeat it cleanly.');
+    });
+
+    test('high RPE still vetoes the weight increase when a target exists', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [set(reps: 10, rpe: 9.5)],
+        minReps: 6,
+        maxReps: 10,
+        targetRpe: 8,
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+      )!;
+      expect(result.weightValue, 80);
+      expect(result.reps, 10);
+      expect(
+        result.rationale,
+        'Hold the load and own the rep target before increasing.',
+      );
     });
   });
 

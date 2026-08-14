@@ -2,7 +2,6 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
-import 'package:logged/core/domain/muscle.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/repositories/exercise_repository.dart';
 
@@ -35,7 +34,7 @@ void main() {
     expect(exercise.preferredLoadingMode, LoadingMode.bodyweightAdded);
   });
 
-  test('updates and clears a valid bias axis', () async {
+  test('updates muscles for bundled exercises', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
     final repository = ExerciseRepository(database);
@@ -47,21 +46,18 @@ void main() {
             category: ExerciseCategory.strength,
             muscleGroup: 'legs',
             primaryMuscles: const Value('["quads","glute_max"]'),
+            secondaryMuscles: const Value('["hamstrings"]'),
           ),
         );
 
-    await repository.updateBiasAxis(
+    await repository.updateMuscles(
       id,
-      biasMuscleA: MuscleId.quads,
-      biasMuscleB: MuscleId.gluteMax,
+      primaryMuscles: '["quads","glute_max","hamstrings"]',
+      secondaryMuscles: '["adductors"]',
     );
-    var exercise = await database.select(database.exercises).getSingle();
-    expect(exercise.biasMuscleA, 'quads');
-    expect(exercise.biasMuscleB, 'glute_max');
 
-    await repository.updateBiasAxis(id);
-    exercise = await database.select(database.exercises).getSingle();
-    expect(exercise.biasMuscleA, isNull);
-    expect(exercise.biasMuscleB, isNull);
+    final exercise = await database.select(database.exercises).getSingle();
+    expect(exercise.primaryMuscles, '["quads","glute_max","hamstrings"]');
+    expect(exercise.secondaryMuscles, '["adductors"]');
   });
 }

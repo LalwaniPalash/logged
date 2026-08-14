@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/keyboard_dismiss_scroll_behavior.dart';
 import 'core/services/notification_service.dart';
 import 'data/database/app_database.dart';
 import 'data/repositories/rest_day_repository.dart';
@@ -23,7 +24,7 @@ Future<void> main() async {
   try {
     await ExerciseSeedService(appDatabase).seedIfEmpty();
     final anatomyService = ExerciseAnatomyService(appDatabase);
-    await anatomyService.enrichBundledExercises();
+    await anatomyService.backfillMuscleAnatomyOnce();
     await anatomyService.backfillWeightEntryOnce();
     await anatomyService.backfillPullUpOnce();
     if (const bool.fromEnvironment(
@@ -88,6 +89,7 @@ class _LoggedAppState extends ConsumerState<LoggedApp> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
+      scrollBehavior: KeyboardDismissScrollBehavior(),
       home: const OnboardingGate(),
     );
   }

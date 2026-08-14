@@ -60,7 +60,7 @@ class StatTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
@@ -142,7 +142,7 @@ class StreakCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         gradient: active
             ? LinearGradient(
                 begin: Alignment.topLeft,
@@ -170,7 +170,9 @@ class StreakCard extends StatelessWidget {
           Icon(
             active ? AppIcons.fire : AppIcons.bolt,
             size: 20,
-            color: active ? Colors.white : theme.colorScheme.onSurfaceVariant,
+            color: active
+                ? colors.onStreak
+                : theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 10),
           Row(
@@ -180,7 +182,7 @@ class StreakCard extends StatelessWidget {
               Text(
                 '$streak',
                 style: theme.textTheme.headlineMedium?.copyWith(
-                  color: active ? Colors.white : theme.colorScheme.onSurface,
+                  color: active ? colors.onStreak : theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -191,7 +193,7 @@ class StreakCard extends StatelessWidget {
                   streak == 1 ? 'day' : 'days',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: active
-                        ? Colors.white.withValues(alpha: 0.9)
+                        ? colors.onStreak.withValues(alpha: 0.9)
                         : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -205,7 +207,7 @@ class StreakCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: active
-                  ? Colors.white.withValues(alpha: 0.92)
+                  ? colors.onStreak.withValues(alpha: 0.92)
                   : theme.colorScheme.onSurfaceVariant,
             ),
           ),
@@ -245,7 +247,7 @@ class WeeklyProgressStrip extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
@@ -431,6 +433,60 @@ class EmptyState extends StatelessWidget {
             ),
             if (action != null) ...[const SizedBox(height: 20), action!],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A full-width tappable row card: leading box, title/subtitle column,
+/// optional trailing widget. The shape shared by list tiles across the app
+/// (recent sessions, history, templates) — use this instead of hand-rolling
+/// the Material/InkWell/Container skeleton again.
+class AppListCard extends StatelessWidget {
+  const AppListCard({
+    super.key,
+    required this.leading,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  final Widget leading;
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              leading,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [title, ?subtitle],
+                ),
+              ),
+              ?trailing,
+            ],
+          ),
         ),
       ),
     );

@@ -25,6 +25,13 @@ void main() {
     expect(decodeMuscleIds(encoded), [MuscleId.sideDelts, MuscleId.upperTraps]);
   });
 
+  test('a repeated muscle id decodes once, in first-seen order', () {
+    expect(
+      decodeMuscleIds('["quads","glute_max","quads"]'),
+      [MuscleId.quads, MuscleId.gluteMax],
+    );
+  });
+
   test('custom muscle selections require primary muscles and no overlap', () {
     expect(
       () => validateMuscleSelection(primary: const [], secondary: const []),

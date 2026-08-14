@@ -36,7 +36,7 @@ void main() {
     final data = jsonDecode(assetFile.readAsStringSync()) as List<dynamic>;
     expect(
       data,
-      hasLength(1047),
+      hasLength(1278),
       reason: 'Every bundled exercise must have reviewed anatomy metadata',
     );
 
@@ -105,41 +105,6 @@ void main() {
           reason: '$name references unknown muscle $id',
         );
       }
-
-      final biasMuscleA = raw['biasMuscleA'] as String?;
-      final biasMuscleB = raw['biasMuscleB'] as String?;
-      expect(
-        biasMuscleA == null,
-        equals(biasMuscleB == null),
-        reason: '$name must define both biasMuscleA and biasMuscleB or neither',
-      );
-      if (biasMuscleA != null && biasMuscleB != null) {
-        expect(
-          () => MuscleId.fromId(biasMuscleA),
-          returnsNormally,
-          reason: '$name references unknown bias muscle $biasMuscleA',
-        );
-        expect(
-          () => MuscleId.fromId(biasMuscleB),
-          returnsNormally,
-          reason: '$name references unknown bias muscle $biasMuscleB',
-        );
-        expect(
-          biasMuscleA == biasMuscleB,
-          isFalse,
-          reason: '$name bias axis must use two different muscles',
-        );
-        expect(
-          primarySet.contains(biasMuscleA),
-          isTrue,
-          reason: '$name biasMuscleA must be a primary muscle',
-        );
-        expect(
-          primarySet.contains(biasMuscleB),
-          isTrue,
-          reason: '$name biasMuscleB must be a primary muscle',
-        );
-      }
     }
   });
 
@@ -156,15 +121,28 @@ void main() {
       exercise('Barbell Bench Press')['secondaryMuscles'],
       containsAll(['front_delts', 'triceps']),
     );
+    expect(exercise('Pec Deck')['primaryMuscles'], [
+      'mid_lower_chest',
+      'upper_chest',
+    ]);
+    expect(exercise('Cable Crossover - Low Pulley')['primaryMuscles'], [
+      'upper_chest',
+    ]);
+    expect(exercise('Decline Push-Up')['primaryMuscles'], ['upper_chest']);
+    expect(exercise('Landmine Press')['primaryMuscles'], [
+      'front_delts',
+      'side_delts',
+    ]);
     expect(exercise('Cable Lat Pulldown')['primaryMuscles'], ['lats']);
     expect(
       exercise('Barbell Back Squat')['primaryMuscles'],
       containsAll(['quads', 'glute_max']),
     );
-    expect(exercise('Barbell Back Squat')['biasMuscleA'], 'quads');
-    expect(exercise('Barbell Back Squat')['biasMuscleB'], 'glute_max');
-    expect(exercise('Leg Press')['biasMuscleA'], 'quads');
-    expect(exercise('Leg Press')['biasMuscleB'], 'glute_max');
+    expect(exercise('Zercher Squat')['primaryMuscles'], ['quads']);
+    expect(
+      exercise('Zercher Squat')['secondaryMuscles'],
+      containsAll(['glute_max', 'hamstrings']),
+    );
     expect(exercise('Dumbbell Lateral Raise')['primaryMuscles'], [
       'side_delts',
     ]);
@@ -183,10 +161,9 @@ void main() {
     );
     expect(exercise('Stationary Bike')['primaryMuscles'], ['quads']);
     expect(exercise('Hip Flexor Stretch')['primaryMuscles'], ['hip_flexors']);
-    expect(
-      exercise('Smith Machine One-Arm Upright Row')['primaryMuscles'],
-      ['side_delts'],
-    );
+    expect(exercise('Smith Machine One-Arm Upright Row')['primaryMuscles'], [
+      'side_delts',
+    ]);
     expect(
       exercise('Smith Machine One-Arm Upright Row')['secondaryMuscles'],
       containsAll(['upper_traps', 'mid_lower_traps']),
@@ -195,10 +172,9 @@ void main() {
       exercise('Smith Machine One-Arm Upright Row')['weightEntry'],
       'perSide',
     );
-    expect(
-      exercise('Wide-Grip Pulldown Behind The Neck')['primaryMuscles'],
-      ['lats'],
-    );
+    expect(exercise('Wide-Grip Pulldown Behind The Neck')['primaryMuscles'], [
+      'lats',
+    ]);
     expect(
       exercise('Wide-Grip Pulldown Behind The Neck')['secondaryMuscles'],
       containsAll(['biceps', 'rhomboids']),
@@ -345,7 +321,7 @@ void main() {
         for (final exercise in exercises) exercise.id: exercise.name,
       };
 
-      expect(rows, hasLength(15));
+      expect(rows, hasLength(17));
       expect(exerciseNamesById[rows.first.exerciseId], 'Barbell Bench Press');
       expect(rows.first.targetSets, 4);
       expect(rows.first.minReps, 5);
@@ -366,6 +342,82 @@ void main() {
           'Saturday — Legs B',
         ]),
       );
+    },
+  );
+
+  test(
+    'upgrades a fully-prescribed pre-v8 template on the next launch',
+    () async {
+      // Simulates an install that already ran the old plan: the template has
+      // COMPLETE prescriptions (so the empty-prescription refresh path alone
+      // would skip it), and no `templatePlanVersion` app_settings row exists
+      // yet. seedIfEmpty() must still replace its exercises with the new
+      // plan content — this is what gets a real device off a stale plan.
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      await ExerciseSeedService(
+        database,
+        loadAsset: assetFile.readAsString,
+      ).seedIfEmpty();
+
+      final squat =
+          await (database.select(database.exercises)..where(
+                (exercise) => exercise.name.equals('Barbell Back Squat'),
+              ))
+              .getSingle();
+      final templateId = await database
+          .into(database.templates)
+          .insert(
+            TemplatesCompanion.insert(name: 'Wednesday — Legs A', position: 2),
+          );
+      await database
+          .into(database.templateExercises)
+          .insert(
+            TemplateExercisesCompanion.insert(
+              templateId: templateId,
+              exerciseId: squat.id,
+              position: 0,
+              targetSets: const Value(4),
+              minReps: const Value(5),
+              maxReps: const Value(8),
+              restSeconds: const Value(180),
+              prescriptionNotes: const Value('stale pre-upgrade prescription'),
+            ),
+          );
+
+      await WorkoutTemplateSeedService(database).seedIfEmpty();
+
+      final rows =
+          (await (database.select(
+              database.templateExercises,
+            )..where((row) => row.templateId.equals(templateId))).get())
+            ..sort((a, b) => a.position.compareTo(b.position));
+
+      expect(
+        rows.length,
+        greaterThan(1),
+        reason:
+            'stale full prescriptions must not block the version-gated upgrade',
+      );
+      expect(
+        rows.first.prescriptionNotes,
+        isNot('stale pre-upgrade prescription'),
+      );
+      expect(rows.first.prescriptionNotes, contains('Zercher Squat'));
+
+      final storedVersion =
+          await (database.select(database.appSettings)
+                ..where((row) => row.key.equals('templatePlanVersion')))
+              .getSingleOrNull();
+      expect(storedVersion?.value, 'v8');
+
+      // A second run must not error and must leave the upgraded content alone.
+      await WorkoutTemplateSeedService(database).seedIfEmpty();
+      final rowsAfterSecondRun = await (database.select(
+        database.templateExercises,
+      )..where((row) => row.templateId.equals(templateId))).get();
+      expect(rowsAfterSecondRun.length, rows.length);
     },
   );
 }

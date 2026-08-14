@@ -29,6 +29,18 @@ bool exerciseNameContainsPhrase(List<String> exerciseTokens, String phrase) {
   return false;
 }
 
+/// Case/whitespace-insensitive check for whether [candidate] already names
+/// an exercise in [existingNames] — used to warn before a custom-exercise
+/// insert would hit the DB's unique constraint on name.
+bool isDuplicateExerciseName(
+  String candidate,
+  Iterable<String> existingNames,
+) {
+  final normalized = candidate.trim().toLowerCase();
+  if (normalized.isEmpty) return false;
+  return existingNames.any((name) => name.trim().toLowerCase() == normalized);
+}
+
 String? mostSpecificExercisePhraseMatch(
   List<String> exerciseTokens,
   Iterable<String> phrases,
