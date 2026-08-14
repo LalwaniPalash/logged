@@ -12,43 +12,77 @@ class RestTimerBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(restTimerControllerProvider);
-    if (!state.running || state.sessionId != sessionId) {
+    if (state.sessionId != sessionId) {
       return const SizedBox.shrink();
     }
     final controller = ref.read(restTimerControllerProvider.notifier);
     final colors = Theme.of(context).colorScheme;
+    if (!state.running && !state.completed) {
+      return const SizedBox.shrink();
+    }
     return SafeArea(
       top: false,
       child: Material(
-        color: colors.secondaryContainer,
+        color: state.completed
+            ? colors.primaryContainer
+            : colors.secondaryContainer,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          child: Row(
-            children: [
-              Icon(AppIcons.rest, color: colors.onSecondaryContainer),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Rest · ${state.display}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colors.onSecondaryContainer,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+          child: state.completed
+              ? Row(
+                  children: [
+                    Icon(AppIcons.rest, color: colors.onPrimaryContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Rest complete',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: colors.onPrimaryContainer,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: controller.acknowledge,
+                      child: const Text('Done'),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Icon(AppIcons.rest, color: colors.onSecondaryContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Rest · ${state.display}',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: colors.onSecondaryContainer,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Subtract 15 seconds',
+                      onPressed: () => controller.adjust(-15),
+                      icon: const Icon(AppIcons.minus),
+                    ),
+                    IconButton(
+                      tooltip: 'Add 15 seconds',
+                      onPressed: () => controller.adjust(15),
+                      icon: const Icon(AppIcons.add),
+                    ),
+                    TextButton(
+                      onPressed: controller.skip,
+                      child: const Text('Skip'),
+                    ),
+                  ],
                 ),
-              ),
-              IconButton(
-                tooltip: 'Subtract 15 seconds',
-                onPressed: () => controller.adjust(-15),
-                icon: const Icon(AppIcons.minus),
-              ),
-              IconButton(
-                tooltip: 'Add 15 seconds',
-                onPressed: () => controller.adjust(15),
-                icon: const Icon(AppIcons.add),
-              ),
-              TextButton(onPressed: controller.skip, child: const Text('Skip')),
-            ],
-          ),
         ),
       ),
     );

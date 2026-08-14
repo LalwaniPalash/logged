@@ -59,6 +59,11 @@ class RestTimerState {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
+  /// Rest ran to zero and has not been acknowledged. Distinct from
+  /// [RestTimerState.idle], which is "no timer for this session at all" —
+  /// `cancel()` and `skip()` produce idle.
+  bool get completed => !running && sessionId != null;
+
   RestTimerState copyWith({
     int? sessionId,
     int? remainingSeconds,
@@ -78,14 +83,31 @@ class RestTimerState {
 class RestTimerController extends Notifier<RestTimerState>
     with WidgetsBindingObserver {
   RestTimerTicker? _ticker;
+  StreamSubscription<String>? _actionSubscription;
   bool _notificationsAllowed = false;
 
   @override
   RestTimerState build() {
     WidgetsBinding.instance.addObserver(this);
+    _actionSubscription?.cancel();
+    _actionSubscription = ref
+        .read(notificationServiceProvider)
+        .actionSelections
+        .listen((actionId) {
+          if (!state.running) return;
+          switch (actionId) {
+            case 'rest_add_15':
+              unawaited(adjust(15));
+              return;
+            case 'rest_skip':
+              unawaited(skip());
+              return;
+          }
+        });
     ref.onDispose(() {
       WidgetsBinding.instance.removeObserver(this);
       _ticker?.cancel();
+      _actionSubscription?.cancel();
     });
     return RestTimerState.idle;
   }
@@ -115,16 +137,7 @@ class RestTimerController extends Notifier<RestTimerState>
           .read(notificationServiceProvider)
           .requestPermission();
     }
-    if (_notificationsAllowed && state.endTime != null) {
-      await ref
-          .read(notificationServiceProvider)
-          .showRestCountdown(
-            id: NotificationService.restTimerNotificationId,
-            endTime: state.endTime!,
-            title: 'Rest timer',
-            body: 'Time for your next set.',
-          );
-    }
+    await _postCountdownNotification();
     return _notificationsAllowed;
   }
 
@@ -153,10 +166,12 @@ class RestTimerController extends Notifier<RestTimerState>
       return;
     }
     state = state.copyWith(endTime: next, remainingSeconds: remaining);
-    await _syncBackgroundNotification();
+    await _postCountdownNotification();
   }
 
   Future<void> skip() => cancel();
+
+  Future<void> acknowledge() => cancel();
 
   Future<void> cancel({int? sessionId}) async {
     if (sessionId != null && state.sessionId != sessionId) return;
@@ -180,39 +195,42 @@ class RestTimerController extends Notifier<RestTimerState>
     );
     await ref
         .read(notificationServiceProvider)
-        .cancel(NotificationService.restTimerNotificationId);
+        .showRestComplete(
+          id: NotificationService.restTimerNotificationId,
+          title: 'Rest complete',
+          body: 'Time for your next set.',
+        );
     await ref.read(restTimerFeedbackProvider)();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!this.state.running) return;
-    if (state == AppLifecycleState.resumed) {
-      tick();
+    switch (state) {
+      case AppLifecycleState.paused:
+        unawaited(_postCountdownNotification());
+        return;
+      case AppLifecycleState.resumed:
+        tick();
+        return;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        return;
     }
-    unawaited(_syncBackgroundNotification(lifecycleState: state));
   }
 
-  Future<void> _syncBackgroundNotification({
-    AppLifecycleState? lifecycleState,
-  }) async {
+  Future<void> _postCountdownNotification() async {
     final notifications = ref.read(notificationServiceProvider);
-    final lifecycle = lifecycleState ?? WidgetsBinding.instance.lifecycleState;
-    if (!_notificationsAllowed ||
-        !state.running ||
-        state.endTime == null ||
-        lifecycle == null ||
-        lifecycle == AppLifecycleState.resumed) {
+    if (!_notificationsAllowed || !state.running || state.endTime == null) {
       await notifications.cancel(NotificationService.restTimerNotificationId);
       return;
     }
-    await notifications.schedule(
+    await notifications.showRestCountdown(
       id: NotificationService.restTimerNotificationId,
-      at: state.endTime!,
-      title: 'Rest complete',
+      endTime: state.endTime!,
+      title: 'Rest timer',
       body: 'Time for your next set.',
-      channelId: 'rest_timer',
-      channelName: 'Rest timer',
     );
   }
 }

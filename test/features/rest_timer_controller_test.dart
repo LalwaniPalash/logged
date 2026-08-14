@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logged/core/services/notification_service.dart';
@@ -85,6 +86,56 @@ void main() {
     );
   });
 
+  test('the countdown survives a resume', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 3,
+      seconds: 45,
+      notificationsEnabled: true,
+    );
+
+    controller.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+    expect(notifications.cancelled, isEmpty);
+    expect(notifications.countdownPosts, hasLength(1));
+  });
+
+  test('inactive does not touch the notification', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 4,
+      seconds: 45,
+      notificationsEnabled: true,
+    );
+    final postCount = notifications.countdownPosts.length;
+    final cancelCount = notifications.cancelled.length;
+
+    controller.didChangeAppLifecycleState(AppLifecycleState.inactive);
+
+    expect(notifications.countdownPosts, hasLength(postCount));
+    expect(notifications.cancelled, hasLength(cancelCount));
+  });
+
+  test('adjust reposts the countdown with the new end time', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 5,
+      seconds: 60,
+      notificationsEnabled: true,
+    );
+
+    await controller.adjust(15);
+
+    expect(notifications.countdownPosts, hasLength(2));
+    expect(
+      notifications.countdownPosts.last,
+      _CountdownPost(
+        id: NotificationService.restTimerNotificationId,
+        endTime: DateTime(2026, 7, 23, 18, 1, 15),
+      ),
+    );
+  });
+
   test('reaching zero fires feedback exactly once', () async {
     final controller = container.read(restTimerControllerProvider.notifier);
     await controller.start(
@@ -103,6 +154,70 @@ void main() {
     expect(feedbackCount, 1);
   });
 
+  test(
+    'finish replaces the countdown with a completion notification',
+    () async {
+      final controller = container.read(restTimerControllerProvider.notifier);
+      await controller.start(
+        sessionId: 6,
+        seconds: 10,
+        notificationsEnabled: true,
+      );
+
+      now = now.add(const Duration(seconds: 10));
+      controller.tick();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        notifications.completionPosts,
+        contains(NotificationService.restTimerNotificationId),
+      );
+      expect(container.read(restTimerControllerProvider).completed, isTrue);
+    },
+  );
+
+  test('skip cancels without posting a completion', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 8,
+      seconds: 30,
+      notificationsEnabled: true,
+    );
+
+    await controller.skip();
+
+    expect(
+      notifications.cancelled,
+      contains(NotificationService.restTimerNotificationId),
+    );
+    expect(notifications.completionPosts, isEmpty);
+  });
+
+  test('state.completed is true after finish and false after skip', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 9,
+      seconds: 5,
+      notificationsEnabled: true,
+    );
+
+    now = now.add(const Duration(seconds: 5));
+    controller.tick();
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(restTimerControllerProvider).completed, isTrue);
+
+    await controller.acknowledge();
+    expect(container.read(restTimerControllerProvider).completed, isFalse);
+
+    await controller.start(
+      sessionId: 9,
+      seconds: 5,
+      notificationsEnabled: true,
+    );
+    await controller.skip();
+    expect(container.read(restTimerControllerProvider).completed, isFalse);
+  });
+
   test('leaving another session cannot cancel the active timer', () async {
     final controller = container.read(restTimerControllerProvider.notifier);
     await controller.start(
@@ -116,6 +231,21 @@ void main() {
 
     await controller.cancel(sessionId: 12);
     expect(container.read(restTimerControllerProvider).running, isFalse);
+  });
+
+  test('a Skip action from the notification stops the timer', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 13,
+      seconds: 60,
+      notificationsEnabled: true,
+    );
+
+    notifications.actions.add('rest_skip');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(restTimerControllerProvider).running, isFalse);
+    expect(notifications.completionPosts, isEmpty);
   });
 }
 
