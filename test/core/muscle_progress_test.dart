@@ -1,9 +1,41 @@
+import 'dart:convert';
+import 'dart:ffi';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
 import 'package:logged/core/domain/muscle.dart';
 import 'package:logged/core/domain/muscle_progress.dart';
-import 'package:logged/core/domain/workout_metrics.dart';
 import 'package:logged/core/domain/training_goal.dart';
+import 'package:logged/core/domain/workout_metrics.dart';
+
+final DynamicLibrary _libc = Platform.isMacOS
+    ? DynamicLibrary.open('/usr/lib/libSystem.B.dylib')
+    : DynamicLibrary.open('libc.so.6');
+
+typedef _SetEnvNative = Int32 Function(Pointer<Int8>, Pointer<Int8>, Int32);
+typedef _SetEnvDart = int Function(Pointer<Int8>, Pointer<Int8>, int);
+typedef _UnsetEnvNative = Int32 Function(Pointer<Int8>);
+typedef _UnsetEnvDart = int Function(Pointer<Int8>);
+typedef _TzSetNative = Void Function();
+typedef _TzSetDart = void Function();
+typedef _MallocNative = Pointer<Void> Function(IntPtr);
+typedef _MallocDart = Pointer<Void> Function(int);
+typedef _FreeNative = Void Function(Pointer<Void>);
+typedef _FreeDart = void Function(Pointer<Void>);
+
+final _SetEnvDart _setEnv = _libc.lookupFunction<_SetEnvNative, _SetEnvDart>(
+  'setenv',
+);
+final _UnsetEnvDart _unsetEnv = _libc
+    .lookupFunction<_UnsetEnvNative, _UnsetEnvDart>('unsetenv');
+final _TzSetDart _tzSet = _libc.lookupFunction<_TzSetNative, _TzSetDart>(
+  'tzset',
+);
+final _MallocDart _malloc = _libc.lookupFunction<_MallocNative, _MallocDart>(
+  'malloc',
+);
+final _FreeDart _free = _libc.lookupFunction<_FreeNative, _FreeDart>('free');
 
 void main() {
   MusclePerformanceRecord record({
@@ -41,6 +73,41 @@ void main() {
     bodyweightFactor: bodyweightFactor,
     isWarmup: isWarmup,
   );
+
+  Pointer<Int8> nativeCString(String value) {
+    final units = utf8.encode(value);
+    final pointer = _malloc(units.length + 1).cast<Int8>();
+    for (var index = 0; index < units.length; index++) {
+      pointer[index] = units[index];
+    }
+    pointer[units.length] = 0;
+    return pointer;
+  }
+
+  T withLocalTimeZone<T>(String timeZone, T Function() body) {
+    if (!Platform.isMacOS && !Platform.isLinux) {
+      return body();
+    }
+    final key = nativeCString('TZ');
+    final original = Platform.environment['TZ'];
+    final value = nativeCString(timeZone);
+    _setEnv(key, value, 1);
+    _tzSet();
+    _free(value.cast<Void>());
+    try {
+      return body();
+    } finally {
+      if (original == null) {
+        _unsetEnv(key);
+      } else {
+        final restore = nativeCString(original);
+        _setEnv(key, restore, 1);
+        _free(restore.cast<Void>());
+      }
+      _tzSet();
+      _free(key.cast<Void>());
+    }
+  }
 
   test('builds exercise-relative muscle indexes with secondary weighting', () {
     final progress = buildMuscleProgress(
@@ -175,6 +242,82 @@ void main() {
     expect(chest.rankScore, greaterThanOrEqualTo(0));
     expect(chest.momentum, MuscleMomentum.declining);
   });
+
+  test('ignores the current partial week in rank scoring', () {
+    List<MusclePerformanceRecord> weeklyVolume({
+      required DateTime weekStart,
+      required int exerciseOffset,
+    }) => [
+      for (var index = 0; index < 8; index++)
+        record(
+          date: weekStart.add(Duration(days: index % 2)),
+          exerciseId: exerciseOffset + index,
+          exerciseName: 'Volume ${exerciseOffset + index}',
+          primary: const [MuscleId.midLowerChest],
+          secondary: const [],
+          weightValue: null,
+          unit: null,
+          reps: null,
+          durationSec: 30,
+        ),
+    ];
+
+    final historical = [
+      weeklyVolume(weekStart: DateTime(2026, 6, 15), exerciseOffset: 100),
+      weeklyVolume(weekStart: DateTime(2026, 6, 22), exerciseOffset: 200),
+      weeklyVolume(weekStart: DateTime(2026, 6, 29), exerciseOffset: 300),
+      weeklyVolume(weekStart: DateTime(2026, 7, 6), exerciseOffset: 400),
+      weeklyVolume(weekStart: DateTime(2026, 7, 13), exerciseOffset: 500),
+      weeklyVolume(weekStart: DateTime(2026, 7, 20), exerciseOffset: 600),
+      weeklyVolume(weekStart: DateTime(2026, 7, 27), exerciseOffset: 700),
+      weeklyVolume(weekStart: DateTime(2026, 8, 3), exerciseOffset: 800),
+    ].expand((records) => records).toList();
+
+    final baseline = buildMuscleProgress(
+      records: historical,
+      today: DateTime(2026, 8, 10),
+    );
+    final withCurrentWeek = buildMuscleProgress(
+      records: [
+        ...historical,
+        ...weeklyVolume(weekStart: DateTime(2026, 8, 10), exerciseOffset: 900),
+      ],
+      today: DateTime(2026, 8, 10),
+    );
+
+    expect(
+      withCurrentWeek[MuscleId.midLowerChest]!.rankScore,
+      closeTo(baseline[MuscleId.midLowerChest]!.rankScore, 0.000001),
+    );
+  });
+
+  test(
+    'rank scoring keeps completed-week volume across the late-October DST shift',
+    () => withLocalTimeZone('Europe/Berlin', () {
+      final progress = buildMuscleProgress(
+        records: [
+          for (var index = 0; index < 8; index++)
+            record(
+              date: DateTime(2026, 10, 19 + (index % 2)),
+              exerciseId: 1000 + index,
+              exerciseName: 'DST ${index + 1}',
+              primary: const [MuscleId.midLowerChest],
+              secondary: const [],
+              weightValue: null,
+              unit: null,
+              reps: null,
+              durationSec: 30,
+            ),
+        ],
+        today: DateTime(2026, 11, 2),
+      );
+
+      expect(progress[MuscleId.midLowerChest]!.rankScore, greaterThan(0));
+    }),
+    skip: !Platform.isMacOS && !Platform.isLinux
+        ? 'requires tzset-supported local timezone changes'
+        : null,
+  );
 
   test('over-assisted bodyweight rows fall back to lower precision reps', () {
     final progress = buildMuscleProgress(

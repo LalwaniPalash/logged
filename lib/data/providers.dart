@@ -131,6 +131,7 @@ final deloadSignalProvider = FutureProvider<DeloadSignal?>((ref) async {
     weeklyEffectiveSetsByMuscle: data.weeklyEffectiveSetsByMuscle,
     oneRepMaxSeriesByExercise: data.oneRepMaxSeriesByExercise,
     rpeAtLoadSeries: data.rpeAtLoadSeries,
+    repDecaySeries: data.repDecaySeries,
     landmarks: resolveLandmarks(
       goal: coaching.trainingGoal,
       overridesJson: coaching.volumeLandmarkOverrides,

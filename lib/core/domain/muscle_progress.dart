@@ -588,13 +588,13 @@ double _rankScore(
     final week = startOfWeek(day);
     weeks[week] = (weeks[week] ?? 0) + sets;
   });
-  final currentWeek = startOfWeek(today);
+  final lastCompletedWeek = _weekStartOffset(startOfWeek(today), 1);
   var adequacyWeighted = 0.0;
   var consistencyWeighted = 0.0;
   var weightTotal = 0.0;
   for (var offset = 0; offset < 8; offset++) {
     final weight = math.pow(0.82, offset).toDouble();
-    final value = weeks[currentWeek.subtract(Duration(days: offset * 7))] ?? 0;
+    final value = weeks[_weekStartOffset(lastCompletedWeek, offset)] ?? 0;
     adequacyWeighted += _volumeAdequacy(value, landmarks) * weight;
     if (value >= landmarks.mev) consistencyWeighted += weight;
     weightTotal += weight;
@@ -627,6 +627,9 @@ double _rankScore(
   }
   return (strengthScore + volumeScore + consistencyScore).clamp(0, 100);
 }
+
+DateTime _weekStartOffset(DateTime weekStart, int weeks) =>
+    DateTime(weekStart.year, weekStart.month, weekStart.day - weeks * 7);
 
 double _volumeAdequacy(double sets, VolumeLandmarks landmarks) {
   if (sets <= 0) return 0;

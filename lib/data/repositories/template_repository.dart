@@ -212,10 +212,26 @@ class TemplateRepository {
         return imported;
       });
 
-  Future<Template> createDeloadWeek({
-    DateTime? today,
-  }) => _database.transaction(() async {
-    final weekStart = startOfWeek(today ?? DateTime.now());
+  /// Builds a half-volume template from the most recent week that contains
+  /// completed training — not "this week", which is empty exactly when a
+  /// deload is most warranted.
+  Future<Template> createDeloadWeek() => _database.transaction(() async {
+    final latestCompleted = await _database
+        .customSelect(
+          'SELECT MAX(started_at) AS latest '
+          'FROM sessions '
+          'WHERE ended_at IS NOT NULL',
+        )
+        .getSingle();
+    final latestValue = latestCompleted.data['latest'];
+    if (latestValue == null) {
+      throw StateError(
+        'Complete at least one workout before generating a deload.',
+      );
+    }
+    final weekStart = startOfWeek(
+      DateTime.fromMillisecondsSinceEpoch((latestValue as num).toInt() * 1000),
+    );
     final rows = await _database
         .customSelect(
           'SELECT sx.exercise_id AS exercise_id, MIN(sx.position) AS position, '
@@ -231,7 +247,7 @@ class TemplateRepository {
         .get();
     if (rows.isEmpty) {
       throw StateError(
-        'Complete at least one workout this week before generating a deload.',
+        'Complete at least one workout before generating a deload.',
       );
     }
     final templates = await _database.select(_database.templates).get();

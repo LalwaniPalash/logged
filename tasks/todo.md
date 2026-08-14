@@ -1749,3 +1749,69 @@ Implemented by Codex, reviewed and corrected here. All five items landed as spec
   confirm weekly muscle balance reads 2.0 sets per muscle, and `sqlite3` the v10 → v11 rescale.
 - **NOT done:** ground rule 8 — no baseline commit was taken before Phase 1, so these changes sit in
   the working tree mixed with the earlier uncommitted N-muscle bias work. Commit before Phase 2.
+
+## Audit remediation — PHASE 2 (spec: `tasks/spec-audit-fixes.md`) — 2026-08-14
+
+Implemented by Codex. All five Phase 2 items landed as specified:
+
+- [x] **2.1 J2** — `_rankScore` now scores the last 8 **completed** weeks only. The current partial
+      week no longer changes rank score/consistency mid-week, so Monday does not zero out the
+      heaviest decay bucket.
+- [x] **2.2 J1** — week-key arithmetic in `_rankScore` and `loadDeloadData` now uses calendar
+      arithmetic (`DateTime(year, month, day - n * 7)`), not `Duration(days: n * 7)`, so DST shifts
+      no longer break exact week-key lookups.
+- [x] **2.3** — `loadDeloadData` builds its `weekStarts` window ending at the **last completed**
+      week, not the current partial one. Deload volume compares completed weeks against MRV.
+- [x] **2.4** — `DeloadData` now carries `repDecaySeries`; `assessDeload` adds the
+      `wideningRepDecay` signal while leaving `risingEffort` unchanged; `_deloadQuery` is bounded to
+      the last 12 weeks. The provider wiring now threads `repDecaySeries` into the deload assessment.
+- [x] **2.5 J3** — `createDeloadWeek` now bases the template on the most recent week **with**
+      completed training, not "this week", and the empty-history error now reads
+      `'Complete at least one workout before generating a deload.'`
+
+- **Verified:** targeted red-first tests were added for current-week rank exclusion, DST-safe week
+  keys, completed-week deload bucketing, rep-decay capture/signal, 12-week stall recency, and
+  most-recent-trained-week deload templates. `flutter analyze` is clean, and `flutter test` is green
+  at **250 tests** (up from the 242-test Phase 1 baseline).
+- **NOT done:** the spec's manual clock-change check — set the device clock to a Monday and confirm
+  the dashboard rank does not drop relative to Sunday.
+- **NOT done:** any real-device verification of the deload card itself. The new signals and windows
+  are automated-test covered, but I did not manipulate a live device clock/database to watch the UI
+  surface a deload recommendation.
+
+### Phase 2 review (Claude, same day)
+
+Validated all five items against source. `flutter analyze` clean, `flutter test` **250 green**.
+The DST test is genuinely red-first: under `Europe/Berlin` with `today = 2026-11-02`, the old
+`currentWeek.subtract(Duration(days: 21))` lands on `2026-10-11 23:00` instead of `2026-10-12`, so
+the exact-equality lookup missed and the week was dropped. The new calendar arithmetic buckets it.
+
+- [x] **Fixed — dead parameter.** `createDeloadWeek({DateTime? today})` kept its `today` param after
+      the body switched to `MAX(started_at)`, so the argument was silently ignored. Two tests still
+      passed `today:` and read as date-scoped while testing nothing of the sort. Removed the
+      parameter and updated all three call sites (`progress_screen.dart` already passed nothing).
+      Same class as the `cameraNode` no-op in `lessons.md` — an input that looks wired and is inert.
+
+**Residual gaps — all three fixed (same day):**
+- [x] **A bodyweight-only trainee could never trigger a deload.** `loadDeloadData`'s
+      `if (weight == null || weight <= 0 ...) continue;` gated *all three* per-exercise signals, so
+      1RM-stall, rep-decay and rising-RPE were simultaneously dead for someone training only
+      pull-ups / dips / push-ups — only volume-overreach survived, 1 of 4 against
+      `reasons.length >= 2`. Exactly the failure class 2.4 exists to fix, relocated to a different
+      population. Fixed at the gate (one `continue`, three signals): the guard is now `reps` only.
+      Rep decay keys on `mode:addedKg` — bodyweight is constant within a session, so a null
+      `weight_value` is a valid load key. The est-1RM stall proxy uses `bodyweight_factor` for
+      strict bodyweight lifts; the detector compares a series against itself, so the constant
+      bodyweight term cancels and the factor alone is a valid scale. Assisted lifts stay excluded.
+      Bodyweight drift is the known ceiling, marked `ponytail:` at the call site.
+- [x] `repDecaySeries` candidate loads now tie-break on the load key. `List.sort` is not stable in
+      Dart, so equal set counts previously picked arbitrarily between runs.
+- [x] `assessDeload`'s `repDecaySeries` is now `required`, matching its siblings — a future caller
+      cannot drop the signal silently.
+- Regression test added: `bodyweight-only training still produces rep-decay and stall signals`
+  (three sessions, two strict sets each, zero `weight_value` anywhere). Red before the gate fix.
+- `flutter analyze` clean, `flutter test` **251 green**.
+
+**Correction to the Phase 2 note above:** the "NOT done: ground rule 8 / commit before Phase 2" item
+was already stale when written — Phase 1 landed as `1d9c03e`, whose message states it is the
+baseline for Phase 2. Phase 1 and Phase 2 are separate commits; nothing needed splitting.

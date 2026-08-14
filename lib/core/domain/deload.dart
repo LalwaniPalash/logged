@@ -13,6 +13,7 @@ DeloadSignal assessDeload({
   required Map<MuscleId, List<double>> weeklyEffectiveSetsByMuscle,
   required Map<int, List<double>> oneRepMaxSeriesByExercise,
   required Map<int, List<double>> rpeAtLoadSeries,
+  required Map<int, List<double>> repDecaySeries,
   required Map<MuscleId, VolumeLandmarks> landmarks,
   TrainingGoal goal = TrainingGoal.build,
 }) {
@@ -43,6 +44,21 @@ DeloadSignal assessDeload({
   if (stalledLifts > 0) {
     reasons.add(
       '$stalledLifts ${stalledLifts == 1 ? 'lift has' : 'lifts have'} stalled or declined across three sessions.',
+    );
+  }
+
+  final repDecayRise = 1.0 * goal.deloadSensitivity;
+  final wideningRepDecay = repDecaySeries.entries.where((entry) {
+    final values = entry.value;
+    if (values.length < 3) return false;
+    final recent = values.sublist(values.length - 3);
+    return recent[1] >= recent[0] &&
+        recent[2] >= recent[1] &&
+        recent.last - recent.first >= repDecayRise;
+  }).length;
+  if (wideningRepDecay > 0) {
+    reasons.add(
+      'Reps are falling further across sets on $wideningRepDecay ${wideningRepDecay == 1 ? 'lift' : 'lifts'}.',
     );
   }
 

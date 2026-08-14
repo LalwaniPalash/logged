@@ -88,11 +88,13 @@ class DeloadData {
     required this.weeklyEffectiveSetsByMuscle,
     required this.oneRepMaxSeriesByExercise,
     required this.rpeAtLoadSeries,
+    required this.repDecaySeries,
   });
 
   final Map<MuscleId, List<double>> weeklyEffectiveSetsByMuscle;
   final Map<int, List<double>> oneRepMaxSeriesByExercise;
   final Map<int, List<double>> rpeAtLoadSeries;
+  final Map<int, List<double>> repDecaySeries;
 }
 
 class AnalyticsRepository {
@@ -148,6 +150,7 @@ class AnalyticsRepository {
       'SELECT s.started_at AS started, e.id AS eid, '
       'e.primary_muscles AS primary_muscles, '
       'e.secondary_muscles AS secondary_muscles, '
+      'e.bodyweight_factor AS bodyweight_factor, '
       'se.weight_value AS weight_value, se.unit AS unit, '
       'se.loading_mode AS loading_mode, '
       'se.reps AS reps, se.rpe AS rpe, se.is_warmup AS is_warmup, '
@@ -157,6 +160,7 @@ class AnalyticsRepository {
       'JOIN sessions s ON s.id = sx.session_id '
       'JOIN exercises e ON e.id = sx.exercise_id '
       'WHERE s.ended_at IS NOT NULL '
+      'AND s.started_at >= ? '
       'ORDER BY s.started_at, se.id';
 
   // Benchmark lifts for strength standards. Unlike [_query] this carries the
@@ -269,19 +273,32 @@ class AnalyticsRepository {
       );
 
   Future<DeloadData> loadDeloadData({DateTime? today, int weeks = 4}) async {
-    final rows = await _database.customSelect(_deloadQuery).get();
     final now = today ?? DateTime.now();
     final currentWeek = startOfWeek(now);
+    final lastCompletedWeek = _weekStartOffset(currentWeek, 1);
+    final deloadWindowStart = _weekStartOffset(currentWeek, 11);
+    final rows = await _database
+        .customSelect(
+          _deloadQuery,
+          variables: [Variable.withDateTime(deloadWindowStart)],
+        )
+        .get();
     final weekStarts = [
       for (var offset = weeks - 1; offset >= 0; offset--)
-        currentWeek.subtract(Duration(days: offset * 7)),
+        _weekStartOffset(lastCompletedWeek, offset),
     ];
+    final weekIndexByStart = {
+      for (var index = 0; index < weekStarts.length; index++)
+        weekStarts[index]: index,
+    };
     final weekly = {
       for (final muscle in MuscleId.values)
         muscle: List<double>.filled(weeks, 0),
     };
     final maxByExerciseDay = <int, Map<DateTime, double>>{};
     final rpeByExerciseLoad = <int, Map<String, List<double>>>{};
+    final repsByExerciseDayLoad =
+        <int, Map<DateTime, Map<String, List<int>>>>{};
 
     for (final row in rows) {
       final isWarmup = switch (row.data['is_warmup']) {
@@ -291,7 +308,7 @@ class AnalyticsRepository {
       };
       if (isWarmup) continue;
       final date = _dateFromColumn(row.data['started']);
-      final weekIndex = weekStarts.indexOf(startOfWeek(date));
+      final weekIndex = weekIndexByStart[startOfWeek(date)] ?? -1;
       if (weekIndex >= 0) {
         final primary = _decodeMuscles(
           row.data['primary_muscles'],
@@ -317,7 +334,7 @@ class AnalyticsRepository {
 
       final weight = (row.data['weight_value'] as num?)?.toDouble();
       final reps = row.data['reps'] as int?;
-      if (weight == null || weight <= 0 || reps == null || reps <= 0) continue;
+      if (reps == null || reps <= 0) continue;
       final exerciseId = row.data['eid'] as int;
       final unit = WeightUnit.values.byName(
         row.data['unit'] as String? ?? 'kg',
@@ -325,14 +342,40 @@ class AnalyticsRepository {
       final loadingMode = LoadingMode.values.byName(
         row.data['loading_mode'] as String? ?? 'external',
       );
-      final loadKg = weightKg(weight, unit);
-      final estimate = loadKg * (1 + reps / 30);
+      // A strict bodyweight set carries no weight_value. Gating every
+      // per-exercise signal on a non-null weight left rep-decay, est-1RM stall
+      // AND rising-RPE all dead for bodyweight-only training, so the deload
+      // card could never reach its two-signal threshold — the same failure this
+      // phase's rep-decay signal exists to fix, just for a different user.
+      final addedKg = weight == null ? 0.0 : weightKg(weight, unit);
       final day = dateOnly(date);
+
+      // Rep decay only needs "the same load across sets of one session", and
+      // bodyweight is constant within a session, so a null weight_value is a
+      // perfectly valid load key. Keying on the mode too keeps a strict set and
+      // an added-load set from grouping together.
+      final loadKey = '${loadingMode.name}:${addedKg.toStringAsFixed(2)}';
+      final repsByDay = repsByExerciseDayLoad[exerciseId] ??= {};
+      final repsByLoad = repsByDay[day] ??= {};
+      (repsByLoad[loadKey] ??= []).add(reps);
+
       // Assisted lifts store assistance as the load, so a FALLING weight is
       // progress, not a stall. Feeding them into the est-1RM decline detector
       // manufactures false deload signals, so keep them out of it — the volume
       // and rising-RPE-at-load signals still cover assisted work.
-      if (loadingMode != LoadingMode.bodyweightAssisted) {
+      //
+      // For a strict bodyweight lift the resisted mass is bodyweight × factor.
+      // The stall detector only compares a series against ITSELF, so the
+      // constant bodyweight term cancels and the factor alone is a valid
+      // proxy — no BodyweightEntries lookup needed.
+      // ponytail: assumes stable bodyweight; a bulking user's true est-1RM
+      // rises while this proxy stays flat. Fold in the real bodyweight series
+      // if that ever misfires.
+      final stallLoadKg = loadingMode == LoadingMode.bodyweight
+          ? ((row.data['bodyweight_factor'] as num?)?.toDouble() ?? 1.0)
+          : addedKg;
+      if (loadingMode != LoadingMode.bodyweightAssisted && stallLoadKg > 0) {
+        final estimate = stallLoadKg * (1 + reps / 30);
         final daily = maxByExerciseDay[exerciseId] ??= {};
         if (estimate > (daily[day] ?? 0)) daily[day] = estimate;
       }
@@ -340,7 +383,7 @@ class AnalyticsRepository {
       final rpe = (row.data['rpe'] as num?)?.toDouble();
       if (rpe != null) {
         final byLoad = rpeByExerciseLoad[exerciseId] ??= {};
-        (byLoad[loadKg.toStringAsFixed(2)] ??= []).add(rpe);
+        (byLoad[loadKey] ??= []).add(rpe);
       }
     }
 
@@ -349,6 +392,27 @@ class AnalyticsRepository {
       final days = entry.value.entries.toList()
         ..sort((a, b) => a.key.compareTo(b.key));
       oneRepSeries[entry.key] = days.map((item) => item.value).toList();
+    }
+
+    final repDecaySeries = <int, List<double>>{};
+    for (final entry in repsByExerciseDayLoad.entries) {
+      final days = entry.value.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+      final series = <double>[];
+      for (final day in days) {
+        // List.sort is not stable in Dart, so equal set counts must tie-break
+        // on the load key or the picked series varies between runs.
+        final candidates =
+            day.value.entries.where((load) => load.value.length >= 2).toList()
+              ..sort((a, b) {
+                final byCount = b.value.length.compareTo(a.value.length);
+                return byCount != 0 ? byCount : a.key.compareTo(b.key);
+              });
+        if (candidates.isEmpty) continue;
+        final repsAtLoad = candidates.first.value;
+        series.add((repsAtLoad.first - repsAtLoad.last).toDouble());
+      }
+      if (series.isNotEmpty) repDecaySeries[entry.key] = series;
     }
 
     return DeloadData(
@@ -361,6 +425,7 @@ class AnalyticsRepository {
                     ..sort((a, b) => b.length.compareTo(a.length)))
                   .first,
       },
+      repDecaySeries: repDecaySeries,
     );
   }
 
@@ -524,3 +589,6 @@ class AnalyticsRepository {
     return DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
   }
 }
+
+DateTime _weekStartOffset(DateTime weekStart, int weeks) =>
+    DateTime(weekStart.year, weekStart.month, weekStart.day - weeks * 7);
