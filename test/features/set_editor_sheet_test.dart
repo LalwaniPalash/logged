@@ -578,10 +578,7 @@ void main() {
     expect(find.text('REPS'), findsNothing);
     expect(find.text('HOLD TIME'), findsOneWidget);
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Duration'),
-      '30',
-    );
+    await tester.enterText(find.widgetWithText(TextField, 'Duration'), '30');
     await tester.pumpAndSettle();
     // A brand-new set: the confirm button reads "Add set", and so does the
     // sheet title, so target the button itself.
@@ -591,5 +588,163 @@ void main() {
     expect(result, isNotNull);
     expect(result!.reps, isNull);
     expect(result!.durationSec, 30);
+  });
+
+  testWidgets('blank new set refuses to save and stays mounted', (
+    tester,
+  ) async {
+    await pumpAt(
+      tester,
+      harness(
+        category: ExerciseCategory.strength,
+        existing: null,
+        name: 'Barbell Back Squat',
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Add set'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SetEditorSheet), findsOneWidget);
+    expect(find.text('Log at least one value for this set.'), findsOneWidget);
+  });
+
+  testWidgets('a pure-bodyweight set with only reps saves', (tester) async {
+    SetEditorResult? result;
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<SetEditorResult>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const SetEditorSheet(
+                    exerciseName: 'Pull-Up',
+                    category: ExerciseCategory.bodyweight,
+                    defaultUnit: WeightUnit.kg,
+                    defaultWeightEntry: WeightEntry.total,
+                    defaultLoadingMode: LoadingMode.bodyweight,
+                    existing: null,
+                    seed: null,
+                    effectiveBodyweightKg: null,
+                    primaryMuscles: [],
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '8');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add set'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result!.reps, 8);
+    expect(result!.weight, isNull);
+  });
+
+  testWidgets('a stretching timed set with only a duration saves', (
+    tester,
+  ) async {
+    SetEditorResult? result;
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<SetEditorResult>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const SetEditorSheet(
+                    exerciseName: 'Couch Stretch',
+                    category: ExerciseCategory.stretching,
+                    timed: true,
+                    defaultUnit: WeightUnit.kg,
+                    defaultWeightEntry: WeightEntry.total,
+                    defaultLoadingMode: LoadingMode.bodyweight,
+                    existing: null,
+                    seed: null,
+                    effectiveBodyweightKg: null,
+                    primaryMuscles: [],
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Duration'), '45');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add set'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result!.durationSec, 45);
+    expect(result!.reps, isNull);
+  });
+
+  testWidgets('a cardio set with only a distance saves', (tester) async {
+    SetEditorResult? result;
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<SetEditorResult>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const SetEditorSheet(
+                    exerciseName: 'Run',
+                    category: ExerciseCategory.cardio,
+                    defaultUnit: WeightUnit.kg,
+                    defaultWeightEntry: WeightEntry.total,
+                    defaultLoadingMode: LoadingMode.bodyweight,
+                    existing: null,
+                    seed: null,
+                    effectiveBodyweightKg: null,
+                    primaryMuscles: [],
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Distance'), '400');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add set'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result!.distanceMeters, 400);
+    expect(result!.durationSec, isNull);
   });
 }

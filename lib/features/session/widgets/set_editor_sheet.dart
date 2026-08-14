@@ -133,6 +133,7 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
   /// the exercise is categorised — an assisted pull-up may sit under `strength`.
   bool get _showsLoadingMode => _isLifting;
   bool get _showsWeight => _isLifting && _loadingMode != LoadingMode.bodyweight;
+
   /// Save nulls any field this hides, so a hidden field must still round-trip a
   /// value the set ALREADY carries — [_showsDuration] and [_showsDistance] both
   /// guard that way. Without the same guard a stretching set (never `_isLifting`)
@@ -300,6 +301,17 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
       setState(() {
         _errorText =
             'Assistance must be less than effective bodyweight resistance.';
+      });
+      return;
+    }
+    final hasAnyValue =
+        (_showsReps && int.tryParse(_reps.text) != null) ||
+        (_showsWeight && parsedWeight != null) ||
+        (_showsDuration && int.tryParse(_duration.text) != null) ||
+        (_showsDistance && double.tryParse(_distance.text) != null);
+    if (!hasAnyValue) {
+      setState(() {
+        _errorText = 'Log at least one value for this set.';
       });
       return;
     }
