@@ -232,32 +232,40 @@ class AnalyticsRepository {
       .watch()
       .map(_map);
 
-  Future<List<({double kg, int reps})>> oneRepMaxPointsForExercise(
+  /// One-rep-max points for the exercise deep-dive chart. A stream, not a
+  /// future: a future is computed once and cached for the provider's lifetime,
+  /// so the chart would never pick up sets logged after it first rendered.
+  Stream<List<({double kg, int reps})>> oneRepMaxPointsForExercise(
     int exerciseId,
-  ) async {
-    final rows = await _database
-        .customSelect(
-          'SELECT se.weight_value, se.unit, se.reps '
-          'FROM set_entries se '
-          'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
-          'JOIN sessions s ON s.id = sx.session_id '
-          'WHERE sx.exercise_id = ? AND s.ended_at IS NOT NULL '
-          'ORDER BY s.started_at',
-          variables: [Variable.withInt(exerciseId)],
-        )
-        .get();
-    return [
-      for (final row in rows)
-        if (row.data['weight_value'] != null && row.data['unit'] != null)
-          (
-            kg: weightKg(
-              (row.data['weight_value'] as num).toDouble(),
-              WeightUnit.values.byName(row.data['unit'] as String),
-            ),
-            reps: (row.data['reps'] as int?) ?? 0,
-          ),
-    ].where((r) => r.kg > 0).toList();
-  }
+  ) => _database
+      .customSelect(
+        'SELECT se.weight_value, se.unit, se.reps '
+        'FROM set_entries se '
+        'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
+        'JOIN sessions s ON s.id = sx.session_id '
+        'WHERE sx.exercise_id = ? AND s.ended_at IS NOT NULL '
+        'ORDER BY s.started_at',
+        variables: [Variable.withInt(exerciseId)],
+        readsFrom: {
+          _database.setEntries,
+          _database.sessionExercises,
+          _database.sessions,
+        },
+      )
+      .watch()
+      .map(
+        (rows) => [
+          for (final row in rows)
+            if (row.data['weight_value'] != null && row.data['unit'] != null)
+              (
+                kg: weightKg(
+                  (row.data['weight_value'] as num).toDouble(),
+                  WeightUnit.values.byName(row.data['unit'] as String),
+                ),
+                reps: (row.data['reps'] as int?) ?? 0,
+              ),
+        ].where((r) => r.kg > 0).toList(),
+      );
 
   Future<List<MuscleSetRecord>> loadLiveMuscleSets() async =>
       _mapLiveMuscleSets(await _database.customSelect(_liveMuscleQuery).get());

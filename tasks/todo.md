@@ -1984,9 +1984,36 @@ Implemented by Codex. Phase 5 landed within the stated scope:
   repository tests for delete renumbering, undo restore, set reorder/insert, and `details()`
   ordering/empty-set behavior, plus widget tests for the blank-save guard and the accepted
   single-field save cases. `flutter analyze` is clean, and `flutter test` is green at
-  **283 tests**.
+  **288 tests** (the entry originally claimed 283; the suite actually reports 288).
 - **NOT done:** the spec's manual Phase 5 checks. I did **not** manually verify in a debug build
   that History/Templates avoid empty-state flashing during rotation/theme changes, that deleting the
   middle of three sets and undoing it behaves correctly on-device, that inserting above set 2 keeps
   numbering contiguous in the running app, that exercise-card drag still feels right by hand, or
   that the blank-set refusal was exercised manually outside the widget tests.
+
+### Phase 5 review follow-up — 2026-08-14
+
+Reviewed by Claude against `tasks/spec-phase5.md`. One regression found and fixed; the rest of the
+phase stands as written.
+
+- [x] **5.1 regression** — `oneRepMaxPointsForExerciseProvider` shipped as a non-autoDispose
+      `FutureProvider.family`, so the Progress deep-dive chart computed its points once and cached
+      them for the app's lifetime. Nothing invalidates it, so sets logged after the chart first
+      rendered never appeared until an app restart. The old `FutureBuilder` re-ran on every build,
+      which is why the audit never saw this. `AnalyticsRepository.oneRepMaxPointsForExercise` is now
+      a `Stream` (`customSelect(...).watch()` with `readsFrom`, SQL byte-identical) behind a
+      `StreamProvider.family`. `progress_screen.dart` needed no change — `.when(...)` is the same.
+      Regression test: `oneRepMaxPointsForExerciseProvider re-emits when a later set is logged`,
+      confirmed failing (5s timeout, no second emission) against the pre-fix code. Suite now 289.
+
+- **Known, not fixed** (logged for a later phase, none block Phase 6):
+  1. `active_session_screen.dart` fires the set move/insert actions through `unawaited(...)`, so an
+     `ArgumentError` from `reorderSets` on a stale id list is an uncaught async error with no user
+     feedback.
+  2. `SetRepository.insertSetAt` never passes `isWarmup` (and `seedForNextSet` does not carry it),
+     so "Insert set above" on a warm-up row inserts a working set into the warm-up block.
+  3. `SetRow`'s `PopupMenuButton` passes no `constraints`, so Flutter's internal `IconButton` falls
+     back to its 48px minimum where the old branch pinned 36px — set rows are probably ~12px taller
+     on an active session. Not verified on device.
+  4. "Set details" is now two taps (menu → item) where it was one tap on the ⋯ button. Row
+     long-press still opens it directly.

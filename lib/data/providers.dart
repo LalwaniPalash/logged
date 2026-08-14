@@ -159,7 +159,7 @@ final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
 );
 
 final oneRepMaxPointsForExerciseProvider =
-    FutureProvider.family<List<({double kg, int reps})>, int>(
+    StreamProvider.family<List<({double kg, int reps})>, int>(
       (ref, exerciseId) => ref
           .watch(analyticsRepositoryProvider)
           .oneRepMaxPointsForExercise(exerciseId),

@@ -98,6 +98,86 @@ void main() {
     },
   );
 
+  test(
+    'oneRepMaxPointsForExerciseProvider re-emits when a later set is logged',
+    () async {
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Deadlift',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'back',
+            ),
+          );
+      final sessionId = await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(
+              startedAt: DateTime(2026, 8, 1, 9),
+              endedAt: Value(DateTime(2026, 8, 1, 10)),
+            ),
+          );
+      final sessionExerciseId = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: exerciseId,
+              position: 0,
+            ),
+          );
+      Future<void> logSet(double weight) => database
+          .into(database.setEntries)
+          .insert(
+            SetEntriesCompanion.insert(
+              sessionExerciseId: sessionExerciseId,
+              setNumber: weight.toInt(),
+              reps: const Value(5),
+              weightValue: Value(weight),
+              unit: const Value(WeightUnit.kg),
+            ),
+          );
+      await logSet(100);
+
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      final firstEmission = Completer<void>();
+      final secondEmission = Completer<void>();
+      final sub = container
+          .listen<AsyncValue<List<({double kg, int reps})>>>(
+            oneRepMaxPointsForExerciseProvider(exerciseId),
+            (previous, next) => next.whenData((points) {
+              if (points.length == 1 && !firstEmission.isCompleted) {
+                firstEmission.complete();
+              }
+              if (points.length == 2 && !secondEmission.isCompleted) {
+                secondEmission.complete();
+              }
+            }),
+            fireImmediately: true,
+          );
+      addTearDown(sub.close);
+
+      await firstEmission.future;
+      // A cached Future never sees this row — the chart would render the
+      // pre-workout points forever.
+      await logSet(110);
+      await secondEmission.future.timeout(const Duration(seconds: 5));
+
+      expect(
+        container
+            .read(oneRepMaxPointsForExerciseProvider(exerciseId))
+            .requireValue
+            .map((point) => point.kg),
+        [100, 110],
+      );
+    },
+  );
+
   test('nextLocalMidnight crosses a month boundary calendar-wise', () {
     expect(
       nextLocalMidnight(DateTime(2026, 1, 31, 23, 59)),
