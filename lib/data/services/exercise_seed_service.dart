@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/domain/enums.dart';
 import '../database/app_database.dart';
+import 'bundled_logging_flags.dart';
 
 class ExerciseSeedService {
   ExerciseSeedService(this._database, {Future<String> Function()? loadAsset})
@@ -21,42 +22,56 @@ class ExerciseSeedService {
       batch.insertAll(
         _database.exercises,
         [
-          for (final raw in data.cast<Map<String, dynamic>>())
-            ExercisesCompanion.insert(
-              name: raw['name']! as String,
-              category: ExerciseCategory.values.byName(
+          for (final raw in data.cast<Map<String, dynamic>>()) ...[
+            () {
+              final category = ExerciseCategory.values.byName(
                 raw['category']! as String,
-              ),
-              muscleGroup: raw['muscleGroup']! as String,
-              primaryMuscles: Value(
-                jsonEncode(
-                  (raw['primaryMuscles'] as List<dynamic>?) ?? const [],
+              );
+              final flags = bundledLoggingFlags(
+                category: category,
+                assetIsTimed: raw['isTimed'] as bool? ?? false,
+                assetTracksDistance: raw['tracksDistance'] as bool? ?? false,
+              );
+              return ExercisesCompanion.insert(
+                name: raw['name']! as String,
+                category: category,
+                muscleGroup: raw['muscleGroup']! as String,
+                primaryMuscles: Value(
+                  jsonEncode(
+                    (raw['primaryMuscles'] as List<dynamic>?) ?? const [],
+                  ),
                 ),
-              ),
-              secondaryMuscles: Value(
-                jsonEncode(
-                  (raw['secondaryMuscles'] as List<dynamic>?) ?? const [],
+                secondaryMuscles: Value(
+                  jsonEncode(
+                    (raw['secondaryMuscles'] as List<dynamic>?) ?? const [],
+                  ),
                 ),
-              ),
-              defaultUnit: Value(
-                WeightUnit.values.byName(raw['defaultUnit']! as String),
-              ),
-              weightEntry: Value(
-                WeightEntry.values.byName(
-                  raw['weightEntry'] as String? ?? 'total',
+                defaultUnit: Value(
+                  WeightUnit.values.byName(raw['defaultUnit']! as String),
                 ),
-              ),
-              // Without this, every seeded exercise fell back to the column
-              // default `external`, so a bodyweight lift like Pull-Up demanded a
-              // weight to log on fresh installs. Honour the asset's mode.
-              preferredLoadingMode: Value(
-                LoadingMode.values.byName(
-                  raw['preferredLoadingMode'] as String? ?? 'external',
+                weightEntry: Value(
+                  WeightEntry.values.byName(
+                    raw['weightEntry'] as String? ?? 'total',
+                  ),
                 ),
-              ),
-              isCustom: const Value(false),
-              isArchived: const Value(false),
-            ),
+                // Without this, every seeded exercise fell back to the column
+                // default `external`, so a bodyweight lift like Pull-Up demanded a
+                // weight to log on fresh installs. Honour the asset's mode.
+                preferredLoadingMode: Value(
+                  LoadingMode.values.byName(
+                    raw['preferredLoadingMode'] as String? ?? 'external',
+                  ),
+                ),
+                // Fresh installs must not rely on a later one-time backfill for
+                // core logging behavior. Shared with the backfill so the two
+                // paths cannot drift — see [bundledLoggingFlags].
+                isTimed: Value(flags.isTimed),
+                tracksDistance: Value(flags.tracksDistance),
+                isCustom: const Value(false),
+                isArchived: const Value(false),
+              );
+            }(),
+          ],
         ],
         mode: InsertMode
             .insertOrIgnore, // a stray duplicate name can't nuke the seed

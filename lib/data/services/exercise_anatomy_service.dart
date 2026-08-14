@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/domain/enums.dart';
 import '../database/app_database.dart';
+import 'bundled_logging_flags.dart';
 
 /// Keeps bundled exercise anatomy aligned with the reviewed asset without
 /// overwriting user-created exercises.
@@ -20,6 +21,7 @@ class ExerciseAnatomyService {
   static const _muscleAnatomyBackfillKey = 'muscleAnatomyBackfilled';
   static const _weightEntryBackfillKey = 'weightEntryBackfilled';
   static const _pullUpBackfillKey = 'pullUpExerciseBackfilled';
+  static const _timedExerciseBackfillKey = 'timedExerciseBackfilled';
 
   /// Returns how many bundled exercise rows changed.
   Future<int> enrichBundledExercises() async {
@@ -174,6 +176,67 @@ class ExerciseAnatomyService {
     return changed;
   }
 
+  /// One-time backfill of bundled timed/distance logging flags.
+  ///
+  /// Seeding uses [InsertMode.insertOrIgnore], so flags added to the bundled
+  /// library later never reach existing installs. This backfill CORRECTS the
+  /// stored values for bundled rows, it does not only fill missing rows.
+  ///
+  /// Like the other one-time bundled backfills, this is guarded in
+  /// `app_settings` so future user edits to bundled rows are not reverted on
+  /// every launch. Custom exercises are never touched.
+  Future<int> backfillTimedExerciseOnce() async {
+    final alreadyRun =
+        await (_database.select(_database.appSettings)
+              ..where((row) => row.key.equals(_timedExerciseBackfillKey)))
+            .getSingleOrNull();
+    if (alreadyRun != null) return 0;
+
+    final assetFlags = await _assetLoggingFlagsByName();
+    final bundled = await (_database.select(
+      _database.exercises,
+    )..where((exercise) => exercise.isCustom.equals(false))).get();
+    final changes = <(int, bool, bool)>[];
+    for (final exercise in bundled) {
+      final asset = assetFlags[exercise.name];
+      // Shared with the seed path. Computing this here independently is how a
+      // strength-category loaded carry ended up tracking distance on a fresh
+      // install and not on an upgraded one.
+      final flags = bundledLoggingFlags(
+        category: exercise.category,
+        assetIsTimed: asset?.isTimed ?? false,
+        assetTracksDistance: asset?.tracksDistance ?? false,
+      );
+      if (exercise.isTimed == flags.isTimed &&
+          exercise.tracksDistance == flags.tracksDistance) {
+        continue;
+      }
+      changes.add((exercise.id, flags.isTimed, flags.tracksDistance));
+    }
+
+    await _database.batch((batch) {
+      for (final change in changes) {
+        batch.update(
+          _database.exercises,
+          ExercisesCompanion(
+            isTimed: Value(change.$2),
+            tracksDistance: Value(change.$3),
+          ),
+          where: (exercise) => exercise.id.equals(change.$1),
+        );
+      }
+      batch.insert(
+        _database.appSettings,
+        AppSettingsCompanion.insert(
+          key: _timedExerciseBackfillKey,
+          value: 'true',
+        ),
+        mode: InsertMode.insertOrReplace,
+      );
+    });
+    return changes.length;
+  }
+
   Future<Map<String, ({String primary, String secondary})>>
   _assetAnatomyByName() async {
     final source = jsonDecode(await _loadAsset()) as List<dynamic>;
@@ -186,6 +249,18 @@ class ExerciseAnatomyService {
           secondary: jsonEncode(
             (raw['secondaryMuscles'] as List<dynamic>?) ?? const [],
           ),
+        ),
+    };
+  }
+
+  Future<Map<String, ({bool isTimed, bool tracksDistance})>>
+  _assetLoggingFlagsByName() async {
+    final source = jsonDecode(await _loadAsset()) as List<dynamic>;
+    return {
+      for (final raw in source.cast<Map<String, dynamic>>())
+        raw['name']! as String: (
+          isTimed: raw['isTimed'] == true,
+          tracksDistance: raw['tracksDistance'] == true,
         ),
     };
   }

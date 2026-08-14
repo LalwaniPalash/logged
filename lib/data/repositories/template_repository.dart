@@ -23,6 +23,9 @@ class ProgramImportExercise {
     this.createCustom = false,
     this.minReps,
     this.maxReps,
+    this.targetDurationSec,
+    this.targetDistanceMeters,
+    this.sidesPerSet,
     this.restSeconds,
     this.rpe,
     this.notes,
@@ -35,6 +38,9 @@ class ProgramImportExercise {
   final bool createCustom;
   final int? minReps;
   final int? maxReps;
+  final int? targetDurationSec;
+  final double? targetDistanceMeters;
+  final int? sidesPerSet;
   final int? restSeconds;
   final double? rpe;
   final String? notes;
@@ -153,6 +159,24 @@ class TemplateRepository {
         for (final item in items) {
           (byDay[item.day.trim()] ??= []).add(item);
         }
+        // An imported custom exercise must carry its own timed/distance
+        // semantics, not just a template prescription — the exercise row
+        // outlives the template and is reachable ad hoc, where a prescription
+        // cannot speak for it. OR across every row naming it, so one day's
+        // fully-specified entry teaches the rest.
+        final customFlags = <String, ({bool isTimed, bool tracksDistance})>{};
+        for (final item in items) {
+          if (item.exerciseId != null) continue;
+          final key = item.exerciseName.trim().toLowerCase();
+          final prior = customFlags[key];
+          customFlags[key] = (
+            isTimed:
+                (prior?.isTimed ?? false) || item.targetDurationSec != null,
+            tracksDistance:
+                (prior?.tracksDistance ?? false) ||
+                item.targetDistanceMeters != null,
+          );
+        }
         final customIds = <String, int>{};
         final imported = <Template>[];
         for (final entry in byDay.entries) {
@@ -178,6 +202,10 @@ class TemplateRepository {
                       category: ExerciseCategory.strength,
                       muscleGroup: 'custom',
                       isCustom: const Value(true),
+                      isTimed: Value(customFlags[key]?.isTimed ?? false),
+                      tracksDistance: Value(
+                        customFlags[key]?.tracksDistance ?? false,
+                      ),
                     ),
                   );
               customIds[key] = exerciseId;
@@ -194,8 +222,11 @@ class TemplateRepository {
                     exerciseId: exerciseId,
                     position: index,
                     targetSets: Value(item.targetSets),
+                    sidesPerSet: Value(item.sidesPerSet),
                     minReps: Value(item.minReps),
                     maxReps: Value(item.maxReps),
+                    targetDurationSec: Value(item.targetDurationSec),
+                    targetDistanceMeters: Value(item.targetDistanceMeters),
                     restSeconds: Value(item.restSeconds),
                     prescriptionNotes: Value(
                       noteParts.isEmpty ? null : noteParts.join(' · '),

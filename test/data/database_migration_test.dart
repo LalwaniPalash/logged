@@ -326,7 +326,7 @@ void main() {
     final exercise = await database.select(database.exercises).getSingle();
     expect(exercise.name, 'Legacy Row');
     expect(exercise.videoUrl, isNull);
-    expect(database.schemaVersion, 11);
+    expect(database.schemaVersion, 12);
   });
 
   test(
@@ -448,7 +448,7 @@ void main() {
       expect(set.reps, 12);
       expect(set.weightValue, 180);
       expect(set.muscleBiasWeights, isNull);
-      expect(database.schemaVersion, 11);
+      expect(database.schemaVersion, 12);
     },
   );
 
@@ -597,7 +597,7 @@ void main() {
         'quads': 0.75,
         'glute_max': 1.25,
       });
-      expect(database.schemaVersion, 11);
+      expect(database.schemaVersion, 12);
     },
   );
 
@@ -727,7 +727,146 @@ void main() {
       expect(weights['quads']!.toDouble(), closeTo(1.5, 1e-9));
       expect(weights['glute_max']!.toDouble(), closeTo(0.9, 1e-9));
       expect(weights['hamstrings']!.toDouble(), closeTo(0.6, 1e-9));
-      expect(database.schemaVersion, 11);
+      expect(database.schemaVersion, 12);
+    },
+  );
+
+  test(
+    'v11 gains timed and distance exercise flags without losing exercise or set data',
+    () async {
+      final executor = NativeDatabase.memory(
+        setup: (database) {
+          database.execute('''
+          CREATE TABLE exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            category TEXT NOT NULL,
+            muscle_group TEXT NOT NULL,
+            primary_muscles TEXT NOT NULL DEFAULT '[]',
+            secondary_muscles TEXT NOT NULL DEFAULT '[]',
+            default_unit TEXT NOT NULL DEFAULT 'kg',
+            weight_entry TEXT NOT NULL DEFAULT 'total',
+            preferred_loading_mode TEXT NOT NULL DEFAULT 'external',
+            bodyweight_factor REAL NOT NULL DEFAULT 1.0,
+            video_url TEXT,
+            is_custom INTEGER NOT NULL DEFAULT 0,
+            is_archived INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE sessions (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            started_at INTEGER NOT NULL,
+            ended_at INTEGER,
+            template_id INTEGER,
+            notes TEXT
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE session_exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            exercise_id INTEGER NOT NULL,
+            position INTEGER NOT NULL
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE set_entries (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_exercise_id INTEGER NOT NULL,
+            set_number INTEGER NOT NULL,
+            reps INTEGER,
+            weight_value REAL,
+            unit TEXT,
+            weight_entry TEXT NOT NULL DEFAULT 'total',
+            side_count INTEGER NOT NULL DEFAULT 1,
+            loading_mode TEXT NOT NULL DEFAULT 'external',
+            distance_meters REAL,
+            duration_sec INTEGER,
+            is_warmup INTEGER NOT NULL DEFAULT 0,
+            rpe REAL,
+            muscle_bias_weights TEXT,
+            notes TEXT
+          )
+        ''');
+          database.execute('''
+          INSERT INTO exercises (
+            id,
+            name,
+            category,
+            muscle_group,
+            primary_muscles,
+            secondary_muscles,
+            default_unit,
+            weight_entry,
+            preferred_loading_mode,
+            bodyweight_factor,
+            video_url
+          ) VALUES (
+            1,
+            'Legacy Carry',
+            'strength',
+            'full body',
+            '["forearms","upper_traps"]',
+            '["abs"]',
+            'lb',
+            'perSide',
+            'external',
+            1.0,
+            'https://youtu.be/carry'
+          )
+        ''');
+          database.execute('''
+          INSERT INTO sessions (id, started_at, ended_at)
+          VALUES (1, 1784505600, 1784509200)
+        ''');
+          database.execute('''
+          INSERT INTO session_exercises (
+            id,
+            session_id,
+            exercise_id,
+            position
+          ) VALUES (1, 1, 1, 0)
+        ''');
+          database.execute('''
+          INSERT INTO set_entries (
+            id,
+            session_exercise_id,
+            set_number,
+            reps,
+            weight_value,
+            unit,
+            weight_entry,
+            side_count,
+            loading_mode,
+            distance_meters
+          ) VALUES (1, 1, 1, 40, 30, 'lb', 'perSide', 1, 'external', 20)
+        ''');
+          database.userVersion = 11;
+        },
+      );
+      final database = AppDatabase(executor);
+      addTearDown(database.close);
+
+      final exercise = await database.select(database.exercises).getSingle();
+      final set = await database.select(database.setEntries).getSingle();
+      final columns = await database
+          .customSelect("PRAGMA table_info('exercises')")
+          .get();
+
+      expect(exercise.name, 'Legacy Carry');
+      expect(exercise.videoUrl, 'https://youtu.be/carry');
+      expect(exercise.isTimed, isFalse);
+      expect(exercise.tracksDistance, isFalse);
+      expect(set.reps, 40);
+      expect(set.weightValue, 30);
+      expect(set.distanceMeters, 20);
+      expect(
+        columns.map((row) => row.read<String>('name')),
+        containsAll(['is_timed', 'tracks_distance']),
+      );
+      expect(database.schemaVersion, 12);
     },
   );
 }

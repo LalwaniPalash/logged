@@ -35,8 +35,9 @@ class BackupService {
     9,
     10,
     11,
+    12,
   };
-  static const int _schemaVersion = 11;
+  static const int _schemaVersion = 12;
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';
@@ -268,6 +269,8 @@ class BackupService {
         'weightEntry': source['weightEntry'] ?? 'total',
         'preferredLoadingMode': source['preferredLoadingMode'] ?? 'external',
         'bodyweightFactor': source['bodyweightFactor'] ?? 1.0,
+        'isTimed': source['isTimed'] ?? false,
+        'tracksDistance': source['tracksDistance'] ?? false,
       });
 
   SetEntry _setEntryFromBackup(
@@ -410,6 +413,9 @@ class BackupService {
     });
     if (version < 8) {
       await _anatomyService.enrichBundledExercises();
+    }
+    if (version < 12) {
+      await _anatomyService.backfillTimedExerciseOnce();
     }
   }
 

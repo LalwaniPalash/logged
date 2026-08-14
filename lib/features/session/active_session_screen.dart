@@ -36,6 +36,18 @@ class ActiveSessionScreen extends ConsumerStatefulWidget {
       _ActiveSessionScreenState();
 }
 
+/// Timed-ness and distance-tracking decide which columns a set shows AND what
+/// makes it complete, so every consumer must agree. Resolving it in one place
+/// stops a set from rendering a hold-time column while completion still demands
+/// reps the editor already nulled.
+bool _timedForDetail(SessionExerciseDetails detail) => isTimedExercise(
+  exerciseIsTimed: detail.exercise.isTimed,
+  sets: detail.sets,
+  targetDurationSec: detail.sessionExercise.targetDurationSec,
+  minReps: detail.sessionExercise.minReps,
+  maxReps: detail.sessionExercise.maxReps,
+);
+
 class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   late Future<_SessionView> _future;
 
@@ -288,11 +300,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         exerciseName: detail.exercise.name,
         category: detail.exercise.category,
         timed: isTimedExercise(
+          exerciseIsTimed: detail.exercise.isTimed,
           sets: detail.sets,
           targetDurationSec: detail.sessionExercise.targetDurationSec,
           minReps: detail.sessionExercise.minReps,
           maxReps: detail.sessionExercise.maxReps,
         ),
+        tracksDistance: detail.exercise.tracksDistance,
         defaultUnit: detail.exercise.defaultUnit,
         defaultWeightEntry: detail.exercise.weightEntry,
         existing: existing,
@@ -313,6 +327,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           weightValue: existing.weightValue,
           durationSec: existing.durationSec,
           distanceMeters: existing.distanceMeters,
+          timed: _timedForDetail(detail),
+          tracksDistance: detail.exercise.tracksDistance,
         );
     final becomesComplete =
         !result.delete &&
@@ -323,6 +339,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           weightValue: result.weight,
           durationSec: result.durationSec,
           distanceMeters: result.distanceMeters,
+          timed: _timedForDetail(detail),
+          tracksDistance: detail.exercise.tracksDistance,
         );
 
     if (result.delete && existing != null) {
@@ -438,6 +456,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     SetEntry set,
     SetRowDraft draft,
   ) async {
+    final timed = _timedForDetail(detail);
+    final tracksDistance = detail.exercise.tracksDistance;
     final wasComplete = isSetComplete(
       category: detail.exercise.category,
       loadingMode: set.loadingMode,
@@ -445,6 +465,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       weightValue: set.weightValue,
       durationSec: set.durationSec,
       distanceMeters: set.distanceMeters,
+      timed: timed,
+      tracksDistance: tracksDistance,
     );
     final becomesComplete = isSetComplete(
       category: detail.exercise.category,
@@ -453,6 +475,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       weightValue: draft.weightValue,
       durationSec: draft.durationSec,
       distanceMeters: draft.distanceMeters,
+      timed: timed,
+      tracksDistance: tracksDistance,
     );
     await ref
         .read(setRepositoryProvider)
@@ -917,6 +941,7 @@ class _ExerciseCard extends StatelessWidget {
     // A Plank is `bodyweight` category but prescribed in seconds; without this
     // it would render a reps column and its hold time would be unloggable.
     final timed = isTimedExercise(
+      exerciseIsTimed: detail.exercise.isTimed,
       sets: detail.sets,
       targetDurationSec: detail.sessionExercise.targetDurationSec,
       minReps: detail.sessionExercise.minReps,
@@ -928,6 +953,7 @@ class _ExerciseCard extends StatelessWidget {
           ? [detail.exercise.preferredLoadingMode]
           : detail.sets.map((set) => set.loadingMode),
       timed: timed,
+      tracksDistance: detail.exercise.tracksDistance,
     );
     final suggestion = timed
         ? null
@@ -1116,6 +1142,7 @@ class _ExerciseCard extends StatelessWidget {
                     headerWeightEntry: headerWeightEntry,
                     headerSideCount: headerSideCount,
                     timed: timed,
+                    tracksDistance: detail.exercise.tracksDistance,
                     suggestion: set == detail.sets.last ? suggestion : null,
                     onCommit: (draft) => onInlineCommit(set, draft),
                     onOpenDetails: () => onEditSet(set),

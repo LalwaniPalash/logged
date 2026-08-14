@@ -66,4 +66,64 @@ void main() {
       );
     });
   });
+
+  test('a timed strength lift completes on hold time, never on reps', () {
+    // A weighted Side Bridge is `strength` + external loading. The editor hides
+    // and NULLS reps for a timed exercise, so a completion rule demanding reps
+    // strands every set as incomplete and the rest timer never fires.
+    expect(
+      isSetComplete(
+        category: ExerciseCategory.strength,
+        loadingMode: LoadingMode.external,
+        reps: null,
+        weightValue: 10,
+        durationSec: 45,
+        timed: true,
+      ),
+      isTrue,
+    );
+    expect(
+      setFieldsFor(
+        category: ExerciseCategory.strength,
+        loadingMode: LoadingMode.external,
+        timed: true,
+      ),
+      const [SetField.weight, SetField.duration],
+    );
+  });
+
+  test('a loaded carry completes on distance and shows a metres column', () {
+    // Audit F2: a Farmer's Walk is `strength` category but measured in metres.
+    expect(
+      isSetComplete(
+        category: ExerciseCategory.strength,
+        loadingMode: LoadingMode.external,
+        reps: null,
+        weightValue: 32,
+        distanceMeters: 40,
+        tracksDistance: true,
+      ),
+      isTrue,
+    );
+    // Weight is still required — a carry with no load is not a logged carry.
+    expect(
+      isSetComplete(
+        category: ExerciseCategory.strength,
+        loadingMode: LoadingMode.external,
+        reps: null,
+        weightValue: null,
+        distanceMeters: 40,
+        tracksDistance: true,
+      ),
+      isFalse,
+    );
+    expect(
+      setFieldsFor(
+        category: ExerciseCategory.strength,
+        loadingMode: LoadingMode.external,
+        tracksDistance: true,
+      ),
+      const [SetField.weight, SetField.distance],
+    );
+  });
 }

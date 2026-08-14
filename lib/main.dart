@@ -27,6 +27,7 @@ Future<void> main() async {
     await anatomyService.backfillMuscleAnatomyOnce();
     await anatomyService.backfillWeightEntryOnce();
     await anatomyService.backfillPullUpOnce();
+    await anatomyService.backfillTimedExerciseOnce();
     if (const bool.fromEnvironment(
       'LOGGED_SEED_DEFAULT_TEMPLATES',
       defaultValue: true,

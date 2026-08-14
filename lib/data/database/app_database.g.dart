@@ -118,6 +118,36 @@ class $ExercisesTable extends Exercises
     requiredDuringInsert: false,
     defaultValue: const Constant(1.0),
   );
+  static const VerificationMeta _isTimedMeta = const VerificationMeta(
+    'isTimed',
+  );
+  @override
+  late final GeneratedColumn<bool> isTimed = GeneratedColumn<bool>(
+    'is_timed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_timed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _tracksDistanceMeta = const VerificationMeta(
+    'tracksDistance',
+  );
+  @override
+  late final GeneratedColumn<bool> tracksDistance = GeneratedColumn<bool>(
+    'tracks_distance',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("tracks_distance" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _videoUrlMeta = const VerificationMeta(
     'videoUrl',
   );
@@ -183,6 +213,8 @@ class $ExercisesTable extends Exercises
     weightEntry,
     preferredLoadingMode,
     bodyweightFactor,
+    isTimed,
+    tracksDistance,
     videoUrl,
     isCustom,
     isArchived,
@@ -246,6 +278,21 @@ class $ExercisesTable extends Exercises
         bodyweightFactor.isAcceptableOrUnknown(
           data['bodyweight_factor']!,
           _bodyweightFactorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_timed')) {
+      context.handle(
+        _isTimedMeta,
+        isTimed.isAcceptableOrUnknown(data['is_timed']!, _isTimedMeta),
+      );
+    }
+    if (data.containsKey('tracks_distance')) {
+      context.handle(
+        _tracksDistanceMeta,
+        tracksDistance.isAcceptableOrUnknown(
+          data['tracks_distance']!,
+          _tracksDistanceMeta,
         ),
       );
     }
@@ -331,6 +378,14 @@ class $ExercisesTable extends Exercises
         DriftSqlType.double,
         data['${effectivePrefix}bodyweight_factor'],
       )!,
+      isTimed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_timed'],
+      )!,
+      tracksDistance: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}tracks_distance'],
+      )!,
       videoUrl: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}video_url'],
@@ -380,6 +435,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final WeightEntry weightEntry;
   final LoadingMode preferredLoadingMode;
   final double bodyweightFactor;
+  final bool isTimed;
+  final bool tracksDistance;
   final String? videoUrl;
   final bool isCustom;
   final bool isArchived;
@@ -395,6 +452,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.weightEntry,
     required this.preferredLoadingMode,
     required this.bodyweightFactor,
+    required this.isTimed,
+    required this.tracksDistance,
     this.videoUrl,
     required this.isCustom,
     required this.isArchived,
@@ -431,6 +490,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       );
     }
     map['bodyweight_factor'] = Variable<double>(bodyweightFactor);
+    map['is_timed'] = Variable<bool>(isTimed);
+    map['tracks_distance'] = Variable<bool>(tracksDistance);
     if (!nullToAbsent || videoUrl != null) {
       map['video_url'] = Variable<String>(videoUrl);
     }
@@ -452,6 +513,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       weightEntry: Value(weightEntry),
       preferredLoadingMode: Value(preferredLoadingMode),
       bodyweightFactor: Value(bodyweightFactor),
+      isTimed: Value(isTimed),
+      tracksDistance: Value(tracksDistance),
       videoUrl: videoUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(videoUrl),
@@ -484,6 +547,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       preferredLoadingMode: $ExercisesTable.$converterpreferredLoadingMode
           .fromJson(serializer.fromJson<String>(json['preferredLoadingMode'])),
       bodyweightFactor: serializer.fromJson<double>(json['bodyweightFactor']),
+      isTimed: serializer.fromJson<bool>(json['isTimed']),
+      tracksDistance: serializer.fromJson<bool>(json['tracksDistance']),
       videoUrl: serializer.fromJson<String?>(json['videoUrl']),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
@@ -514,6 +579,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
         ),
       ),
       'bodyweightFactor': serializer.toJson<double>(bodyweightFactor),
+      'isTimed': serializer.toJson<bool>(isTimed),
+      'tracksDistance': serializer.toJson<bool>(tracksDistance),
       'videoUrl': serializer.toJson<String?>(videoUrl),
       'isCustom': serializer.toJson<bool>(isCustom),
       'isArchived': serializer.toJson<bool>(isArchived),
@@ -532,6 +599,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     WeightEntry? weightEntry,
     LoadingMode? preferredLoadingMode,
     double? bodyweightFactor,
+    bool? isTimed,
+    bool? tracksDistance,
     Value<String?> videoUrl = const Value.absent(),
     bool? isCustom,
     bool? isArchived,
@@ -547,6 +616,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     weightEntry: weightEntry ?? this.weightEntry,
     preferredLoadingMode: preferredLoadingMode ?? this.preferredLoadingMode,
     bodyweightFactor: bodyweightFactor ?? this.bodyweightFactor,
+    isTimed: isTimed ?? this.isTimed,
+    tracksDistance: tracksDistance ?? this.tracksDistance,
     videoUrl: videoUrl.present ? videoUrl.value : this.videoUrl,
     isCustom: isCustom ?? this.isCustom,
     isArchived: isArchived ?? this.isArchived,
@@ -578,6 +649,10 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       bodyweightFactor: data.bodyweightFactor.present
           ? data.bodyweightFactor.value
           : this.bodyweightFactor,
+      isTimed: data.isTimed.present ? data.isTimed.value : this.isTimed,
+      tracksDistance: data.tracksDistance.present
+          ? data.tracksDistance.value
+          : this.tracksDistance,
       videoUrl: data.videoUrl.present ? data.videoUrl.value : this.videoUrl,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
       isArchived: data.isArchived.present
@@ -600,6 +675,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('weightEntry: $weightEntry, ')
           ..write('preferredLoadingMode: $preferredLoadingMode, ')
           ..write('bodyweightFactor: $bodyweightFactor, ')
+          ..write('isTimed: $isTimed, ')
+          ..write('tracksDistance: $tracksDistance, ')
           ..write('videoUrl: $videoUrl, ')
           ..write('isCustom: $isCustom, ')
           ..write('isArchived: $isArchived, ')
@@ -620,6 +697,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     weightEntry,
     preferredLoadingMode,
     bodyweightFactor,
+    isTimed,
+    tracksDistance,
     videoUrl,
     isCustom,
     isArchived,
@@ -639,6 +718,8 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.weightEntry == this.weightEntry &&
           other.preferredLoadingMode == this.preferredLoadingMode &&
           other.bodyweightFactor == this.bodyweightFactor &&
+          other.isTimed == this.isTimed &&
+          other.tracksDistance == this.tracksDistance &&
           other.videoUrl == this.videoUrl &&
           other.isCustom == this.isCustom &&
           other.isArchived == this.isArchived &&
@@ -656,6 +737,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<WeightEntry> weightEntry;
   final Value<LoadingMode> preferredLoadingMode;
   final Value<double> bodyweightFactor;
+  final Value<bool> isTimed;
+  final Value<bool> tracksDistance;
   final Value<String?> videoUrl;
   final Value<bool> isCustom;
   final Value<bool> isArchived;
@@ -671,6 +754,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.weightEntry = const Value.absent(),
     this.preferredLoadingMode = const Value.absent(),
     this.bodyweightFactor = const Value.absent(),
+    this.isTimed = const Value.absent(),
+    this.tracksDistance = const Value.absent(),
     this.videoUrl = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -687,6 +772,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.weightEntry = const Value.absent(),
     this.preferredLoadingMode = const Value.absent(),
     this.bodyweightFactor = const Value.absent(),
+    this.isTimed = const Value.absent(),
+    this.tracksDistance = const Value.absent(),
     this.videoUrl = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -705,6 +792,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? weightEntry,
     Expression<String>? preferredLoadingMode,
     Expression<double>? bodyweightFactor,
+    Expression<bool>? isTimed,
+    Expression<bool>? tracksDistance,
     Expression<String>? videoUrl,
     Expression<bool>? isCustom,
     Expression<bool>? isArchived,
@@ -722,6 +811,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (preferredLoadingMode != null)
         'preferred_loading_mode': preferredLoadingMode,
       if (bodyweightFactor != null) 'bodyweight_factor': bodyweightFactor,
+      if (isTimed != null) 'is_timed': isTimed,
+      if (tracksDistance != null) 'tracks_distance': tracksDistance,
       if (videoUrl != null) 'video_url': videoUrl,
       if (isCustom != null) 'is_custom': isCustom,
       if (isArchived != null) 'is_archived': isArchived,
@@ -740,6 +831,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<WeightEntry>? weightEntry,
     Value<LoadingMode>? preferredLoadingMode,
     Value<double>? bodyweightFactor,
+    Value<bool>? isTimed,
+    Value<bool>? tracksDistance,
     Value<String?>? videoUrl,
     Value<bool>? isCustom,
     Value<bool>? isArchived,
@@ -756,6 +849,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       weightEntry: weightEntry ?? this.weightEntry,
       preferredLoadingMode: preferredLoadingMode ?? this.preferredLoadingMode,
       bodyweightFactor: bodyweightFactor ?? this.bodyweightFactor,
+      isTimed: isTimed ?? this.isTimed,
+      tracksDistance: tracksDistance ?? this.tracksDistance,
       videoUrl: videoUrl ?? this.videoUrl,
       isCustom: isCustom ?? this.isCustom,
       isArchived: isArchived ?? this.isArchived,
@@ -806,6 +901,12 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (bodyweightFactor.present) {
       map['bodyweight_factor'] = Variable<double>(bodyweightFactor.value);
     }
+    if (isTimed.present) {
+      map['is_timed'] = Variable<bool>(isTimed.value);
+    }
+    if (tracksDistance.present) {
+      map['tracks_distance'] = Variable<bool>(tracksDistance.value);
+    }
     if (videoUrl.present) {
       map['video_url'] = Variable<String>(videoUrl.value);
     }
@@ -834,6 +935,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('weightEntry: $weightEntry, ')
           ..write('preferredLoadingMode: $preferredLoadingMode, ')
           ..write('bodyweightFactor: $bodyweightFactor, ')
+          ..write('isTimed: $isTimed, ')
+          ..write('tracksDistance: $tracksDistance, ')
           ..write('videoUrl: $videoUrl, ')
           ..write('isCustom: $isCustom, ')
           ..write('isArchived: $isArchived, ')
@@ -5270,6 +5373,8 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<WeightEntry> weightEntry,
       Value<LoadingMode> preferredLoadingMode,
       Value<double> bodyweightFactor,
+      Value<bool> isTimed,
+      Value<bool> tracksDistance,
       Value<String?> videoUrl,
       Value<bool> isCustom,
       Value<bool> isArchived,
@@ -5287,6 +5392,8 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<WeightEntry> weightEntry,
       Value<LoadingMode> preferredLoadingMode,
       Value<double> bodyweightFactor,
+      Value<bool> isTimed,
+      Value<bool> tracksDistance,
       Value<String?> videoUrl,
       Value<bool> isCustom,
       Value<bool> isArchived,
@@ -5399,6 +5506,16 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<double> get bodyweightFactor => $composableBuilder(
     column: $table.bodyweightFactor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isTimed => $composableBuilder(
+    column: $table.isTimed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get tracksDistance => $composableBuilder(
+    column: $table.tracksDistance,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5532,6 +5649,16 @@ class $$ExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isTimed => $composableBuilder(
+    column: $table.isTimed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get tracksDistance => $composableBuilder(
+    column: $table.tracksDistance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get videoUrl => $composableBuilder(
     column: $table.videoUrl,
     builder: (column) => ColumnOrderings(column),
@@ -5606,6 +5733,14 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<double> get bodyweightFactor => $composableBuilder(
     column: $table.bodyweightFactor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isTimed =>
+      $composableBuilder(column: $table.isTimed, builder: (column) => column);
+
+  GeneratedColumn<bool> get tracksDistance => $composableBuilder(
+    column: $table.tracksDistance,
     builder: (column) => column,
   );
 
@@ -5716,6 +5851,8 @@ class $$ExercisesTableTableManager
                 Value<WeightEntry> weightEntry = const Value.absent(),
                 Value<LoadingMode> preferredLoadingMode = const Value.absent(),
                 Value<double> bodyweightFactor = const Value.absent(),
+                Value<bool> isTimed = const Value.absent(),
+                Value<bool> tracksDistance = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -5731,6 +5868,8 @@ class $$ExercisesTableTableManager
                 weightEntry: weightEntry,
                 preferredLoadingMode: preferredLoadingMode,
                 bodyweightFactor: bodyweightFactor,
+                isTimed: isTimed,
+                tracksDistance: tracksDistance,
                 videoUrl: videoUrl,
                 isCustom: isCustom,
                 isArchived: isArchived,
@@ -5748,6 +5887,8 @@ class $$ExercisesTableTableManager
                 Value<WeightEntry> weightEntry = const Value.absent(),
                 Value<LoadingMode> preferredLoadingMode = const Value.absent(),
                 Value<double> bodyweightFactor = const Value.absent(),
+                Value<bool> isTimed = const Value.absent(),
+                Value<bool> tracksDistance = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -5763,6 +5904,8 @@ class $$ExercisesTableTableManager
                 weightEntry: weightEntry,
                 preferredLoadingMode: preferredLoadingMode,
                 bodyweightFactor: bodyweightFactor,
+                isTimed: isTimed,
+                tracksDistance: tracksDistance,
                 videoUrl: videoUrl,
                 isCustom: isCustom,
                 isArchived: isArchived,

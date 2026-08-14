@@ -19,10 +19,14 @@ enum SetField { weight, reps, duration, distance }
 /// category but is prescribed in seconds, so it needs a duration column where
 /// a Push-Up needs reps. Deliberately capped at two columns: three steppers do
 /// not fit a 320pt phone.
+/// [tracksDistance] marks a loaded carry — a Farmer's Walk is `strength`
+/// category but is measured in metres, so distance replaces reps as its volume
+/// unit exactly as [timed] replaces them with a hold time.
 List<SetField> setFieldsFor({
   required ExerciseCategory category,
   required LoadingMode loadingMode,
   bool timed = false,
+  bool tracksDistance = false,
 }) => switch (category) {
   ExerciseCategory.cardio => const [SetField.duration, SetField.distance],
   ExerciseCategory.stretching => const [SetField.duration],
@@ -30,23 +34,29 @@ List<SetField> setFieldsFor({
   // it is filed under. A `strength` exercise the user marks bodyweight (e.g. an
   // Inverted Row) must NOT keep demanding a weight — drive this off the loading
   // mode, not the category enum.
-  ExerciseCategory.bodyweight ||
-  ExerciseCategory.strength when loadingMode == LoadingMode.bodyweight =>
-    timed ? const [SetField.duration] : const [SetField.reps],
+  ExerciseCategory.bodyweight || ExerciseCategory.strength
+      when loadingMode == LoadingMode.bodyweight =>
+    timed
+        ? const [SetField.duration]
+        : (tracksDistance ? const [SetField.distance] : const [SetField.reps]),
   ExerciseCategory.bodyweight || ExerciseCategory.strength =>
     timed
         ? const [SetField.weight, SetField.duration]
-        : const [SetField.weight, SetField.reps],
+        : (tracksDistance
+              ? const [SetField.weight, SetField.distance]
+              : const [SetField.weight, SetField.reps]),
 };
 
 /// Whether an exercise is logged by hold time instead of reps. Prefers what the
 /// sets actually contain; falls back to the prescription for an empty exercise.
 bool isTimedExercise({
+  required bool exerciseIsTimed,
   required Iterable<SetEntry> sets,
   required int? targetDurationSec,
   required int? minReps,
   required int? maxReps,
 }) {
+  if (exerciseIsTimed) return true;
   if (sets.isNotEmpty) {
     return sets.any((set) => set.durationSec != null) &&
         sets.every((set) => set.reps == null);
@@ -57,6 +67,10 @@ bool isTimedExercise({
 /// Completion is derived from the fields that make this kind of set useful.
 /// Kept pure so session orchestration can detect the incomplete → complete
 /// transition without introducing another persisted source of truth.
+/// [timed] and [tracksDistance] must match what [setFieldsFor] renders. The
+/// editor nulls any field it hides, so demanding reps from an exercise whose
+/// only volume column is a hold time or a distance strands every set as
+/// incomplete and the rest timer never fires — the same trap `cardio` had.
 bool isSetComplete({
   required ExerciseCategory category,
   required LoadingMode loadingMode,
@@ -64,18 +78,25 @@ bool isSetComplete({
   double? weightValue,
   int? durationSec,
   double? distanceMeters,
+  bool timed = false,
+  bool tracksDistance = false,
 }) => switch (category) {
   ExerciseCategory.cardio =>
     (durationSec ?? 0) > 0 && (distanceMeters ?? 0) > 0,
   ExerciseCategory.stretching => (durationSec ?? 0) > 0,
-  // Pure bodyweight completes on reps or hold time alone — a bodyweight set has
+  // Pure bodyweight completes on its volume column alone — a bodyweight set has
   // no weight to enter, so requiring weight > 0 would strand it as incomplete
   // (and never fire the rest timer). Gate on loading mode, not category.
-  ExerciseCategory.bodyweight ||
-  ExerciseCategory.strength when loadingMode == LoadingMode.bodyweight =>
-    (reps ?? 0) > 0 || (durationSec ?? 0) > 0,
-  ExerciseCategory.bodyweight ||
-  ExerciseCategory.strength => (reps ?? 0) > 0 && (weightValue ?? 0) > 0,
+  ExerciseCategory.bodyweight || ExerciseCategory.strength
+      when loadingMode == LoadingMode.bodyweight =>
+    (reps ?? 0) > 0 || (durationSec ?? 0) > 0 || (distanceMeters ?? 0) > 0,
+  ExerciseCategory.bodyweight || ExerciseCategory.strength =>
+    (weightValue ?? 0) > 0 &&
+        (timed
+            ? (durationSec ?? 0) > 0
+            : tracksDistance
+            ? (distanceMeters ?? 0) > 0
+            : (reps ?? 0) > 0),
 };
 
 /// Columns for a whole exercise: the union of what each of its sets needs, so
@@ -85,11 +106,17 @@ List<SetField> setColumnsFor({
   required ExerciseCategory category,
   required Iterable<LoadingMode> loadingModes,
   bool timed = false,
+  bool tracksDistance = false,
 }) {
   final used = <SetField>{};
   for (final mode in loadingModes) {
     used.addAll(
-      setFieldsFor(category: category, loadingMode: mode, timed: timed),
+      setFieldsFor(
+        category: category,
+        loadingMode: mode,
+        timed: timed,
+        tracksDistance: tracksDistance,
+      ),
     );
   }
   return [
@@ -260,6 +287,7 @@ class SetRow extends StatefulWidget {
     required this.headerWeightEntry,
     required this.headerSideCount,
     required this.timed,
+    this.tracksDistance = false,
     required this.onCommit,
     required this.onOpenDetails,
     this.suggestion,
@@ -278,6 +306,9 @@ class SetRow extends StatefulWidget {
   final WeightEntry headerWeightEntry;
   final int headerSideCount;
   final bool timed;
+
+  /// A loaded carry logs metres instead of reps — see [setFieldsFor].
+  final bool tracksDistance;
 
   final Future<void> Function(SetRowDraft draft) onCommit;
   final VoidCallback onOpenDetails;
@@ -317,6 +348,7 @@ class _SetRowState extends State<SetRow> {
     category: widget.category,
     loadingMode: widget.set.loadingMode,
     timed: widget.timed,
+    tracksDistance: widget.tracksDistance,
   );
 
   @override
@@ -428,6 +460,8 @@ class _SetRowState extends State<SetRow> {
     weightValue: _doubleOrNull(_weight.text),
     durationSec: int.tryParse(_duration.text.trim()),
     distanceMeters: _doubleOrNull(_distance.text),
+    timed: widget.timed,
+    tracksDistance: widget.tracksDistance,
   );
 
   void _applySuggestion() {

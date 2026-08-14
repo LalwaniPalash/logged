@@ -297,9 +297,22 @@ void main() {
   });
 
   test('isTimedExercise reads the sets first, then the prescription', () {
+    expect(
+      isTimedExercise(
+        exerciseIsTimed: true,
+        sets: const [],
+        targetDurationSec: null,
+        minReps: null,
+        maxReps: null,
+      ),
+      isTrue,
+      reason:
+          'a new custom exercise marked timed must resolve as timed before it has any history',
+    );
     // Empty Plank: only the 90s/no-reps prescription can say it is timed.
     expect(
       isTimedExercise(
+        exerciseIsTimed: false,
         sets: const [],
         targetDurationSec: 90,
         minReps: null,
@@ -310,6 +323,7 @@ void main() {
     // A rep target wins even when a duration is also prescribed.
     expect(
       isTimedExercise(
+        exerciseIsTimed: false,
         sets: const [],
         targetDurationSec: 90,
         minReps: 8,
@@ -320,6 +334,7 @@ void main() {
     // Logged sets outrank the prescription.
     expect(
       isTimedExercise(
+        exerciseIsTimed: false,
         sets: [buildSet(setNumber: 1, reps: 8)],
         targetDurationSec: 90,
         minReps: null,

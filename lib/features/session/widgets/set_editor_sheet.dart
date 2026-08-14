@@ -59,6 +59,7 @@ class SetEditorSheet extends StatefulWidget {
     required this.effectiveBodyweightKg,
     required this.primaryMuscles,
     this.timed = false,
+    this.tracksDistance = false,
   });
 
   final String exerciseName;
@@ -66,6 +67,7 @@ class SetEditorSheet extends StatefulWidget {
 
   /// Exercise is logged by hold time rather than reps (e.g. Plank).
   final bool timed;
+  final bool tracksDistance;
   final WeightUnit defaultUnit;
   final WeightEntry defaultWeightEntry;
   final LoadingMode defaultLoadingMode;
@@ -131,7 +133,13 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
   /// the exercise is categorised — an assisted pull-up may sit under `strength`.
   bool get _showsLoadingMode => _isLifting;
   bool get _showsWeight => _isLifting && _loadingMode != LoadingMode.bodyweight;
-  bool get _showsReps => _isLifting;
+  /// Save nulls any field this hides, so a hidden field must still round-trip a
+  /// value the set ALREADY carries — [_showsDuration] and [_showsDistance] both
+  /// guard that way. Without the same guard a stretching set (never `_isLifting`)
+  /// or a set on a newly-timed exercise silently loses its logged reps the next
+  /// time the sheet is saved.
+  bool get _showsReps =>
+      (_isLifting && !widget.timed) || widget.existing?.reps != null;
 
   /// Timed holds (Plank is `bodyweight` but prescribed in seconds) and any set
   /// that already carries a duration must be able to edit it.
@@ -143,6 +151,7 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
       widget.seed?.durationSec != null;
   bool get _showsDistance =>
       widget.category == ExerciseCategory.cardio ||
+      widget.tracksDistance ||
       widget.existing?.distanceMeters != null;
   bool get _showsMuscleBias => widget.primaryMuscles.length >= 2;
 
@@ -297,13 +306,13 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
     Navigator.pop(
       context,
       SetEditorResult(
-        reps: int.tryParse(_reps.text),
+        reps: _showsReps ? int.tryParse(_reps.text) : null,
         weight: _loadingMode == LoadingMode.bodyweight ? null : parsedWeight,
         unit: _unit,
         weightEntry: _weightEntry,
         loadingMode: _loadingMode,
-        distanceMeters: double.tryParse(_distance.text),
-        durationSec: int.tryParse(_duration.text),
+        distanceMeters: _showsDistance ? double.tryParse(_distance.text) : null,
+        durationSec: _showsDuration ? int.tryParse(_duration.text) : null,
         sideCount: _eachSide ? 2 : 1,
         rpe: double.tryParse(_rpe.text),
         isWarmup: _warmup,

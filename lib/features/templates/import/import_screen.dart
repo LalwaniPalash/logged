@@ -113,6 +113,9 @@ class _ProgramImportScreenState extends ConsumerState<ProgramImportScreen> {
                 targetSets: row.sets,
                 minReps: row.minReps,
                 maxReps: row.maxReps,
+                targetDurationSec: row.targetDurationSec,
+                targetDistanceMeters: row.targetDistanceMeters,
+                sidesPerSet: row.sidesPerSet,
                 restSeconds: row.restSeconds,
                 rpe: row.rpe,
                 notes: row.notes,
@@ -149,7 +152,8 @@ class _ProgramImportScreenState extends ConsumerState<ProgramImportScreen> {
           Text('CSV columns', style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           const SelectableText(
-            'day,exercise,sets,min_reps,max_reps,rest_sec,rpe,notes',
+            'day,exercise,sets,min_reps,max_reps,duration_sec,distance_m,'
+            'sides,rest_sec,rpe,notes',
           ),
           const SizedBox(height: 12),
           TextField(

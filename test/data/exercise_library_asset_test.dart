@@ -194,6 +194,52 @@ void main() {
     final rows = await database.select(database.exercises).get();
     final expected = (jsonDecode(assetFile.readAsStringSync()) as List).length;
     expect(rows, hasLength(expected));
+
+    // The timed/distance flags are asset-driven, so assert them against the
+    // REAL library rather than a fixture — a fixture cannot catch a renamed or
+    // missing entry, which is how four of the spec's six named holds turned out
+    // not to exist. Copenhagen Plank is the user-reported case: it must log a
+    // hold time, not 30 reps per side.
+    final byName = {for (final row in rows) row.name: row};
+    for (final hold in const [
+      'Plank',
+      'Side Plank',
+      'Copenhagen Plank',
+      'Hollow Body Hold',
+      'Towel Dead Hang',
+      'Side Bridge',
+    ]) {
+      expect(byName[hold], isNotNull, reason: '$hold missing from the library');
+      expect(byName[hold]!.isTimed, isTrue, reason: '$hold must be timed');
+    }
+    // Audit F2: a farmer's carry filed under `strength` could never record
+    // distance.
+    for (final carry in const [
+      'Farmer Carry',
+      "Farmer's Walk",
+      'Suitcase Carry',
+      'Yoke Walk',
+    ]) {
+      expect(byName[carry], isNotNull, reason: '$carry missing');
+      expect(
+        byName[carry]!.tracksDistance,
+        isTrue,
+        reason: '$carry must track distance',
+      );
+    }
+    // Every stretch is held for time; cardio always covers ground.
+    expect(
+      rows
+          .where((row) => row.category == ExerciseCategory.stretching)
+          .every((row) => row.isTimed),
+      isTrue,
+    );
+    expect(
+      rows
+          .where((row) => row.category == ExerciseCategory.cardio)
+          .every((row) => row.tracksDistance),
+      isTrue,
+    );
   });
 
   test(

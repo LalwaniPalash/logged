@@ -21,6 +21,9 @@ class Exercises extends Table {
   TextColumn get preferredLoadingMode =>
       textEnum<LoadingMode>().withDefault(const Constant('external'))();
   RealColumn get bodyweightFactor => real().withDefault(const Constant(1.0))();
+  BoolColumn get isTimed => boolean().withDefault(const Constant(false))();
+  BoolColumn get tracksDistance =>
+      boolean().withDefault(const Constant(false))();
   // Optional demo/form video (e.g. a YouTube link) that belongs to the exercise
   // itself, so it shows in any workout the exercise appears in. A per-template
   // override still lives on TemplateExercises/SessionExercises.formUrl.
@@ -150,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'logged'));
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -317,10 +320,19 @@ class AppDatabase extends _$AppDatabase {
         }
 
         await migrator.alterTable(TableMigration(setEntries));
-        await migrator.alterTable(TableMigration(exercises));
+        await migrator.alterTable(
+          TableMigration(
+            exercises,
+            newColumns: [exercises.isTimed, exercises.tracksDistance],
+          ),
+        );
       }
       if (from < 11) {
         await rescaleStoredMuscleBiasWeights(this);
+      }
+      if (from < 12 && (from < 8 || from >= 10)) {
+        await migrator.addColumn(exercises, exercises.isTimed);
+        await migrator.addColumn(exercises, exercises.tracksDistance);
       }
     },
     beforeOpen: (details) async {

@@ -1474,7 +1474,8 @@
       "spinal_erectors",
       "serratus_anterior"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "isTimed": true
   },
   {
     "name": "Side Plank",
@@ -1488,7 +1489,8 @@
       "glute_med_min",
       "serratus_anterior"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "isTimed": true
   },
   {
     "name": "Hollow Body Hold",
@@ -1501,7 +1503,8 @@
     "secondaryMuscles": [
       "obliques"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "isTimed": true
   },
   {
     "name": "Dead Bug",
@@ -1701,7 +1704,8 @@
       "glute_max",
       "hamstrings"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "isTimed": true
   },
   {
     "name": "Back Extension",
@@ -1822,7 +1826,8 @@
       "calves"
     ],
     "defaultUnit": "kg",
-    "weightEntry": "perSide"
+    "weightEntry": "perSide",
+    "tracksDistance": true
   },
   {
     "name": "Trap Bar Deadlift",
@@ -2015,7 +2020,8 @@
       "spinal_erectors",
       "glute_max"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Box Jump",
@@ -3018,7 +3024,8 @@
       "hamstrings",
       "abs"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "isTimed": true
   },
   {
     "name": "Balance Drill",
@@ -6481,7 +6488,8 @@
       "quads",
       "upper_traps"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Fast Skipping",
@@ -10771,7 +10779,8 @@
       "quads",
       "upper_traps"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Rickshaw Deadlift",
@@ -11567,7 +11576,8 @@
     "secondaryMuscles": [
       "front_delts"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "isTimed": true
   },
   {
     "name": "Side Hop-Sprint",
@@ -14306,7 +14316,8 @@
       "hamstrings",
       "spinal_erectors"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Zercher Squats",
@@ -15003,7 +15014,8 @@
     ],
     "defaultUnit": "kg",
     "preferredLoadingMode": "bodyweight",
-    "bodyweightFactor": 0.55
+    "bodyweightFactor": 0.55,
+    "isTimed": true
   },
   {
     "name": "Copenhagen Hip Adduction",
@@ -15535,7 +15547,8 @@
       "glute_max",
       "calves"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Farmer Carry",
@@ -15552,7 +15565,8 @@
       "calves"
     ],
     "defaultUnit": "kg",
-    "weightEntry": "perSide"
+    "weightEntry": "perSide",
+    "tracksDistance": true
   },
   {
     "name": "Suitcase Carry",
@@ -15568,7 +15582,8 @@
       "spinal_erectors",
       "calves"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Overhead Carry",
@@ -15585,7 +15600,8 @@
       "triceps",
       "calves"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Waiter's Carry",
@@ -15601,7 +15617,8 @@
       "obliques",
       "triceps"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Reeves Deadlift",
@@ -16273,7 +16290,8 @@
       "spinal_erectors",
       "calves"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "RKC Plank",
@@ -16290,7 +16308,8 @@
     ],
     "defaultUnit": "kg",
     "preferredLoadingMode": "bodyweight",
-    "bodyweightFactor": 0.65
+    "bodyweightFactor": 0.65,
+    "isTimed": true
   },
   {
     "name": "Body Saw",
@@ -16567,7 +16586,8 @@
     ],
     "defaultUnit": "kg",
     "preferredLoadingMode": "bodyweightAdded",
-    "bodyweightFactor": 1.0
+    "bodyweightFactor": 1.0,
+    "isTimed": true
   },
   {
     "name": "Fat-Grip Dead Hang",
@@ -16583,7 +16603,8 @@
     ],
     "defaultUnit": "kg",
     "preferredLoadingMode": "bodyweightAdded",
-    "bodyweightFactor": 1.0
+    "bodyweightFactor": 1.0,
+    "isTimed": true
   },
   {
     "name": "Bottom-Up Kettlebell Carry",
@@ -16599,7 +16620,8 @@
       "abs",
       "obliques"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Fingertip Push-Up",
@@ -17309,7 +17331,8 @@
       "calves",
       "front_delts"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Bottom-Up Carry",
@@ -17326,7 +17349,8 @@
       "obliques",
       "triceps"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Cross-Body Carry",
@@ -17343,7 +17367,8 @@
       "spinal_erectors",
       "glute_max"
     ],
-    "defaultUnit": "kg"
+    "defaultUnit": "kg",
+    "tracksDistance": true
   },
   {
     "name": "Landmine 180",

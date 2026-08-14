@@ -1815,3 +1815,88 @@ the exact-equality lookup missed and the week was dropped. The new calendar arit
 **Correction to the Phase 2 note above:** the "NOT done: ground rule 8 / commit before Phase 2" item
 was already stale when written — Phase 1 landed as `1d9c03e`, whose message states it is the
 baseline for Phase 2. Phase 1 and Phase 2 are separate commits; nothing needed splitting.
+
+## Audit remediation — PHASE 3 (spec: `tasks/spec-audit-fixes.md`) — 2026-08-14
+
+Implemented by Codex. Both Phase 3 items landed as specified:
+
+- [x] **3.1 F1+F2** — schemaVersion bumped to **12** with new `exercises.isTimed` and
+      `exercises.tracksDistance` columns; backup writer/importer bumped to schema 12 with false
+      defaults for older backups; fresh seeding now writes the reviewed timed/distance defaults; a
+      one-time bundled backfill `timedExerciseBackfilled` corrects existing installs and is called
+      from `main()`. `isTimedExercise` now prefers the exercise column, `SetEditorSheet` accepts
+      `tracksDistance`, and the custom-exercise modal adds **Logged in seconds** /
+      **Tracks distance** switches plus category helper text.
+- [x] **3.1 launch-sync guard** — `enrichBundledExercises()` was deliberately left blind to
+      `isTimed` / `tracksDistance`. Only the one-time backfill writes those columns for bundled rows,
+      so a later user choice cannot be silently reverted on every app launch.
+- [x] **3.1 bounded asset edit** — only `Plank` and `Side Plank` in
+      `assets/data/exercise_library.json` received `"isTimed": true`. The other requested names were
+      not exact matches in the real asset, so they were intentionally left untouched rather than
+      guessed (`Dead Hang`, `Wall Sit`, `L-Sit`, `Hollow Hold`).
+- [x] **3.2 P** — CSV program import now accepts optional `duration_sec`, `distance_m`, and `sides`
+      columns, keeps per-row validation/errors, and threads the parsed values into
+      `TemplateExercisesCompanion` as `targetDurationSec`, `targetDistanceMeters`, and `sidesPerSet`.
+      The import-screen sample header was updated accordingly.
+
+- **Verified:** targeted tests added for the seed path, the one-time timed/distance backfill, v11 →
+  v12 migration, backup round-trip/defaults, parser duration/sides validation, and the zero-history
+  `exerciseIsTimed` regression. `flutter analyze` is clean, and `flutter test` is green at
+  **258 tests**.
+- **NOT done:** the spec's manual real-device check — create a custom `Copenhagen Plank`, toggle
+  **Logged in seconds**, log `30 s` each side in an ad-hoc workout, then inspect the on-device DB for
+  `duration_sec = 30`, `side_count = 2`, `reps IS NULL`.
+- **NOT done:** any real-device backup import/export pass. The backup schema/defaults are test-covered,
+  but I did not restore an actual ≤11 backup on hardware and inspect the post-import exercise rows.
+
+### Phase 3 review (Claude, same day)
+
+`flutter analyze` clean, `flutter test` **264 green** (codex handed over 258). Reviewed the whole
+diff by hand and ran a Codex Mode-B pass in parallel. Four real defects, all fixed with tests.
+
+**Asset audit — the spec's list was wrong, and it omitted the actual bug.**
+Four of the six holds the spec names do not exist in `exercise_library.json`: `Dead Hang`,
+`Wall Sit` and `L-Sit` are absent entirely, and `Hollow Hold` is really `Hollow Body Hold`. Codex
+correctly reported the misses instead of inventing rows. More importantly **`Copenhagen Plank` is
+already a bundled `bodyweight` exercise and the spec never listed it** — F1 was written up as a
+*custom*-exercise problem, so following the spec literally would have shipped Phase 3 with the
+user's own reported bug still live. Marked 10 holds `isTimed` and 15 loaded carries
+`tracksDistance` (audit F2), verified name-by-name against the asset. Deliberately excluded
+`Leverage Iso Row` (isolateral, not isometric), the `Hang Clean`/`Hang Snatch` family (a starting
+position, not a hold), and the ambiguous locomotion drills. Pinned in the real-asset seeding test —
+a fixture cannot catch a renamed entry, which is how the spec's list went stale.
+
+- [x] **Seed and backfill disagreed on `tracksDistance`.** The backfill derived it from
+      `category == cardio` alone while the seed path read the asset, so a `Farmer Carry` (category
+      `strength`) tracked distance on a fresh install and silently did not on an upgraded one — F2
+      would have stayed broken for every existing user. Latent until the asset gained a
+      strength-category carry, which my audit added. Fixed by extracting the one rule both paths now
+      call (`lib/data/services/bundled_logging_flags.dart`).
+- [x] **Saving a set destroyed reps it already carried.** Codex changed save to null every hidden
+      field, but `_showsReps` had no existing-value guard while its siblings `_showsDuration` and
+      `_showsDistance` both did. A stretching set (never `_isLifting`) logged with reps lost them on
+      any later edit. Verified red first: `Expected: <12>, Actual: <null>`.
+- [x] **A timed or distance-tracking strength lift could never complete.** `isSetComplete` took no
+      `timed`/`tracksDistance` at all and demanded `reps > 0` for the whole strength/bodyweight
+      branch — but the editor now hides and nulls reps for those exercises, so the set stayed
+      incomplete forever and the rest timer never fired. Exactly the `cardio` trap the audit
+      describes. Threaded both flags through `setFieldsFor`, `setColumnsFor` and `isSetComplete`;
+      distance now replaces reps as a carry's volume column the way duration does for a hold.
+- [x] **CSV import created custom exercises with both columns at defaults** (Codex Mode-B finding 3).
+      The exercise row outlives the template and is reachable ad hoc, where a prescription cannot
+      speak for it. Flags are now OR-ed across every row naming the exercise.
+- [x] **`duration_sec` / `distance_m` accepted 0 and negatives** (finding 4) while the sibling
+      `rest_sec` correctly rejected them. Bounded; error text updated and its assertion realigned.
+
+Codex Mode-B finding 1 (bundled holds left untagged) was already resolved by the asset audit above —
+it reviewed a diff snapshotted before that work. Its clearance of `enrichBundledExercises` and the
+backup version path matches my own read: the new columns are deliberately outside the launch-time
+sync, so a bundled row cannot be clobbered.
+
+**Migration coverage is real:** v9→v12 exercises the `alterTable` branch and v2/v5/v6/v7 the
+`addColumn` branch, so the awkward `from < 12 && (from < 8 || from >= 10)` guard is proven on both
+sides. That condition is precisely "the v8–v9 rebuild did not run" — correct, but obscure enough
+that the next migration should re-derive it rather than copy it.
+
+- **Still NOT done** (both carried from codex's record): the real-device Copenhagen Plank check and
+  a real-device restore of a ≤11 backup. Neither is verified on hardware.

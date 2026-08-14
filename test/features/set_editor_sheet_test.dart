@@ -483,4 +483,113 @@ void main() {
 
     expect(result!.delete, isTrue);
   });
+
+  testWidgets('saving a stretching set preserves reps it already carries', (
+    tester,
+  ) async {
+    // Save nulls every field the sheet hides. A stretching exercise is never
+    // `_isLifting`, so the reps field does not render — but a set logged with
+    // reps must survive an edit that only touched, say, the duration. Without
+    // the existing-value guard this silently destroyed the user's rep count.
+    SetEditorResult? result;
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<SetEditorResult>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => SetEditorSheet(
+                    exerciseName: 'Hip Flexor Stretch',
+                    category: ExerciseCategory.stretching,
+                    defaultUnit: WeightUnit.kg,
+                    defaultWeightEntry: WeightEntry.total,
+                    defaultLoadingMode: LoadingMode.external,
+                    existing: buildSet(reps: 12, weightValue: null),
+                    seed: null,
+                    effectiveBodyweightKg: null,
+                    primaryMuscles: const [],
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save set'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result!.reps, 12);
+  });
+
+  testWidgets('a timed exercise with no rep history saves duration, not reps', (
+    tester,
+  ) async {
+    // The Copenhagen Plank case: marked timed at creation, no history at all.
+    // Reps must not be invented, and the hold time must round-trip.
+    SetEditorResult? result;
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<SetEditorResult>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => SetEditorSheet(
+                    exerciseName: 'Copenhagen Plank',
+                    category: ExerciseCategory.bodyweight,
+                    timed: true,
+                    defaultUnit: WeightUnit.kg,
+                    defaultWeightEntry: WeightEntry.total,
+                    defaultLoadingMode: LoadingMode.bodyweight,
+                    existing: null,
+                    seed: null,
+                    effectiveBodyweightKg: null,
+                    primaryMuscles: const [],
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('REPS'), findsNothing);
+    expect(find.text('HOLD TIME'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Duration'),
+      '30',
+    );
+    await tester.pumpAndSettle();
+    // A brand-new set: the confirm button reads "Add set", and so does the
+    // sheet title, so target the button itself.
+    await tester.tap(find.widgetWithText(FilledButton, 'Add set'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result!.reps, isNull);
+    expect(result!.durationSec, 30);
+  });
 }

@@ -11,6 +11,8 @@ import 'package:logged/data/services/backup_service.dart';
 import 'package:logged/data/services/exercise_anatomy_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('backup payload round-trips all linked workout data', () async {
     final source = AppDatabase(NativeDatabase.memory());
     final target = AppDatabase(NativeDatabase.memory());
@@ -27,6 +29,8 @@ void main() {
             secondaryMuscles: Value(jsonEncode(['front_delts', 'triceps'])),
             defaultUnit: const Value(WeightUnit.kg),
             weightEntry: const Value(WeightEntry.perSide),
+            isTimed: const Value(true),
+            tracksDistance: const Value(true),
             videoUrl: const Value('https://youtu.be/demo'),
             isCustom: const Value(false),
             isArchived: const Value(false),
@@ -78,7 +82,7 @@ void main() {
           ),
         );
     final payload = await BackupService(source).exportPayload();
-    expect(payload['schemaVersion'], 11);
+    expect(payload['schemaVersion'], 12);
     await BackupService(target).replaceFromPayload(payload);
     final exercises = await target.select(target.exercises).get();
     expect(exercises, hasLength(1));
@@ -89,6 +93,8 @@ void main() {
       'triceps',
     ]);
     expect(exercises.single.weightEntry, WeightEntry.perSide);
+    expect(exercises.single.isTimed, isTrue);
+    expect(exercises.single.tracksDistance, isTrue);
     expect(await target.select(target.sessions).get(), hasLength(1));
     final sets = await target.select(target.setEntries).get();
     expect(sets, hasLength(1));
@@ -104,6 +110,43 @@ void main() {
     expect(bodyweights, hasLength(1));
     expect(bodyweights.single.value, 80);
   });
+
+  test(
+    'v11 backup imports missing timed/distance keys with false defaults',
+    () async {
+      final source = AppDatabase(NativeDatabase.memory());
+      final target = AppDatabase(NativeDatabase.memory());
+      addTearDown(source.close);
+      addTearDown(target.close);
+
+      await source
+          .into(source.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'My Imported Hold',
+              category: ExerciseCategory.bodyweight,
+              muscleGroup: 'custom',
+              isCustom: const Value(true),
+            ),
+          );
+
+      final payload = await BackupService(source).exportPayload();
+      payload['schemaVersion'] = 11;
+      for (final exercise
+          in (payload['exercises'] as List<dynamic>)
+              .cast<Map<String, dynamic>>()) {
+        exercise.remove('isTimed');
+        exercise.remove('tracksDistance');
+      }
+
+      await BackupService(target).replaceFromPayload(payload);
+
+      final exercise = await target.select(target.exercises).getSingle();
+      expect(exercise.name, 'My Imported Hold');
+      expect(exercise.isTimed, isFalse);
+      expect(exercise.tracksDistance, isFalse);
+    },
+  );
 
   test('v2 backup imports and enriches bundled exercise anatomy', () async {
     final source = AppDatabase(NativeDatabase.memory());

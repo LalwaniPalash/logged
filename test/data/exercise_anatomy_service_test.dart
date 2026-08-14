@@ -369,4 +369,156 @@ void main() {
       expect(pullUp.preferredLoadingMode, LoadingMode.bodyweight);
     },
   );
+
+  test(
+    'backfills timed and distance flags once, correcting bundled rows only',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Plank',
+              category: ExerciseCategory.bodyweight,
+              muscleGroup: 'core',
+            ),
+          );
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Hip Flexor Stretch',
+              category: ExerciseCategory.stretching,
+              muscleGroup: 'hips',
+            ),
+          );
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Stationary Bike',
+              category: ExerciseCategory.cardio,
+              muscleGroup: 'legs',
+            ),
+          );
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'My Plank',
+              category: ExerciseCategory.bodyweight,
+              muscleGroup: 'custom',
+              isCustom: const Value(true),
+            ),
+          );
+
+      const asset = '''
+[
+  {"name": "Plank", "isTimed": true},
+  {"name": "Hip Flexor Stretch"},
+  {"name": "Stationary Bike"}
+]
+''';
+      final service = ExerciseAnatomyService(
+        database,
+        loadAsset: () async => asset,
+      );
+
+      expect(await service.backfillTimedExerciseOnce(), 3);
+
+      final firstPass = await database.select(database.exercises).get();
+      expect(
+        firstPass.singleWhere((exercise) => exercise.name == 'Plank').isTimed,
+        isTrue,
+        reason:
+            'the backfill must CORRECT bundled rows already stored with false',
+      );
+      expect(
+        firstPass
+            .singleWhere((exercise) => exercise.name == 'Hip Flexor Stretch')
+            .isTimed,
+        isTrue,
+      );
+      expect(
+        firstPass
+            .singleWhere((exercise) => exercise.name == 'Stationary Bike')
+            .tracksDistance,
+        isTrue,
+      );
+      expect(
+        firstPass
+            .singleWhere((exercise) => exercise.name == 'My Plank')
+            .isTimed,
+        isFalse,
+        reason: 'custom exercises must never be rewritten by the library',
+      );
+
+      await (database.update(database.exercises)
+            ..where((exercise) => exercise.name.equals('Plank')))
+          .write(const ExercisesCompanion(isTimed: Value(false)));
+
+      expect(await service.backfillTimedExerciseOnce(), 0);
+      final secondPass = await database.select(database.exercises).get();
+      expect(
+        secondPass.singleWhere((exercise) => exercise.name == 'Plank').isTimed,
+        isFalse,
+        reason: 'the one-time guard must not revert later user edits',
+      );
+    },
+  );
+
+  test(
+    'backfill honours an asset distance flag on a strength-category carry',
+    () async {
+      // The backfill originally derived tracksDistance from `category == cardio`
+      // alone while the seed path read the asset. A Farmer Carry is `strength`,
+      // so it tracked distance on a fresh install and silently did not on an
+      // upgraded one — audit F2 would have stayed broken for existing users.
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Farmer Carry',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'forearms',
+            ),
+          );
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Side Bridge',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'core',
+            ),
+          );
+
+      const asset = '''
+[
+  {"name": "Farmer Carry", "tracksDistance": true},
+  {"name": "Side Bridge", "isTimed": true}
+]
+''';
+      final service = ExerciseAnatomyService(
+        database,
+        loadAsset: () async => asset,
+      );
+
+      expect(await service.backfillTimedExerciseOnce(), 2);
+
+      final rows = await database.select(database.exercises).get();
+      final carry = rows.singleWhere((row) => row.name == 'Farmer Carry');
+      expect(carry.tracksDistance, isTrue);
+      expect(carry.isTimed, isFalse);
+
+      final bridge = rows.singleWhere((row) => row.name == 'Side Bridge');
+      expect(bridge.isTimed, isTrue);
+      expect(bridge.tracksDistance, isFalse);
+    },
+  );
 }

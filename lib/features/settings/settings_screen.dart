@@ -159,6 +159,8 @@ class SettingsScreen extends ConsumerWidget {
     var secondary = <MuscleId>{};
     var musclesTouched = false;
     var loadingMode = LoadingMode.external;
+    var isTimed = false;
+    var tracksDistance = false;
     final shouldSave = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -250,6 +252,34 @@ class SettingsScreen extends ConsumerWidget {
                                         setDialogState(() => category = item),
                                   ),
                               ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _categoryLoggingHelper(category),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Logged in seconds'),
+                              subtitle: const Text(
+                                'Show a duration field instead of reps for this exercise.',
+                              ),
+                              value: isTimed,
+                              onChanged: (value) =>
+                                  setDialogState(() => isTimed = value),
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Tracks distance'),
+                              subtitle: const Text(
+                                'Keep distance available even when this exercise is not cardio.',
+                              ),
+                              value: tracksDistance,
+                              onChanged: (value) =>
+                                  setDialogState(() => tracksDistance = value),
                             ),
                             const SizedBox(height: 20),
                             const _FieldLabel('Default load'),
@@ -387,6 +417,8 @@ class SettingsScreen extends ConsumerWidget {
             defaultUnit: const Value(WeightUnit.kg),
             preferredLoadingMode: Value(loadingMode),
             bodyweightFactor: Value(factor),
+            isTimed: Value(isTimed),
+            tracksDistance: Value(tracksDistance),
             videoUrl: Value(
               videoUrl.text.trim().isEmpty ? null : videoUrl.text.trim(),
             ),
@@ -988,6 +1020,17 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
+
+String _categoryLoggingHelper(ExerciseCategory category) => switch (category) {
+  ExerciseCategory.cardio =>
+    'Cardio sets need both a duration and a distance to count as complete.',
+  ExerciseCategory.stretching =>
+    'Stretching sets are logged in seconds, not reps.',
+  ExerciseCategory.bodyweight =>
+    'Bodyweight sets count when you log reps or seconds.',
+  ExerciseCategory.strength =>
+    'Strength sets count when you log reps and load.',
+};
 
 class _ReminderSettingsCard extends StatelessWidget {
   const _ReminderSettingsCard({

@@ -8,6 +8,9 @@ class ParsedProgramRow {
     required this.sets,
     this.minReps,
     this.maxReps,
+    this.targetDurationSec,
+    this.targetDistanceMeters,
+    this.sidesPerSet,
     this.restSeconds,
     this.rpe,
     this.notes,
@@ -19,6 +22,9 @@ class ParsedProgramRow {
   final int sets;
   final int? minReps;
   final int? maxReps;
+  final int? targetDurationSec;
+  final double? targetDistanceMeters;
+  final int? sidesPerSet;
   final int? restSeconds;
   final double? rpe;
   final String? notes;
@@ -39,6 +45,20 @@ class ProgramParseResult {
 }
 
 const programCsvHeader = [
+  'day',
+  'exercise',
+  'sets',
+  'min_reps',
+  'max_reps',
+  'duration_sec',
+  'distance_m',
+  'sides',
+  'rest_sec',
+  'rpe',
+  'notes',
+];
+
+const _requiredProgramCsvHeader = [
   'day',
   'exercise',
   'sets',
@@ -87,7 +107,9 @@ ProgramParseResult _parseCsvProgram(String input) {
   final header = records.first
       .map((cell) => cell.trim().toLowerCase())
       .toList();
-  final missing = programCsvHeader.where((column) => !header.contains(column));
+  final missing = _requiredProgramCsvHeader.where(
+    (column) => !header.contains(column),
+  );
   if (missing.isNotEmpty) {
     return ProgramParseResult(
       rows: const [],
@@ -110,7 +132,9 @@ ProgramParseResult _parseCsvProgram(String input) {
     if (record.every((cell) => cell.trim().isEmpty)) continue;
     String cell(String name) {
       final position = index[name]!;
-      return position < record.length ? record[position].trim() : '';
+      return position >= 0 && position < record.length
+          ? record[position].trim()
+          : '';
     }
 
     final day = cell('day');
@@ -118,6 +142,9 @@ ProgramParseResult _parseCsvProgram(String input) {
     final sets = int.tryParse(cell('sets'));
     final minReps = _optionalInt(cell('min_reps'));
     final maxReps = _optionalInt(cell('max_reps'));
+    final targetDurationSec = _optionalInt(cell('duration_sec'));
+    final targetDistanceMeters = _optionalDouble(cell('distance_m'));
+    final sidesPerSet = _optionalInt(cell('sides'));
     final rest = _optionalInt(cell('rest_sec'));
     final rpe = _optionalDouble(cell('rpe'));
     final rowErrors = <String>[
@@ -130,6 +157,18 @@ ProgramParseResult _parseCsvProgram(String input) {
         'max_reps must be an integer',
       if (minReps != null && maxReps != null && minReps > maxReps)
         'min_reps cannot exceed max_reps',
+      // Bounded like rest_sec/rpe below. A 0 or negative prescription can
+      // never satisfy the app's own completion rules, so it must not import.
+      if (cell('duration_sec').isNotEmpty &&
+          (targetDurationSec == null || targetDurationSec <= 0))
+        'duration_sec must be a positive integer',
+      if (cell('distance_m').isNotEmpty &&
+          (targetDistanceMeters == null || targetDistanceMeters <= 0))
+        'distance_m must be a positive number',
+      if (cell('sides').isNotEmpty && sidesPerSet == null)
+        'sides must be an integer',
+      if (sidesPerSet != null && sidesPerSet != 1 && sidesPerSet != 2)
+        'sides must be 1 or 2',
       if (cell('rest_sec').isNotEmpty && (rest == null || rest < 0))
         'rest_sec must be a non-negative integer',
       if (cell('rpe').isNotEmpty && (rpe == null || rpe < 1 || rpe > 10))
@@ -149,6 +188,9 @@ ProgramParseResult _parseCsvProgram(String input) {
         sets: sets!,
         minReps: minReps,
         maxReps: maxReps,
+        targetDurationSec: targetDurationSec,
+        targetDistanceMeters: targetDistanceMeters,
+        sidesPerSet: sidesPerSet,
         restSeconds: rest,
         rpe: rpe,
         notes: cell('notes').isEmpty ? null : cell('notes'),
