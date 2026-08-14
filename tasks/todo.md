@@ -11,20 +11,20 @@ then 6, then 7. Baseline at the head of Phase 4: `flutter analyze` clean, `flutt
 
 | File | What it is |
 |---|---|
-| **`tasks/spec-phase5.md`** | **The active implementation spec.** Standalone Phase 5 brief for Codex, grounded at `0be0ba9`. Start here. |
-| `tasks/spec-audit-fixes.md` | The full phased spec, Phases 1–7. Phases 1–4 are done; its Phase 5 section is superseded by `spec-phase5.md`. Phases 6–7 still live here. |
+| **`tasks/spec-phase6.md`** | **The active implementation spec.** Standalone Phase 6 brief for Codex, grounded at `3f41587`. Start here. |
+| `tasks/spec-phase5.md` | Standalone Phase 5 brief, grounded at `0be0ba9`. Done — shipped in `a9075ed`..`6e10c58` plus the review fix `3f41587`. |
+| `tasks/spec-audit-fixes.md` | The full phased spec, Phases 1–7. Phases 1–5 are done; its Phase 5 section is superseded by `spec-phase5.md` and its Phase 6 section by `spec-phase6.md`. Phase 7 still lives here. |
 | `tasks/audit-2026-08-14.md` | Full audit: 50+ findings across 6 rounds, with evidence and file:line references. The spec's reasoning lives here. |
 | `tasks/lessons.md` | Read before touching anything. |
 | `tasks/spec-set-logging.md` | Earlier set-logging spec (historical). |
 
 ### Remaining phases at a glance
 
-- **Phase 5 — Flutter practice & set-list mechanics.** B1 (streams built in `build()` on 4 screens),
-  H1 (set numbers gap after delete), H2 (no set reorder / insert), H3 (empty set saveable),
-  B2/B3 (`details()` N+1, dashboard never rolls over at midnight). No schema change.
+- ~~**Phase 5 — Flutter practice & set-list mechanics.**~~ Done 2026-08-14.
 - **Phase 6 — Rest timer: persistent lock-screen countdown.** C1/C2. Android ongoing chronometer
-  notification, controller inversion, full-screen timer route, iOS Live Activities as optional
-  follow-up. **Ground rule 6 applies — needs a real backgrounded device.**
+  notification, controller inversion, full-screen timer route. iOS Live Activities are **out of
+  scope**, cut to a `.timeSensitive` interim — see `tasks/spec-phase6.md`.
+  **Ground rule 6 applies — needs a real backgrounded device.**
 - **Phase 7 — Lower priority / deferrable.** L1, L2, M1, I2, N1, A9, A5 (+ a batch pointing back at
   the audit doc). **A5 is a product decision — confirm before building.**
 
