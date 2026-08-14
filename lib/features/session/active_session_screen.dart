@@ -23,6 +23,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../data/providers.dart';
 import '../settings/reminder_scheduler.dart';
+import 'rest_timer_screen.dart';
 import 'widgets/plate_calculator_sheet.dart';
 import 'widgets/set_editor_sheet.dart';
 import 'rest_timer_controller.dart';
@@ -382,6 +383,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     SessionExerciseDetails detail, {
     SetEntry? existing,
     SetSeed? seed,
+    ProgressionSuggestion? suggestion,
   }) async {
     final sessionRepository = ref.read(sessionRepositoryProvider);
     final resolvedSeed = existing == null
@@ -510,7 +512,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           );
     }
     if (!wasComplete && becomesComplete) {
-      await _startRestTimer(detail);
+      await _startRestTimer(detail, suggestion: suggestion);
     }
     if (!mounted) return;
     setState(_refresh);
@@ -614,6 +616,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     SessionExerciseDetails detail,
     SetEntry set,
     SetRowDraft draft,
+    ProgressionSuggestion? suggestion,
   ) async {
     final timed = _timedForDetail(detail);
     final tracksDistance = detail.exercise.tracksDistance;
@@ -668,32 +671,46 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           notes: Value(set.notes),
         );
     if (!wasComplete && becomesComplete) {
-      await _startRestTimer(detail);
+      await _startRestTimer(detail, suggestion: suggestion);
     }
     if (!mounted) return;
     setState(_refresh);
   }
 
-  Future<void> _startRestTimer(SessionExerciseDetails detail) async {
+  Future<void> _startRestTimer(
+    SessionExerciseDetails detail, {
+    ProgressionSuggestion? suggestion,
+  }) async {
     final preferences = await ref
         .read(settingsRepositoryProvider)
         .readRestTimerPreferences();
     // Opt-out for people who log sets after training instead of resting in-app:
     // with auto-start off the countdown bar never appears.
     if (!preferences.autoStartEnabled) return;
-    final notificationsAllowed = await ref
-        .read(restTimerControllerProvider.notifier)
-        .start(
-          sessionId: widget.sessionId,
-          seconds:
-              detail.sessionExercise.restSeconds ?? preferences.defaultSeconds,
-          notificationsEnabled: preferences.notificationsEnabled,
-        );
+    final controller = ref.read(restTimerControllerProvider.notifier);
+    final notificationsAllowed = await controller.start(
+      sessionId: widget.sessionId,
+      seconds: detail.sessionExercise.restSeconds ?? preferences.defaultSeconds,
+      notificationsEnabled: preferences.notificationsEnabled,
+    );
     if (preferences.notificationsEnabled && !notificationsAllowed) {
       await ref
           .read(settingsRepositoryProvider)
           .setRestTimerNotificationsEnabled(false);
     }
+    if (!mounted) return;
+    final timerState = ref.read(restTimerControllerProvider);
+    if (!timerState.running || timerState.sessionId != widget.sessionId) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => RestTimerScreen(
+          sessionId: widget.sessionId,
+          exerciseName: detail.exercise.name,
+          nextSetNumber: _nextSetNumber(detail),
+          suggestion: suggestion,
+        ),
+      ),
+    );
   }
 
   Future<void> _finish() async {
@@ -990,10 +1007,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                   inventory: plateInventory,
                                   onAddSet: () => _addSet(detail),
                                   onRepeatSet: () => _repeatSet(detail),
-                                  onInlineCommit: (set, draft) =>
-                                      _updateInlineSet(detail, set, draft),
-                                  onEditSet: (set) =>
-                                      _openSet(detail, existing: set),
+                                  onInlineCommit: (set, draft, suggestion) =>
+                                      _updateInlineSet(
+                                        detail,
+                                        set,
+                                        draft,
+                                        suggestion,
+                                      ),
+                                  onEditSet: (set, suggestion) => _openSet(
+                                    detail,
+                                    existing: set,
+                                    suggestion: suggestion,
+                                  ),
                                   onMoveSet: _reorderSets,
                                   onInsertSetAbove: _insertSetAbove,
                                   onOpenPlates: _openPlateCalculator,
@@ -1125,8 +1150,14 @@ class _ExerciseCard extends StatelessWidget {
   final List<SetEntry> previousSets;
   final VoidCallback onAddSet;
   final VoidCallback onRepeatSet;
-  final Future<void> Function(SetEntry set, SetRowDraft draft) onInlineCommit;
-  final ValueChanged<SetEntry> onEditSet;
+  final Future<void> Function(
+    SetEntry set,
+    SetRowDraft draft,
+    ProgressionSuggestion? suggestion,
+  )
+  onInlineCommit;
+  final void Function(SetEntry set, ProgressionSuggestion? suggestion)
+  onEditSet;
   final Future<void> Function(
     SessionExerciseDetails detail,
     int oldIndex,
@@ -1422,8 +1453,15 @@ class _ExerciseCard extends StatelessWidget {
                     timed: timed,
                     tracksDistance: detail.exercise.tracksDistance,
                     suggestion: set == detail.sets.last ? suggestion : null,
-                    onCommit: (draft) => onInlineCommit(set, draft),
-                    onOpenDetails: () => onEditSet(set),
+                    onCommit: (draft) => onInlineCommit(
+                      set,
+                      draft,
+                      set == detail.sets.last ? suggestion : null,
+                    ),
+                    onOpenDetails: () => onEditSet(
+                      set,
+                      set == detail.sets.last ? suggestion : null,
+                    ),
                     onMoveUp: reorderable && set != detail.sets.first
                         ? () => unawaited(
                             onMoveSet(
