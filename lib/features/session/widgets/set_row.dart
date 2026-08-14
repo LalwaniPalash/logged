@@ -290,6 +290,9 @@ class SetRow extends StatefulWidget {
     this.tracksDistance = false,
     required this.onCommit,
     required this.onOpenDetails,
+    this.onMoveUp,
+    this.onMoveDown,
+    this.onInsertAbove,
     this.suggestion,
   });
 
@@ -312,6 +315,9 @@ class SetRow extends StatefulWidget {
 
   final Future<void> Function(SetRowDraft draft) onCommit;
   final VoidCallback onOpenDetails;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final VoidCallback? onInsertAbove;
   final ProgressionSuggestion? suggestion;
 
   @override
@@ -497,6 +503,10 @@ class _SetRowState extends State<SetRow> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final deviations = _deviations;
+    final hasOverflowActions =
+        widget.onMoveUp != null ||
+        widget.onMoveDown != null ||
+        widget.onInsertAbove != null;
     return InkWell(
       onLongPress: widget.onOpenDetails,
       borderRadius: BorderRadius.circular(14),
@@ -520,21 +530,64 @@ class _SetRowState extends State<SetRow> {
                 ],
                 SizedBox(
                   width: _trailingWidth,
-                  child: IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: _trailingWidth,
-                      height: 36,
-                    ),
-                    onPressed: widget.onOpenDetails,
-                    icon: Icon(
-                      AppIcons.more,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    tooltip: 'Set details',
-                  ),
+                  child: hasOverflowActions
+                      ? PopupMenuButton<_SetRowAction>(
+                          tooltip: 'Set actions',
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            AppIcons.more,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          onSelected: (action) {
+                            switch (action) {
+                              case _SetRowAction.details:
+                                widget.onOpenDetails();
+                              case _SetRowAction.moveUp:
+                                widget.onMoveUp?.call();
+                              case _SetRowAction.moveDown:
+                                widget.onMoveDown?.call();
+                              case _SetRowAction.insertAbove:
+                                widget.onInsertAbove?.call();
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: _SetRowAction.details,
+                              child: Text('Set details'),
+                            ),
+                            PopupMenuItem(
+                              value: _SetRowAction.moveUp,
+                              enabled: widget.onMoveUp != null,
+                              child: const Text('Move up'),
+                            ),
+                            PopupMenuItem(
+                              value: _SetRowAction.moveDown,
+                              enabled: widget.onMoveDown != null,
+                              child: const Text('Move down'),
+                            ),
+                            PopupMenuItem(
+                              value: _SetRowAction.insertAbove,
+                              enabled: widget.onInsertAbove != null,
+                              child: const Text('Insert set above'),
+                            ),
+                          ],
+                        )
+                      : IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: _trailingWidth,
+                            height: 36,
+                          ),
+                          onPressed: widget.onOpenDetails,
+                          icon: Icon(
+                            AppIcons.more,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          tooltip: 'Set details',
+                        ),
                 ),
               ],
             ),
@@ -646,6 +699,8 @@ class _SetRowState extends State<SetRow> {
         : 'Suggested: $prescription · Apply';
   }
 }
+
+enum _SetRowAction { details, moveUp, moveDown, insertAbove }
 
 /// Set number badge. Fills with the accent once the set holds real data — it is
 /// a status indicator derived from the row, never a tappable "done" control.

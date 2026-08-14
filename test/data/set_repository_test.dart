@@ -380,4 +380,128 @@ void main() {
       expect(restored.notes, 'Restore me');
     },
   );
+
+  test('reorderSets rewrites numbers to match the given order', () async {
+    final setIds = <int>[];
+    for (var setNumber = 1; setNumber <= 3; setNumber++) {
+      setIds.add(
+        await repository.add(
+          sessionExerciseId: sessionExerciseId,
+          setNumber: setNumber,
+          reps: setNumber,
+          weightValue: 40 + setNumber.toDouble(),
+          unit: WeightUnit.kg,
+        ),
+      );
+    }
+
+    await repository.reorderSets(sessionExerciseId, [
+      setIds[2],
+      setIds[0],
+      setIds[1],
+    ]);
+
+    final rows =
+        await (database.select(database.setEntries)
+              ..where((row) => row.sessionExerciseId.equals(sessionExerciseId))
+              ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
+            .get();
+    expect(rows.map((row) => row.id), [setIds[2], setIds[0], setIds[1]]);
+    expect(rows.map((row) => row.setNumber), [1, 2, 3]);
+  });
+
+  test('reorderSets rejects an id from a different exercise', () async {
+    final foreignExerciseId = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Front Squat',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'legs',
+          ),
+        );
+    final foreignSessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 7, 26, 9)));
+    final foreignSessionExerciseId = await database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: foreignSessionId,
+            exerciseId: foreignExerciseId,
+            position: 0,
+          ),
+        );
+
+    final ownSetId = await repository.add(
+      sessionExerciseId: sessionExerciseId,
+      setNumber: 1,
+      reps: 8,
+      weightValue: 60,
+      unit: WeightUnit.kg,
+    );
+    final foreignSetId = await repository.add(
+      sessionExerciseId: foreignSessionExerciseId,
+      setNumber: 1,
+      reps: 6,
+      weightValue: 80,
+      unit: WeightUnit.kg,
+    );
+
+    expect(
+      () => repository.reorderSets(sessionExerciseId, [foreignSetId]),
+      throwsArgumentError,
+    );
+    expect(
+      () => repository.reorderSets(sessionExerciseId, [ownSetId, foreignSetId]),
+      throwsArgumentError,
+    );
+  });
+
+  test(
+    'insertSetAt shifts the following sets and lands at the requested number',
+    () async {
+      await repository.add(
+        sessionExerciseId: sessionExerciseId,
+        setNumber: 1,
+        reps: 8,
+        weightValue: 50,
+        unit: WeightUnit.kg,
+      );
+      await repository.add(
+        sessionExerciseId: sessionExerciseId,
+        setNumber: 2,
+        reps: 6,
+        weightValue: 70,
+        unit: WeightUnit.kg,
+      );
+      await repository.add(
+        sessionExerciseId: sessionExerciseId,
+        setNumber: 3,
+        reps: 4,
+        weightValue: 90,
+        unit: WeightUnit.kg,
+      );
+
+      final insertedId = await repository.insertSetAt(
+        sessionExerciseId: sessionExerciseId,
+        setNumber: 2,
+        reps: 10,
+        weightValue: 60,
+        unit: WeightUnit.kg,
+      );
+
+      final rows =
+          await (database.select(database.setEntries)
+                ..where(
+                  (row) => row.sessionExerciseId.equals(sessionExerciseId),
+                )
+                ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
+              .get();
+      expect(rows.map((row) => row.setNumber), [1, 2, 3, 4]);
+      expect(rows.singleWhere((row) => row.id == insertedId).setNumber, 2);
+      expect(rows.singleWhere((row) => row.setNumber == 3).reps, 6);
+      expect(rows.singleWhere((row) => row.setNumber == 4).reps, 4);
+    },
+  );
 }

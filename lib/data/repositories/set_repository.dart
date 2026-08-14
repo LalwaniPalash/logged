@@ -165,7 +165,37 @@ class SetRepository {
     });
   }
 
-  Future<int> restoreDeletedSet({
+  /// Reorders the sets within one exercise.
+  /// [orderedSetIds] must contain exactly the exercise's current
+  /// `SetEntries.id`s, each once — a partial or foreign list would silently
+  /// corrupt the other sets' numbering.
+  Future<void> reorderSets(
+    int sessionExerciseId,
+    List<int> orderedSetIds,
+  ) => _database.transaction(() async {
+    final existing = await (_database.select(
+      _database.setEntries,
+    )..where((row) => row.sessionExerciseId.equals(sessionExerciseId))).get();
+    final existingIds = existing.map((row) => row.id).toSet();
+    if (orderedSetIds.toSet().length != orderedSetIds.length ||
+        existingIds.difference(orderedSetIds.toSet()).isNotEmpty ||
+        orderedSetIds.toSet().difference(existingIds).isNotEmpty) {
+      throw ArgumentError.value(
+        orderedSetIds,
+        'orderedSetIds',
+        'must contain every set in this exercise exactly once',
+      );
+    }
+    for (var index = 0; index < orderedSetIds.length; index++) {
+      await update(
+        orderedSetIds[index],
+        SetEntriesCompanion(setNumber: Value(index + 1)),
+      );
+    }
+  });
+
+  /// Opens a gap at [setNumber] and inserts a new set there.
+  Future<int> insertSetAt({
     required int sessionExerciseId,
     required int setNumber,
     int? reps,
@@ -203,6 +233,38 @@ class SetRepository {
       notes: notes,
     );
   });
+
+  Future<int> restoreDeletedSet({
+    required int sessionExerciseId,
+    required int setNumber,
+    int? reps,
+    double? weightValue,
+    WeightUnit? unit,
+    WeightEntry weightEntry = WeightEntry.total,
+    int sideCount = 1,
+    LoadingMode loadingMode = LoadingMode.external,
+    double? distanceMeters,
+    int? durationSec,
+    bool isWarmup = false,
+    double? rpe,
+    Map<MuscleId, double>? muscleBiasWeights,
+    String? notes,
+  }) => insertSetAt(
+    sessionExerciseId: sessionExerciseId,
+    setNumber: setNumber,
+    reps: reps,
+    weightValue: weightValue,
+    unit: unit,
+    weightEntry: weightEntry,
+    sideCount: sideCount,
+    loadingMode: loadingMode,
+    distanceMeters: distanceMeters,
+    durationSec: durationSec,
+    isWarmup: isWarmup,
+    rpe: rpe,
+    muscleBiasWeights: muscleBiasWeights,
+    notes: notes,
+  );
 
   Future<void> delete(int setId) => _database.transaction(() async {
     final row = await (_database.select(

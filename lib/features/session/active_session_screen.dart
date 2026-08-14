@@ -567,6 +567,49 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     setState(_refresh);
   }
 
+  Future<void> _reorderSets(
+    SessionExerciseDetails detail,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final orderedIds = [for (final set in detail.sets) set.id];
+    final moved = orderedIds.removeAt(oldIndex);
+    orderedIds.insert(newIndex, moved);
+    await ref
+        .read(setRepositoryProvider)
+        .reorderSets(detail.sessionExercise.id, orderedIds);
+    if (!mounted) return;
+    setState(_refresh);
+  }
+
+  Future<void> _insertSetAbove(
+    SessionExerciseDetails detail,
+    SetEntry target,
+  ) async {
+    final seed = await ref
+        .read(sessionRepositoryProvider)
+        .seedForNextSet(sessionExerciseId: detail.sessionExercise.id);
+    await ref
+        .read(setRepositoryProvider)
+        .insertSetAt(
+          sessionExerciseId: detail.sessionExercise.id,
+          setNumber: target.setNumber,
+          reps: seed.reps,
+          weightValue: seed.weightValue,
+          unit: seed.weightValue == null
+              ? null
+              : (seed.unit ?? detail.exercise.defaultUnit),
+          weightEntry: seed.weightEntry,
+          sideCount: seed.sideCount,
+          loadingMode: seed.loadingMode,
+          distanceMeters: seed.distanceMeters,
+          durationSec: seed.durationSec,
+          muscleBiasWeights: seed.muscleBiasWeights,
+        );
+    if (!mounted) return;
+    setState(_refresh);
+  }
+
   Future<void> _updateInlineSet(
     SessionExerciseDetails detail,
     SetEntry set,
@@ -951,6 +994,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                       _updateInlineSet(detail, set, draft),
                                   onEditSet: (set) =>
                                       _openSet(detail, existing: set),
+                                  onMoveSet: _reorderSets,
+                                  onInsertSetAbove: _insertSetAbove,
                                   onOpenPlates: _openPlateCalculator,
                                   onOpenWarmup: _previewWarmup,
                                   onSwap: () => _swapExercise(detail),
@@ -1061,6 +1106,8 @@ class _ExerciseCard extends StatelessWidget {
     required this.onRepeatSet,
     required this.onInlineCommit,
     required this.onEditSet,
+    required this.onMoveSet,
+    required this.onInsertSetAbove,
     required this.onOpenPlates,
     required this.onOpenWarmup,
     required this.onRemove,
@@ -1080,6 +1127,14 @@ class _ExerciseCard extends StatelessWidget {
   final VoidCallback onRepeatSet;
   final Future<void> Function(SetEntry set, SetRowDraft draft) onInlineCommit;
   final ValueChanged<SetEntry> onEditSet;
+  final Future<void> Function(
+    SessionExerciseDetails detail,
+    int oldIndex,
+    int newIndex,
+  )
+  onMoveSet;
+  final Future<void> Function(SessionExerciseDetails detail, SetEntry set)
+  onInsertSetAbove;
   final ValueChanged<_PlateCalculatorRequest> onOpenPlates;
   final ValueChanged<_WarmupRequest> onOpenWarmup;
   final VoidCallback onRemove;
@@ -1369,6 +1424,27 @@ class _ExerciseCard extends StatelessWidget {
                     suggestion: set == detail.sets.last ? suggestion : null,
                     onCommit: (draft) => onInlineCommit(set, draft),
                     onOpenDetails: () => onEditSet(set),
+                    onMoveUp: reorderable && set != detail.sets.first
+                        ? () => unawaited(
+                            onMoveSet(
+                              detail,
+                              detail.sets.indexOf(set),
+                              detail.sets.indexOf(set) - 1,
+                            ),
+                          )
+                        : null,
+                    onMoveDown: reorderable && set != detail.sets.last
+                        ? () => unawaited(
+                            onMoveSet(
+                              detail,
+                              detail.sets.indexOf(set),
+                              detail.sets.indexOf(set) + 1,
+                            ),
+                          )
+                        : null,
+                    onInsertAbove: reorderable
+                        ? () => unawaited(onInsertSetAbove(detail, set))
+                        : null,
                   ),
               ],
               const SizedBox(height: 6),
