@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logged/core/services/notification_service.dart';
@@ -27,6 +29,7 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    addTearDown(notifications.actions.close);
   });
 
   test('ticks from the absolute end time and formats the countdown', () async {
@@ -62,6 +65,24 @@ void main() {
     await controller.skip();
     expect(container.read(restTimerControllerProvider).running, isFalse);
     expect(notifications.cancelled, contains(1001));
+  });
+
+  test('start posts an ongoing countdown immediately', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 42,
+      seconds: 75,
+      notificationsEnabled: true,
+    );
+
+    expect(notifications.countdownPosts, hasLength(1));
+    expect(
+      notifications.countdownPosts.single,
+      _CountdownPost(
+        id: NotificationService.restTimerNotificationId,
+        endTime: DateTime(2026, 7, 23, 18, 1, 15),
+      ),
+    );
   });
 
   test('reaching zero fires feedback exactly once', () async {
@@ -105,6 +126,12 @@ class _FakeTicker implements RestTimerTicker {
 
 class _FakeNotificationClient implements NotificationClient {
   final cancelled = <int>[];
+  final countdownPosts = <_CountdownPost>[];
+  final completionPosts = <int>[];
+  final actions = StreamController<String>.broadcast();
+
+  @override
+  Stream<String> get actionSelections => actions.stream;
 
   @override
   Future<void> cancel(int id) async => cancelled.add(id);
@@ -114,6 +141,25 @@ class _FakeNotificationClient implements NotificationClient {
 
   @override
   Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> showRestComplete({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    completionPosts.add(id);
+  }
+
+  @override
+  Future<void> showRestCountdown({
+    required int id,
+    required DateTime endTime,
+    required String title,
+    required String body,
+  }) async {
+    countdownPosts.add(_CountdownPost(id: id, endTime: endTime));
+  }
 
   @override
   Future<void> schedule({
@@ -133,4 +179,21 @@ class _FakeNotificationClient implements NotificationClient {
     required String channelId,
     required String channelName,
   }) async {}
+}
+
+class _CountdownPost {
+  const _CountdownPost({required this.id, required this.endTime});
+
+  final int id;
+  final DateTime endTime;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _CountdownPost &&
+        other.id == id &&
+        other.endTime == endTime;
+  }
+
+  @override
+  int get hashCode => Object.hash(id, endTime);
 }

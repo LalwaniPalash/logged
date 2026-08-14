@@ -115,7 +115,16 @@ class RestTimerController extends Notifier<RestTimerState>
           .read(notificationServiceProvider)
           .requestPermission();
     }
-    await _syncBackgroundNotification();
+    if (_notificationsAllowed && state.endTime != null) {
+      await ref
+          .read(notificationServiceProvider)
+          .showRestCountdown(
+            id: NotificationService.restTimerNotificationId,
+            endTime: state.endTime!,
+            title: 'Rest timer',
+            body: 'Time for your next set.',
+          );
+    }
     return _notificationsAllowed;
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -9,6 +11,10 @@ abstract interface class NotificationClient {
   Future<void> init();
 
   Future<bool> requestPermission();
+
+  /// Action ids from notification buttons, e.g. 'rest_add_15', 'rest_skip'.
+  /// Foreground-isolate only — see [NotificationService.init].
+  Stream<String> get actionSelections;
 
   Future<void> showNow({
     required int id,
@@ -27,6 +33,23 @@ abstract interface class NotificationClient {
     required String channelName,
   });
 
+  /// Posts (or updates) the ongoing rest countdown. Android renders a
+  /// system-ticked chronometer counting down to [endTime]; iOS has no
+  /// equivalent, so it schedules a one-shot alert at [endTime] instead.
+  Future<void> showRestCountdown({
+    required int id,
+    required DateTime endTime,
+    required String title,
+    required String body,
+  });
+
+  /// Replaces the countdown with a dismissible "rest is over" alert.
+  Future<void> showRestComplete({
+    required int id,
+    required String title,
+    required String body,
+  });
+
   Future<void> cancel(int id);
 }
 
@@ -41,6 +64,8 @@ class NotificationService implements NotificationClient {
   static const restTimerNotificationId = 1001;
 
   final FlutterLocalNotificationsPlugin _plugin;
+  final StreamController<String> _actionSelections =
+      StreamController<String>.broadcast();
   bool _initialized = false;
 
   /// Android keeps only the alpha channel of a small icon and paints the result
@@ -67,6 +92,9 @@ class NotificationService implements NotificationClient {
   );
 
   @override
+  Stream<String> get actionSelections => _actionSelections.stream;
+
+  @override
   Future<void> init() async {
     if (_initialized || kIsWeb) return;
     try {
@@ -76,6 +104,17 @@ class NotificationService implements NotificationClient {
           android: _androidInitialization,
           iOS: _darwinInitialization,
         ),
+        onDidReceiveNotificationResponse: (response) {
+          final actionId = response.actionId;
+          if (actionId == null || actionId.isEmpty) return;
+          _actionSelections.add(actionId);
+        },
+        // Do not register the background callback here: it runs in a separate
+        // Dart isolate with no access to the Riverpod container or live timer
+        // state, so +15s / Skip would compile, run, and silently fail to
+        // adjust the timer the user is looking at. If the app process has been
+        // killed, those actions can only bring the app back; they cannot
+        // mutate the timer without an isolate bridge, which is out of scope.
       );
       _initialized = true;
     } on PlatformException catch (error) {
@@ -167,6 +206,68 @@ class NotificationService implements NotificationClient {
   }
 
   @override
+  Future<void> showRestCountdown({
+    required int id,
+    required DateTime endTime,
+    required String title,
+    required String body,
+  }) async {
+    await init();
+    if (!_initialized) return;
+    try {
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.android:
+          await _plugin.show(
+            id: id,
+            title: title,
+            body: body,
+            notificationDetails: _countdownDetails(endTime),
+          );
+        case TargetPlatform.iOS:
+          if (!endTime.isAfter(DateTime.now())) return;
+          await _plugin.zonedSchedule(
+            id: id,
+            scheduledDate: tz.TZDateTime.from(endTime.toUtc(), tz.UTC),
+            title: title,
+            body: body,
+            notificationDetails: _completionDetails('rest_timer', 'Rest timer'),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          );
+        default:
+          return;
+      }
+    } on PlatformException catch (error) {
+      debugPrint('Could not show rest countdown: $error');
+    }
+  }
+
+  @override
+  Future<void> showRestComplete({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    await init();
+    if (!_initialized) return;
+    try {
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.android:
+        case TargetPlatform.iOS:
+          await _plugin.show(
+            id: id,
+            title: title,
+            body: body,
+            notificationDetails: _completionDetails('rest_timer', 'Rest timer'),
+          );
+        default:
+          return;
+      }
+    } on PlatformException catch (error) {
+      debugPrint('Could not show rest completion notification: $error');
+    }
+  }
+
+  @override
   Future<void> cancel(int id) async {
     await init();
     if (!_initialized) return;
@@ -176,6 +277,67 @@ class NotificationService implements NotificationClient {
       debugPrint('Could not cancel notification: $error');
     }
   }
+
+  NotificationDetails _countdownDetails(DateTime endTime) =>
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'rest_timer_progress',
+          'Rest timer countdown',
+          channelDescription: 'Logged rest timer countdown',
+          importance: Importance.low,
+          priority: Priority.low,
+          playSound: false,
+          enableVibration: false,
+          icon: _androidNotificationIcon,
+          color: _androidNotificationAccent,
+          colorized: false,
+          ongoing: true,
+          silent: true,
+          onlyAlertOnce: true,
+          when: endTime.millisecondsSinceEpoch,
+          usesChronometer: true,
+          chronometerCountDown: true,
+          category: AndroidNotificationCategory.stopwatch,
+          actions: const [
+            AndroidNotificationAction(
+              'rest_add_15',
+              '+15s',
+              showsUserInterface: false,
+              cancelNotification: false,
+            ),
+            AndroidNotificationAction(
+              'rest_skip',
+              'Skip',
+              showsUserInterface: false,
+              cancelNotification: false,
+            ),
+          ],
+        ),
+      );
+
+  NotificationDetails _completionDetails(
+    String channelId,
+    String channelName,
+  ) => NotificationDetails(
+    android: AndroidNotificationDetails(
+      channelId,
+      channelName,
+      channelDescription: 'Logged workout reminders',
+      importance: Importance.high,
+      priority: Priority.high,
+      enableVibration: true,
+      icon: _androidNotificationIcon,
+      color: _androidNotificationAccent,
+      colorized: false,
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBanner: true,
+      presentList: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    ),
+  );
 
   NotificationDetails _details(String channelId, String channelName) =>
       NotificationDetails(
