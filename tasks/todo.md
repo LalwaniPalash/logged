@@ -6,12 +6,30 @@
 
 ## ACTIVE WORK
 
+**Phases 1–4 are shipped** (commits `1d9c03e`, `8a1a9fd`, `ccdaf4d`, `0be0ba9`). **Phase 5 is next**,
+then 6, then 7. Baseline at the head of Phase 4: `flutter analyze` clean, `flutter test` **272/272**.
+
 | File | What it is |
 |---|---|
-| **`tasks/spec-audit-fixes.md`** | **The active implementation spec.** Phased, standalone, written for Codex. Start here. |
+| **`tasks/spec-phase5.md`** | **The active implementation spec.** Standalone Phase 5 brief for Codex, grounded at `0be0ba9`. Start here. |
+| `tasks/spec-audit-fixes.md` | The full phased spec, Phases 1–7. Phases 1–4 are done; its Phase 5 section is superseded by `spec-phase5.md`. Phases 6–7 still live here. |
 | `tasks/audit-2026-08-14.md` | Full audit: 50+ findings across 6 rounds, with evidence and file:line references. The spec's reasoning lives here. |
 | `tasks/lessons.md` | Read before touching anything. |
 | `tasks/spec-set-logging.md` | Earlier set-logging spec (historical). |
+
+### Remaining phases at a glance
+
+- **Phase 5 — Flutter practice & set-list mechanics.** B1 (streams built in `build()` on 4 screens),
+  H1 (set numbers gap after delete), H2 (no set reorder / insert), H3 (empty set saveable),
+  B2/B3 (`details()` N+1, dashboard never rolls over at midnight). No schema change.
+- **Phase 6 — Rest timer: persistent lock-screen countdown.** C1/C2. Android ongoing chronometer
+  notification, controller inversion, full-screen timer route, iOS Live Activities as optional
+  follow-up. **Ground rule 6 applies — needs a real backgrounded device.**
+- **Phase 7 — Lower priority / deferrable.** L1, L2, M1, I2, N1, A9, A5 (+ a batch pointing back at
+  the audit doc). **A5 is a product decision — confirm before building.**
+
+Carried forward, still unverified on hardware: the Copenhagen Plank check and a real-device restore
+of a ≤11 backup.
 
 ## Where the audit came from
 

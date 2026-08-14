@@ -488,3 +488,21 @@ Format: [date] | what went wrong | rule to prevent it
   Rule: a data-shape conversion that a migration would otherwise own must run inside the same
   transaction as the write it corrects. "After the transaction" is only safe for idempotent work that
   something else will retry.
+
+- 2026-08-14 | Phase 4's set-delete Undo captured `ref` inside the `SnackBarAction.onPressed`
+  closure. The SnackBar is posted to the root `ScaffoldMessenger`, so it outlives the route that
+  created it; riverpod 3.3.2's `_assertNotDisposed` (`consumer.dart:469`) throws a `StateError` the
+  moment `ref` is touched after the widget unmounts. Delete a set → leave the session → tap Undo =
+  crash. The same commit's bodyweight-entry Undo did it correctly, capturing the repository first.
+  Rule: any callback that can fire after its widget is gone — SnackBar actions, notification
+  handlers, timer callbacks, `.then()` on a future the widget did not await — must capture the
+  concrete dependency (the repository, the messenger) at creation time, never `ref` or `context`.
+  When one PR contains two instances of the same pattern, diff them against each other.
+
+- 2026-08-14 | `flutter analyze` clean + 272 tests green said nothing about either Phase 4 defect
+  found in review: the `ref`-after-dispose crash needs a widget test that pops a route while a
+  SnackBar is up, and the `AlertDialog` that overflows under the keyboard (`scrollable` defaults to
+  `false`, and a `Column` with a 4-line `TextField` does not fit a short phone with the keyboard
+  open) is invisible to any test that does not raise the keyboard. Rule: lifecycle bugs and
+  keyboard-inset layout bugs are structurally invisible to this project's test suite. Review diffs
+  for them by hand, and do not read a green suite as coverage of either category.
