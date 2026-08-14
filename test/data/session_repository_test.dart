@@ -373,6 +373,129 @@ void main() {
     );
   });
 
+  test(
+    'details returns exercises ordered by position with their sets ordered by set number',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = SessionRepository(database);
+
+      final firstExerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Bench Press',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+            ),
+          );
+      final secondExerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Row',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'back',
+            ),
+          );
+      final sessionId = await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 9)),
+          );
+      final secondLinkId = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: secondExerciseId,
+              position: 1,
+            ),
+          );
+      final firstLinkId = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: firstExerciseId,
+              position: 0,
+            ),
+          );
+
+      await database.batch((batch) {
+        batch.insertAll(database.setEntries, [
+          SetEntriesCompanion.insert(
+            sessionExerciseId: firstLinkId,
+            setNumber: 2,
+            reps: const Value(6),
+            weightValue: const Value(80),
+            unit: const Value(WeightUnit.kg),
+          ),
+          SetEntriesCompanion.insert(
+            sessionExerciseId: secondLinkId,
+            setNumber: 1,
+            reps: const Value(10),
+            weightValue: const Value(50),
+            unit: const Value(WeightUnit.kg),
+          ),
+          SetEntriesCompanion.insert(
+            sessionExerciseId: firstLinkId,
+            setNumber: 1,
+            reps: const Value(8),
+            weightValue: const Value(70),
+            unit: const Value(WeightUnit.kg),
+          ),
+        ]);
+      });
+
+      final details = await repository.details(sessionId);
+
+      expect(details.map((detail) => detail.sessionExercise.id), [
+        firstLinkId,
+        secondLinkId,
+      ]);
+      expect(details.first.exercise.id, firstExerciseId);
+      expect(details.first.sets.map((set) => set.setNumber), [1, 2]);
+      expect(details[1].exercise.id, secondExerciseId);
+      expect(details[1].sets.map((set) => set.setNumber), [1]);
+    },
+  );
+
+  test('details includes an exercise that has no sets', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SessionRepository(database);
+
+    final exerciseId = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Face Pull',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'shoulders',
+          ),
+        );
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 10)));
+    final linkId = await database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+
+    final details = await repository.details(sessionId);
+
+    expect(details, hasLength(1));
+    expect(details.single.sessionExercise.id, linkId);
+    expect(details.single.exercise.id, exerciseId);
+    expect(details.single.sets, isEmpty);
+  });
+
   test('finish without notes leaves an existing note untouched', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

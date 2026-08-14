@@ -1954,3 +1954,39 @@ Implemented by Codex. Phase 4 landed within the stated scope:
 - **NOT done:** the spec's manual Phase 4 flow checks — I did **not** manually remove an exercise
   mid-session and inspect the confirmation dialog, delete a set and undo it in the running app,
   rename a bundled exercise in Settings, or attempt a blocked delete and choose Archive in the UI.
+
+## Audit remediation — PHASE 5 (spec: `tasks/spec-phase5.md`) — 2026-08-14
+
+Implemented by Codex. Phase 5 landed within the stated scope:
+
+- [x] **5.1 B1** — moved the dashboard/history recent-session streams, the templates stream, and the
+      progress screen's one-rep-max point load off widget `build()` methods and into Riverpod
+      providers. `dashboard_screen.dart`, `history_screen.dart`, `templates_screen.dart`, and
+      `progress_screen.dart` now use `ref.watch(...).when(...)` with distinct loading and empty
+      states, so rebuilds no longer flash those screens blank.
+- [x] **5.2 H1** — `SetRepository.delete(...)` now renumbers remaining sets contiguously inside the
+      same transaction, and Undo restores the deleted set at its original ordinal through a
+      repository method instead of naively re-adding a duplicate `setNumber`.
+- [x] **5.3 H2** — sets can now be reordered and inserted mid-list through per-row overflow actions
+      (**Move up**, **Move down**, **Insert set above**) without nesting a reorderable list inside
+      the existing exercise-card reorderable. The actions are hidden on completed sessions.
+- [x] **5.4 H3** — `SetEditorSheet._save()` now refuses an otherwise blank set and surfaces
+      `Log at least one value for this set.` while still allowing reps-only bodyweight, duration-only
+      timed/stretching, and distance-only cardio saves.
+- [x] **5.5a B2** — `SessionRepository.details()` no longer does N+1 queries per exercise. It now
+      loads session-exercise/exercise rows in one join, loads all sets for those links in one query,
+      groups them in memory, and preserves the existing order/empty-set contract.
+- [x] **5.5b B3** — added `todayProvider` and pure `nextLocalMidnight(DateTime)` in
+      `lib/data/providers.dart`. The dashboard and history month-summary date now read the provider
+      instead of a raw `DateTime.now()` inside `build()`, so they can roll over at local midnight.
+
+- **Verified:** added provider tests for recent-session family limits and `nextLocalMidnight(...)`,
+  repository tests for delete renumbering, undo restore, set reorder/insert, and `details()`
+  ordering/empty-set behavior, plus widget tests for the blank-save guard and the accepted
+  single-field save cases. `flutter analyze` is clean, and `flutter test` is green at
+  **283 tests**.
+- **NOT done:** the spec's manual Phase 5 checks. I did **not** manually verify in a debug build
+  that History/Templates avoid empty-state flashing during rotation/theme changes, that deleting the
+  middle of three sets and undoing it behaves correctly on-device, that inserting above set 2 keeps
+  numbering contiguous in the running app, that exercise-card drag still feels right by hand, or
+  that the blank-set refusal was exercised manually outside the widget tests.

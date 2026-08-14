@@ -97,4 +97,22 @@ void main() {
       );
     },
   );
+
+  test('nextLocalMidnight crosses a month boundary calendar-wise', () {
+    expect(
+      nextLocalMidnight(DateTime(2026, 1, 31, 23, 59)),
+      DateTime(2026, 2, 1),
+    );
+  });
+
+  test('nextLocalMidnight crosses a year boundary calendar-wise', () {
+    expect(nextLocalMidnight(DateTime(2026, 12, 31, 12)), DateTime(2027, 1, 1));
+  });
+
+  test('nextLocalMidnight crosses leap day calendar-wise', () {
+    expect(
+      nextLocalMidnight(DateTime(2028, 2, 28, 7, 30)),
+      DateTime(2028, 2, 29),
+    );
+  });
 }

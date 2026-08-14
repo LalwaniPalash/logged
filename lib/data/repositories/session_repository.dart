@@ -332,30 +332,51 @@ class SessionRepository {
   }
 
   Future<List<SessionExerciseDetails>> details(int sessionId) async {
-    final links =
-        await (_database.select(_database.sessionExercises)
-              ..where((row) => row.sessionId.equals(sessionId))
-              ..orderBy([(row) => OrderingTerm.asc(row.position)]))
+    final rows =
+        await (_database.select(_database.sessionExercises).join([
+                innerJoin(
+                  _database.exercises,
+                  _database.exercises.id.equalsExp(
+                    _database.sessionExercises.exerciseId,
+                  ),
+                ),
+              ])
+              ..where(_database.sessionExercises.sessionId.equals(sessionId))
+              ..orderBy([
+                OrderingTerm.asc(_database.sessionExercises.position),
+              ]))
             .get();
-    final results = <SessionExerciseDetails>[];
-    for (final link in links) {
-      final exercise = await (_database.select(
-        _database.exercises,
-      )..where((row) => row.id.equals(link.exerciseId))).getSingle();
-      final sets =
-          await (_database.select(_database.setEntries)
-                ..where((row) => row.sessionExerciseId.equals(link.id))
-                ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
-              .get();
-      results.add(
+    if (rows.isEmpty) return const [];
+
+    final links = [
+      for (final row in rows) row.readTable(_database.sessionExercises),
+    ];
+    final exercisesByLinkId = {
+      for (final row in rows)
+        row.readTable(_database.sessionExercises).id: row.readTable(
+          _database.exercises,
+        ),
+    };
+    final sets =
+        await (_database.select(_database.setEntries)
+              ..where(
+                (row) => row.sessionExerciseId.isIn(links.map((l) => l.id)),
+              )
+              ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
+            .get();
+    final setsByLinkId = <int, List<SetEntry>>{};
+    for (final set in sets) {
+      setsByLinkId.putIfAbsent(set.sessionExerciseId, () => []).add(set);
+    }
+
+    return [
+      for (final link in links)
         SessionExerciseDetails(
           sessionExercise: link,
-          exercise: exercise,
-          sets: sets,
+          exercise: exercisesByLinkId[link.id]!,
+          sets: setsByLinkId[link.id] ?? const [],
         ),
-      );
-    }
-    return results;
+    ];
   }
 
   /// Values to prefill a new set with, in priority order:
