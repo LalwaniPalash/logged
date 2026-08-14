@@ -61,7 +61,7 @@ class DashboardScreen extends ConsumerWidget {
       next.whenData((progress) => _handleRankUpdates(context, ref, progress));
     });
     final theme = Theme.of(context);
-    final recent = ref.watch(sessionRepositoryProvider).watchRecent(limit: 3);
+    final recent = ref.watch(recentSessionsProvider(3));
     final bodySummary = ref.watch(bodyProgressSummaryProvider);
     final days =
         ref.watch(trainingDaysProvider).asData?.value ?? const <DateTime>[];
@@ -70,7 +70,7 @@ class DashboardScreen extends ConsumerWidget {
     final settings =
         ref.watch(workoutSettingsProvider).asData?.value ??
         WorkoutSettings.defaults;
-    final now = DateTime.now();
+    final now = ref.watch(todayProvider).asData?.value ?? DateTime.now();
     final goal =
         ref.watch(coachingPreferencesProvider).asData?.value.trainingGoal ??
         TrainingGoal.build;
@@ -202,10 +202,21 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               const SectionHeader('Recent sessions'),
-              StreamBuilder(
-                stream: recent,
-                builder: (context, snapshot) {
-                  final sessions = snapshot.data ?? const [];
+              recent.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, _) => Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Recent sessions could not be loaded.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ),
+                data: (sessions) {
                   if (sessions.isEmpty) {
                     return _EmptyRecent(onStart: () => _start(context, ref));
                   }

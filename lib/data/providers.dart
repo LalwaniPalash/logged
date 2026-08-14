@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/domain/live_muscle_state.dart';
@@ -88,6 +90,17 @@ final bodyweightEntriesProvider = StreamProvider<List<BodyweightEntry>>(
 final workoutSettingsProvider = StreamProvider<WorkoutSettings>(
   (ref) => ref.watch(settingsRepositoryProvider).watch(),
 );
+
+/// Most recent sessions, newest first. Family key is the row limit — the
+/// dashboard wants 3, history wants 500, and they must not share a
+/// subscription with the wrong limit.
+final recentSessionsProvider = StreamProvider.family<List<Session>, int>(
+  (ref, limit) =>
+      ref.watch(sessionRepositoryProvider).watchRecent(limit: limit),
+);
+final templatesProvider = StreamProvider<List<Template>>(
+  (ref) => ref.watch(templateRepositoryProvider).watchAll(),
+);
 final restTimerPreferencesProvider = StreamProvider<RestTimerPreferences>(
   (ref) => ref.watch(settingsRepositoryProvider).watchRestTimerPreferences(),
 );
@@ -144,6 +157,43 @@ final deloadSignalProvider = FutureProvider<DeloadSignal?>((ref) async {
 final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
   (ref) => AnalyticsRepository(ref.watch(databaseProvider)),
 );
+
+final oneRepMaxPointsForExerciseProvider =
+    FutureProvider.family<List<({double kg, int reps})>, int>(
+      (ref, exerciseId) => ref
+          .watch(analyticsRepositoryProvider)
+          .oneRepMaxPointsForExercise(exerciseId),
+    );
+
+DateTime nextLocalMidnight(DateTime from) =>
+    DateTime(from.year, from.month, from.day + 1);
+
+/// Today's date, re-emitted at each local midnight. Read this instead of
+/// calling DateTime.now() inside build(), which never updates across a day
+/// boundary.
+final todayProvider = StreamProvider<DateTime>((ref) async* {
+  yield dateOnly(DateTime.now());
+
+  Timer? timer;
+  final controller = StreamController<DateTime>();
+
+  void scheduleNextTick() {
+    final now = DateTime.now();
+    final next = nextLocalMidnight(now);
+    timer = Timer(next.difference(now), () {
+      controller.add(dateOnly(DateTime.now()));
+      scheduleNextTick();
+    });
+  }
+
+  scheduleNextTick();
+  ref.onDispose(() {
+    timer?.cancel();
+    controller.close();
+  });
+
+  yield* controller.stream;
+});
 
 /// All completed working sets (drives the Progress analytics). Warm-ups are
 /// excluded; bodyweight sets are included and contribute 0 kg of tonnage.

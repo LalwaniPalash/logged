@@ -151,6 +151,7 @@ class TemplatesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final templatesAsync = ref.watch(templatesProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Templates'),
@@ -169,10 +170,21 @@ class TemplatesScreen extends ConsumerWidget {
         icon: const Icon(AppIcons.add),
         label: const Text('New template'),
       ),
-      body: StreamBuilder<List<Template>>(
-        stream: ref.watch(templateRepositoryProvider).watchAll(),
-        builder: (context, snapshot) {
-          final templates = snapshot.data ?? const <Template>[];
+      body: templatesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Templates could not be loaded.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
+        ),
+        data: (templates) {
           if (templates.isEmpty) {
             return EmptyState(
               icon: AppIcons.templates,

@@ -17,18 +17,30 @@ class HistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final days =
         ref.watch(trainingDaysProvider).asData?.value ?? const <DateTime>[];
-    final now = DateTime.now();
+    final now = ref.watch(todayProvider).asData?.value ?? DateTime.now();
+    final sessions = ref.watch(recentSessionsProvider(500));
     final thisMonth = days
         .where((d) => d.year == now.year && d.month == now.month)
         .length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
-      body: StreamBuilder<List<Session>>(
-        stream: ref.watch(sessionRepositoryProvider).watchRecent(limit: 500),
-        builder: (context, snapshot) {
-          final sessions = snapshot.data ?? const <Session>[];
-          if (sessions.isEmpty) {
+      body: sessions.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Workout history could not be loaded.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ),
+        ),
+        data: (loadedSessions) {
+          if (loadedSessions.isEmpty) {
             return EmptyState(
               icon: AppIcons.history,
               title: 'No history yet',
@@ -42,7 +54,7 @@ class HistoryScreen extends ConsumerWidget {
             );
           }
 
-          final grouped = _groupByMonth(sessions);
+          final grouped = _groupByMonth(loadedSessions);
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
             children: [

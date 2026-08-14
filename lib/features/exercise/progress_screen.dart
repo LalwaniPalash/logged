@@ -1,17 +1,14 @@
-import 'package:drift/drift.dart' show Variable;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/app_icons.dart';
-import '../../core/domain/enums.dart';
 import '../../core/domain/deload.dart';
 import '../../core/domain/live_muscle_state.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart';
 import '../../core/domain/progress_analytics.dart';
-import '../../core/domain/workout_metrics.dart';
 import '../../core/domain/volume_landmarks.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
@@ -33,32 +30,6 @@ class ProgressScreen extends ConsumerStatefulWidget {
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Exercise? _exercise;
 
-  Future<List<({double kg, int reps})>> _loadExercise(int id) async {
-    final rows = await ref
-        .read(databaseProvider)
-        .customSelect(
-          'SELECT se.weight_value, se.unit, se.reps '
-          'FROM set_entries se '
-          'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
-          'JOIN sessions s ON s.id = sx.session_id '
-          'WHERE sx.exercise_id = ? AND s.ended_at IS NOT NULL '
-          'ORDER BY s.started_at',
-          variables: [Variable.withInt(id)],
-        )
-        .get();
-    return [
-      for (final row in rows)
-        if (row.data['weight_value'] != null && row.data['unit'] != null)
-          (
-            kg: weightKg(
-              (row.data['weight_value'] as num).toDouble(),
-              WeightUnit.values.byName(row.data['unit'] as String),
-            ),
-            reps: (row.data['reps'] as int?) ?? 0,
-          ),
-    ].where((r) => r.kg > 0).toList();
-  }
-
   Future<void> _pickExercise() async {
     final exercises = await ref.read(exerciseRepositoryProvider).all();
     if (!mounted) return;
@@ -76,6 +47,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ref.watch(effectiveVolumeLandmarksProvider).asData?.value ??
         defaultLandmarks;
     final deloadSignal = ref.watch(deloadSignalProvider).asData?.value;
+    final exercisePoints = _exercise == null
+        ? null
+        : ref.watch(oneRepMaxPointsForExerciseProvider(_exercise!.id));
 
     final weekly = weeklyStats(sets, weeks: 8);
     final prs = recentPrs(sets, limit: 6);
@@ -187,17 +161,21 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           const SectionHeader('Exercise deep-dive'),
           _ExercisePickerButton(exercise: _exercise, onTap: _pickExercise),
           const SizedBox(height: 16),
-          if (_exercise != null)
-            FutureBuilder<List<({double kg, int reps})>>(
-              future: _loadExercise(_exercise!.id),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final values = snapshot.data ?? const [];
+          if (exercisePoints != null)
+            exercisePoints.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.only(top: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (error, _) => _Card(
+                child: Text(
+                  'Exercise history could not be loaded.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+              data: (values) {
                 if (values.isEmpty) {
                   return _Card(
                     child: Text(
