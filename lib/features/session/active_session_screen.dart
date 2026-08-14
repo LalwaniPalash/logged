@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,6 +17,7 @@ import '../../core/domain/training_goal.dart';
 import '../../core/domain/warmup.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../../core/widgets/app_widgets.dart';
+import '../../core/widgets/prescription_editor_sheet.dart';
 import '../../core/widgets/exercise_picker.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/session_repository.dart';
@@ -196,11 +198,122 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     setState(_refresh);
   }
 
-  Future<void> _removeExercise(int sessionExerciseId) async {
+  Future<void> _removeExercise(SessionExerciseDetails detail) async {
+    final setCount = detail.sets.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove exercise?'),
+        content: Text(
+          'Remove ${detail.exercise.name} and delete its $setCount ${setCount == 1 ? 'set' : 'sets'} from this workout?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     await ref
         .read(sessionRepositoryProvider)
-        .removeSessionExercise(sessionExerciseId);
+        .removeSessionExercise(detail.sessionExercise.id);
     setState(_refresh);
+  }
+
+  Future<void> _editPrescription(SessionExerciseDetails detail) async {
+    final updated = await showModalBottomSheet<ExercisePrescriptionValues>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => PrescriptionEditorSheet(
+        exerciseName: detail.exercise.name,
+        initialValues: ExercisePrescriptionValues(
+          targetSets: detail.sessionExercise.targetSets,
+          sidesPerSet: detail.sessionExercise.sidesPerSet,
+          minReps: detail.sessionExercise.minReps,
+          maxReps: detail.sessionExercise.maxReps,
+          targetDurationSec: detail.sessionExercise.targetDurationSec,
+          targetDistanceMeters: detail.sessionExercise.targetDistanceMeters,
+          restSeconds: detail.sessionExercise.restSeconds,
+          eccentricSec: detail.sessionExercise.eccentricSec,
+          bottomPauseSec: detail.sessionExercise.bottomPauseSec,
+          concentricSec: detail.sessionExercise.concentricSec,
+          topPauseSec: detail.sessionExercise.topPauseSec,
+          prescriptionNotes: detail.sessionExercise.prescriptionNotes,
+          formUrl: detail.sessionExercise.formUrl,
+        ),
+      ),
+    );
+    if (updated == null) return;
+    await ref
+        .read(sessionRepositoryProvider)
+        .updatePrescription(
+          detail.sessionExercise.id,
+          targetSets: Value(updated.targetSets),
+          sidesPerSet: Value(updated.sidesPerSet),
+          minReps: Value(updated.minReps),
+          maxReps: Value(updated.maxReps),
+          targetDurationSec: Value(updated.targetDurationSec),
+          targetDistanceMeters: Value(updated.targetDistanceMeters),
+          restSeconds: Value(updated.restSeconds),
+          eccentricSec: Value(updated.eccentricSec),
+          bottomPauseSec: Value(updated.bottomPauseSec),
+          concentricSec: Value(updated.concentricSec),
+          topPauseSec: Value(updated.topPauseSec),
+          prescriptionNotes: Value(updated.prescriptionNotes),
+          formUrl: Value(updated.formUrl),
+        );
+    if (!mounted) return;
+    setState(_refresh);
+  }
+
+  void _showDeletedSetSnackBar(SessionExerciseDetails detail, SetEntry set) {
+    final messenger = ScaffoldMessenger.of(context);
+    // Read the repository up front: the SnackBar outlives this route, so
+    // touching `ref` from the Undo callback throws once the screen unmounts.
+    final repository = ref.read(setRepositoryProvider);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('${detail.exercise.name} set ${set.setNumber} deleted.'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            unawaited(
+              repository
+                  .add(
+                    sessionExerciseId: detail.sessionExercise.id,
+                    setNumber: set.setNumber,
+                    reps: set.reps,
+                    weightValue: set.weightValue,
+                    unit: set.unit,
+                    weightEntry: set.weightEntry,
+                    sideCount: set.sideCount,
+                    loadingMode: set.loadingMode,
+                    distanceMeters: set.distanceMeters,
+                    durationSec: set.durationSec,
+                    isWarmup: set.isWarmup,
+                    rpe: set.rpe,
+                    muscleBiasWeights: set.muscleBiasWeights == null
+                        ? null
+                        : decodeMuscleBiasWeights(set.muscleBiasWeights),
+                    notes: set.notes,
+                  )
+                  .then((_) {
+                    if (!mounted) return;
+                    setState(_refresh);
+                  }),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _reorderExercises(
@@ -350,18 +463,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           .read(setRepositoryProvider)
           .edit(
             existing.id,
-            reps: result.reps,
-            weightValue: result.weight,
-            unit: result.weight == null ? null : result.unit,
+            reps: Value(result.reps),
+            weightValue: Value(result.weight),
+            unit: Value(result.weight == null ? null : result.unit),
             weightEntry: result.weightEntry,
             sideCount: result.sideCount,
             loadingMode: result.loadingMode,
-            distanceMeters: result.distanceMeters,
-            durationSec: result.durationSec,
-            rpe: result.rpe,
-            muscleBiasWeights: result.muscleBiasWeights,
+            distanceMeters: Value(result.distanceMeters),
+            durationSec: Value(result.durationSec),
+            rpe: Value(result.rpe),
+            muscleBiasWeights: Value(result.muscleBiasWeights),
             isWarmup: result.isWarmup,
-            notes: result.notes,
+            notes: Value(result.notes),
           );
     } else {
       await ref
@@ -401,6 +514,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     }
     if (!mounted) return;
     setState(_refresh);
+    if (result.delete && existing != null) {
+      _showDeletedSetSnackBar(detail, existing);
+    }
   }
 
   Future<void> _addSet(SessionExerciseDetails detail) async {
@@ -482,24 +598,31 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         .read(setRepositoryProvider)
         .edit(
           set.id,
-          reps: draft.reps,
-          weightValue: set.loadingMode == LoadingMode.bodyweight
-              ? null
-              : draft.weightValue,
-          unit:
-              set.loadingMode == LoadingMode.bodyweight ||
-                  draft.weightValue == null
-              ? null
-              : draft.unit,
+          reps: Value(draft.reps),
+          weightValue: Value(
+            set.loadingMode == LoadingMode.bodyweight
+                ? null
+                : draft.weightValue,
+          ),
+          unit: Value(
+            set.loadingMode == LoadingMode.bodyweight ||
+                    draft.weightValue == null
+                ? null
+                : draft.unit,
+          ),
           weightEntry: set.weightEntry,
           sideCount: set.sideCount,
           loadingMode: set.loadingMode,
-          distanceMeters: draft.distanceMeters,
-          durationSec: draft.durationSec,
-          rpe: set.rpe,
-          muscleBiasWeights: decodeMuscleBiasWeights(set.muscleBiasWeights),
+          distanceMeters: Value(draft.distanceMeters),
+          durationSec: Value(draft.durationSec),
+          rpe: Value(set.rpe),
+          muscleBiasWeights: Value(
+            set.muscleBiasWeights == null
+                ? null
+                : decodeMuscleBiasWeights(set.muscleBiasWeights),
+          ),
           isWarmup: set.isWarmup,
-          notes: set.notes,
+          notes: Value(set.notes),
         );
     if (!wasComplete && becomesComplete) {
       await _startRestTimer(detail);
@@ -531,11 +654,34 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   }
 
   Future<void> _finish() async {
+    final repository = ref.read(sessionRepositoryProvider);
+    final session = await repository.getSession(widget.sessionId);
+    if (!mounted) return;
+    final controller = TextEditingController(text: session?.notes ?? '');
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         title: const Text('Finish workout?'),
-        content: const Text('This marks the session complete.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('This marks the session complete.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              maxLines: 4,
+              minLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Workout notes',
+                hintText: 'Optional',
+              ),
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -548,11 +694,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         ],
       ),
     );
+    final notes = controller.text.trim();
+    controller.dispose();
     if (confirm != true) return;
-    final session = await ref
-        .read(sessionRepositoryProvider)
-        .getSession(widget.sessionId);
-    await ref.read(sessionRepositoryProvider).finish(widget.sessionId);
+    await repository.finish(
+      widget.sessionId,
+      notes: notes.isEmpty ? null : notes,
+    );
     await ref.read(reminderSchedulerProvider).sync();
     await ref.read(homeWidgetServiceProvider).refresh();
     final prs = recentPrs(
@@ -695,6 +843,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         final view = snapshot.data;
         final details = view?.details ?? const <SessionExerciseDetails>[];
         final completed = view?.session?.endedAt != null;
+        final sessionNote = view?.session?.notes?.trim();
 
         return Scaffold(
           appBar: AppBar(
@@ -740,6 +889,36 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                       )
                     : CustomScrollView(
                         slivers: [
+                          if (completed &&
+                              sessionNote != null &&
+                              sessionNote.isNotEmpty)
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              sliver: SliverToBoxAdapter(
+                                child: Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      14,
+                                      16,
+                                      14,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Workout notes',
+                                          style: theme.textTheme.titleSmall,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(sessionNote),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           SliverPadding(
                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                             sliver: SliverReorderableList(
@@ -775,10 +954,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                   onOpenPlates: _openPlateCalculator,
                                   onOpenWarmup: _previewWarmup,
                                   onSwap: () => _swapExercise(detail),
-                                  onRemove: () => _removeExercise(
-                                    detail.sessionExercise.id,
-                                  ),
+                                  onRemove: () => _removeExercise(detail),
                                   onEditVideoUrl: () => _editVideoUrl(detail),
+                                  onEditPrescription: () =>
+                                      _editPrescription(detail),
+                                  prescriptionEditable: !completed,
                                 );
                               },
                             ),
@@ -886,6 +1066,8 @@ class _ExerciseCard extends StatelessWidget {
     required this.onRemove,
     required this.onSwap,
     required this.onEditVideoUrl,
+    required this.onEditPrescription,
+    required this.prescriptionEditable,
     required this.progressionAggressiveness,
     required this.inventory,
   });
@@ -903,6 +1085,8 @@ class _ExerciseCard extends StatelessWidget {
   final VoidCallback onRemove;
   final VoidCallback onSwap;
   final VoidCallback onEditVideoUrl;
+  final VoidCallback onEditPrescription;
+  final bool prescriptionEditable;
   final double progressionAggressiveness;
   final PlateInventory inventory;
 
@@ -915,7 +1099,7 @@ class _ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final targetText = _formatPrescription(
+    final targetText = formatPrescription(
       targetSets: detail.sessionExercise.targetSets,
       sidesPerSet: detail.sessionExercise.sidesPerSet,
       minReps: detail.sessionExercise.minReps,
@@ -1019,13 +1203,52 @@ class _ExerciseCard extends StatelessWidget {
                           detail.exercise.name,
                           style: theme.textTheme.titleMedium,
                         ),
-                        if (targetText.isNotEmpty) ...[
+                        if (prescriptionEditable || targetText.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(
-                            targetText,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              height: 1.4,
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: prescriptionEditable
+                                  ? onEditPrescription
+                                  : null,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        targetText.isEmpty
+                                            ? 'Add prescription'
+                                            : targetText,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  targetText.isEmpty &&
+                                                      prescriptionEditable
+                                                  ? theme.colorScheme.primary
+                                                  : theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                              height: 1.4,
+                                            ),
+                                      ),
+                                    ),
+                                    if (prescriptionEditable) ...[
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        AppIcons.edit,
+                                        size: 14,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -1219,55 +1442,6 @@ double? _targetRpe(String? notes) {
   return double.tryParse(match?.group(1) ?? '');
 }
 
-String _formatPrescription({
-  int? targetSets,
-  int? sidesPerSet,
-  int? minReps,
-  int? maxReps,
-  int? targetDurationSec,
-  double? targetDistanceMeters,
-  int? restSeconds,
-  int? eccentricSec,
-  int? bottomPauseSec,
-  int? concentricSec,
-  int? topPauseSec,
-}) {
-  final parts = <String>[];
-  final eachSide = sidesPerSet != null && sidesPerSet > 1;
-  if (targetSets != null) {
-    parts.add('$targetSets ${targetSets == 1 ? 'set' : 'sets'}');
-  }
-  if (minReps != null || maxReps != null) {
-    if (minReps != null && maxReps != null && minReps != maxReps) {
-      parts.add('$minReps–$maxReps reps${eachSide ? ' each side' : ''}');
-    } else {
-      parts.add('${minReps ?? maxReps} reps${eachSide ? ' each side' : ''}');
-    }
-  }
-  if (targetDurationSec != null) {
-    parts.add(
-      '${_formatPrescriptionDuration(targetDurationSec)}${eachSide ? ' each side' : ''}',
-    );
-  }
-  if (targetDistanceMeters != null) {
-    parts.add(
-      '${_formatPrescriptionDistance(targetDistanceMeters)}${eachSide ? ' each side' : ''}',
-    );
-  }
-  if (eccentricSec != null ||
-      bottomPauseSec != null ||
-      concentricSec != null ||
-      topPauseSec != null) {
-    parts.add(
-      'Tempo ${eccentricSec ?? 0}-${bottomPauseSec ?? 0}-${concentricSec ?? 0}-${topPauseSec ?? 0}',
-    );
-  }
-  if (restSeconds != null) {
-    parts.add('${_formatPrescriptionDuration(restSeconds)} rest');
-  }
-  return parts.join(' · ');
-}
-
 double? _latestWorkingWeight(
   List<SetEntry> sets, {
   required LoadingMode loadingMode,
@@ -1294,18 +1468,6 @@ String _formatWarmupWeight(
 ) {
   final label = weightEntry == WeightEntry.perSide ? '/hand' : '';
   return '${_trimPrescription(value)} ${unit.label}$label';
-}
-
-String _formatPrescriptionDuration(int seconds) {
-  final minutes = seconds ~/ 60;
-  final remaining = seconds % 60;
-  if (minutes <= 0) return '${seconds}s';
-  return remaining == 0 ? '${minutes}m' : '${minutes}m ${remaining}s';
-}
-
-String _formatPrescriptionDistance(double meters) {
-  if (meters >= 1000) return '${_trimPrescription(meters / 1000)} km';
-  return '${_trimPrescription(meters)} m';
 }
 
 String _trimPrescription(double value) =>

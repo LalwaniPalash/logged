@@ -19,6 +19,30 @@ class ExerciseRepository {
   Future<int> add(ExercisesCompanion exercise) =>
       _database.into(_database.exercises).insert(exercise);
 
+  Future<void> updateDetails(
+    int exerciseId, {
+    String? name,
+    ExerciseCategory? category,
+    double? bodyweightFactor,
+    bool? isTimed,
+    bool? tracksDistance,
+  }) =>
+      (_database.update(
+        _database.exercises,
+      )..where((row) => row.id.equals(exerciseId))).write(
+        ExercisesCompanion(
+          name: name == null ? const Value.absent() : Value(name),
+          category: category == null ? const Value.absent() : Value(category),
+          bodyweightFactor: bodyweightFactor == null
+              ? const Value.absent()
+              : Value(bodyweightFactor),
+          isTimed: isTimed == null ? const Value.absent() : Value(isTimed),
+          tracksDistance: tracksDistance == null
+              ? const Value.absent()
+              : Value(tracksDistance),
+        ),
+      );
+
   Future<void> updateDefaultUnit(int exerciseId, WeightUnit unit) =>
       (_database.update(_database.exercises)
             ..where((row) => row.id.equals(exerciseId)))
@@ -64,4 +88,35 @@ class ExerciseRepository {
       (_database.update(_database.exercises)
             ..where((row) => row.id.equals(exerciseId)))
           .write(ExercisesCompanion(isArchived: Value(archived)));
+
+  Future<bool> delete(int exerciseId) => _database.transaction(() async {
+    final sessionReferences = await _countReferences(
+      tableName: 'session_exercises',
+      exerciseId: exerciseId,
+    );
+    final templateReferences = await _countReferences(
+      tableName: 'template_exercises',
+      exerciseId: exerciseId,
+    );
+    if (sessionReferences > 0 || templateReferences > 0) {
+      return false;
+    }
+    final deleted = await (_database.delete(
+      _database.exercises,
+    )..where((row) => row.id.equals(exerciseId))).go();
+    return deleted > 0;
+  });
+
+  Future<int> _countReferences({
+    required String tableName,
+    required int exerciseId,
+  }) async {
+    final row = await _database
+        .customSelect(
+          'SELECT COUNT(*) AS row_count FROM $tableName WHERE exercise_id = ?',
+          variables: [Variable<int>(exerciseId)],
+        )
+        .getSingle();
+    return (row.data['row_count'] as num?)?.toInt() ?? 0;
+  }
 }

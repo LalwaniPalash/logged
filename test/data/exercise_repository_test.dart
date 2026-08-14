@@ -60,4 +60,111 @@ void main() {
     expect(exercise.primaryMuscles, '["quads","glute_max","hamstrings"]');
     expect(exercise.secondaryMuscles, '["adductors"]');
   });
+
+  test(
+    'delete returns false and keeps the row when the exercise has logged sets',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = ExerciseRepository(database);
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Cable Row',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'back',
+            ),
+          );
+      final sessionId = await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 9)),
+          );
+      final sessionExerciseId = await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: exerciseId,
+              position: 0,
+            ),
+          );
+      await database
+          .into(database.setEntries)
+          .insert(
+            SetEntriesCompanion.insert(
+              sessionExerciseId: sessionExerciseId,
+              setNumber: 1,
+              reps: const Value(10),
+            ),
+          );
+
+      final deleted = await repository.delete(exerciseId);
+
+      final remaining = await database.select(database.exercises).get();
+      expect(deleted, isFalse);
+      expect(remaining.single.id, exerciseId);
+    },
+  );
+
+  test(
+    'delete returns false and keeps the row when the exercise is referenced by a template',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = ExerciseRepository(database);
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Bulgarian Split Squat',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'legs',
+            ),
+          );
+      final templateId = await database
+          .into(database.templates)
+          .insert(TemplatesCompanion.insert(name: 'Leg Day', position: 0));
+      await database
+          .into(database.templateExercises)
+          .insert(
+            TemplateExercisesCompanion.insert(
+              templateId: templateId,
+              exerciseId: exerciseId,
+              position: 0,
+            ),
+          );
+
+      final deleted = await repository.delete(exerciseId);
+
+      final remaining = await database.select(database.exercises).get();
+      expect(deleted, isFalse);
+      expect(remaining.single.id, exerciseId);
+    },
+  );
+
+  test(
+    'delete returns true and removes the row when there are no references',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = ExerciseRepository(database);
+      final exerciseId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Sled Push',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'legs',
+            ),
+          );
+
+      final deleted = await repository.delete(exerciseId);
+
+      final remaining = await database.select(database.exercises).get();
+      expect(deleted, isTrue);
+      expect(remaining, isEmpty);
+    },
+  );
 }

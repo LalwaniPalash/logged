@@ -7,6 +7,7 @@ import '../../core/app_icons.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
+import '../../core/widgets/prescription_editor_sheet.dart';
 import '../../core/widgets/exercise_picker.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
@@ -176,16 +177,19 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   }
 
   Future<void> _edit(_TemplateExerciseDraft draft) async {
-    final updated = await showModalBottomSheet<_TemplateExerciseDraft>(
+    final updated = await showModalBottomSheet<ExercisePrescriptionValues>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => _PrescriptionEditor(draft: draft),
+      builder: (context) => PrescriptionEditorSheet(
+        exerciseName: draft.exercise.name,
+        initialValues: draft.prescriptionValues,
+      ),
     );
     if (updated == null) return;
     setState(() {
       final index = _selected.indexOf(draft);
-      if (index != -1) _selected[index] = updated;
+      if (index != -1) _selected[index] = draft.copyWithPrescription(updated);
       _dirty = true;
     });
   }
@@ -375,183 +379,6 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   }
 }
 
-class _PrescriptionEditor extends StatefulWidget {
-  const _PrescriptionEditor({required this.draft});
-  final _TemplateExerciseDraft draft;
-
-  @override
-  State<_PrescriptionEditor> createState() => _PrescriptionEditorState();
-}
-
-class _PrescriptionEditorState extends State<_PrescriptionEditor> {
-  late final TextEditingController _sets = TextEditingController(
-    text: widget.draft.targetSets?.toString() ?? '',
-  );
-  late bool _eachSide = widget.draft.sidesPerSet == 2;
-  late final TextEditingController _minReps = TextEditingController(
-    text: widget.draft.minReps?.toString() ?? '',
-  );
-  late final TextEditingController _maxReps = TextEditingController(
-    text: widget.draft.maxReps?.toString() ?? '',
-  );
-  late final TextEditingController _duration = TextEditingController(
-    text: widget.draft.targetDurationSec?.toString() ?? '',
-  );
-  late final TextEditingController _distance = TextEditingController(
-    text: widget.draft.targetDistanceMeters?.toString() ?? '',
-  );
-  late final TextEditingController _rest = TextEditingController(
-    text: widget.draft.restSeconds?.toString() ?? '',
-  );
-  late final TextEditingController _eccentric = TextEditingController(
-    text: widget.draft.eccentricSec?.toString() ?? '',
-  );
-  late final TextEditingController _bottomPause = TextEditingController(
-    text: widget.draft.bottomPauseSec?.toString() ?? '',
-  );
-  late final TextEditingController _concentric = TextEditingController(
-    text: widget.draft.concentricSec?.toString() ?? '',
-  );
-  late final TextEditingController _topPause = TextEditingController(
-    text: widget.draft.topPauseSec?.toString() ?? '',
-  );
-  late final TextEditingController _notes = TextEditingController(
-    text: widget.draft.prescriptionNotes ?? '',
-  );
-  late final TextEditingController _formUrl = TextEditingController(
-    text: widget.draft.formUrl ?? '',
-  );
-
-  @override
-  void dispose() {
-    _sets.dispose();
-    _minReps.dispose();
-    _maxReps.dispose();
-    _duration.dispose();
-    _distance.dispose();
-    _rest.dispose();
-    _eccentric.dispose();
-    _bottomPause.dispose();
-    _concentric.dispose();
-    _topPause.dispose();
-    _notes.dispose();
-    _formUrl.dispose();
-    super.dispose();
-  }
-
-  void _save() {
-    Navigator.pop(
-      context,
-      widget.draft.copyWith(
-        targetSets: _intOrNull(_sets.text),
-        sidesPerSet: _eachSide ? 2 : null,
-        minReps: _intOrNull(_minReps.text),
-        maxReps: _intOrNull(_maxReps.text),
-        targetDurationSec: _intOrNull(_duration.text),
-        targetDistanceMeters: _doubleOrNull(_distance.text),
-        restSeconds: _intOrNull(_rest.text),
-        eccentricSec: _intOrNull(_eccentric.text),
-        bottomPauseSec: _intOrNull(_bottomPause.text),
-        concentricSec: _intOrNull(_concentric.text),
-        topPauseSec: _intOrNull(_topPause.text),
-        prescriptionNotes: _blankToNull(_notes.text),
-        formUrl: _blankToNull(_formUrl.text),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, bottom + 20),
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          Text(
-            widget.draft.exercise.name,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _field(_sets, 'Sets')),
-              const SizedBox(width: 10),
-              FilterChip(
-                label: const Text('Each side'),
-                selected: _eachSide,
-                onSelected: (value) => setState(() => _eachSide = value),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: _field(_minReps, 'Min reps')),
-              const SizedBox(width: 10),
-              Expanded(child: _field(_maxReps, 'Max reps')),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _field(_duration, 'Duration sec')),
-              const SizedBox(width: 10),
-              Expanded(child: _field(_rest, 'Rest sec')),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _field(_eccentric, 'Eccentric')),
-              const SizedBox(width: 10),
-              Expanded(child: _field(_bottomPause, 'Bottom pause')),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _field(_concentric, 'Concentric')),
-              const SizedBox(width: 10),
-              Expanded(child: _field(_topPause, 'Top pause')),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _field(_distance, 'Distance meters'),
-          const SizedBox(height: 10),
-          _field(
-            _formUrl,
-            'YouTube / form URL',
-            keyboardType: TextInputType.url,
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _notes,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(labelText: 'Notes / cues'),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(onPressed: _save, child: const Text('Save')),
-        ],
-      ),
-    );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-    String label, {
-    TextInputType keyboardType = TextInputType.number,
-  }) => TextField(
-    controller: controller,
-    keyboardType: keyboardType,
-    decoration: InputDecoration(labelText: label),
-  );
-
-  int? _intOrNull(String value) => int.tryParse(value.trim());
-  double? _doubleOrNull(String value) => double.tryParse(value.trim());
-  String? _blankToNull(String value) {
-    final trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
-  }
-}
-
 class _TemplateExerciseDraft {
   _TemplateExerciseDraft({
     required this.exercise,
@@ -608,6 +435,23 @@ class _TemplateExerciseDraft {
   final String? formUrl;
   final Object localKey;
 
+  ExercisePrescriptionValues get prescriptionValues =>
+      ExercisePrescriptionValues(
+        targetSets: targetSets,
+        sidesPerSet: sidesPerSet,
+        minReps: minReps,
+        maxReps: maxReps,
+        targetDurationSec: targetDurationSec,
+        targetDistanceMeters: targetDistanceMeters,
+        restSeconds: restSeconds,
+        eccentricSec: eccentricSec,
+        bottomPauseSec: bottomPauseSec,
+        concentricSec: concentricSec,
+        topPauseSec: topPauseSec,
+        prescriptionNotes: prescriptionNotes,
+        formUrl: formUrl,
+      );
+
   String get targetText => formatPrescription(
     targetSets: targetSets,
     sidesPerSet: sidesPerSet,
@@ -655,6 +499,24 @@ class _TemplateExerciseDraft {
     localKey: localKey,
   );
 
+  _TemplateExerciseDraft copyWithPrescription(
+    ExercisePrescriptionValues values,
+  ) => copyWith(
+    targetSets: values.targetSets,
+    sidesPerSet: values.sidesPerSet,
+    minReps: values.minReps,
+    maxReps: values.maxReps,
+    targetDurationSec: values.targetDurationSec,
+    targetDistanceMeters: values.targetDistanceMeters,
+    restSeconds: values.restSeconds,
+    eccentricSec: values.eccentricSec,
+    bottomPauseSec: values.bottomPauseSec,
+    concentricSec: values.concentricSec,
+    topPauseSec: values.topPauseSec,
+    prescriptionNotes: values.prescriptionNotes,
+    formUrl: values.formUrl,
+  );
+
   TemplateExercisesCompanion toCompanion({
     required int templateId,
     required int position,
@@ -677,65 +539,3 @@ class _TemplateExerciseDraft {
     formUrl: Value(formUrl),
   );
 }
-
-String formatPrescription({
-  int? targetSets,
-  int? sidesPerSet,
-  int? minReps,
-  int? maxReps,
-  int? targetDurationSec,
-  double? targetDistanceMeters,
-  int? restSeconds,
-  int? eccentricSec,
-  int? bottomPauseSec,
-  int? concentricSec,
-  int? topPauseSec,
-}) {
-  final parts = <String>[];
-  final eachSide = sidesPerSet != null && sidesPerSet > 1;
-  if (targetSets != null) {
-    parts.add('$targetSets ${targetSets == 1 ? 'set' : 'sets'}');
-  }
-  if (minReps != null || maxReps != null) {
-    if (minReps != null && maxReps != null && minReps != maxReps) {
-      parts.add('$minReps–$maxReps reps${eachSide ? ' each side' : ''}');
-    } else {
-      parts.add('${minReps ?? maxReps} reps${eachSide ? ' each side' : ''}');
-    }
-  }
-  if (targetDurationSec != null) {
-    parts.add(
-      '${_formatDuration(targetDurationSec)}${eachSide ? ' each side' : ''}',
-    );
-  }
-  if (targetDistanceMeters != null) {
-    parts.add(
-      '${_formatDistance(targetDistanceMeters)}${eachSide ? ' each side' : ''}',
-    );
-  }
-  if (eccentricSec != null ||
-      bottomPauseSec != null ||
-      concentricSec != null ||
-      topPauseSec != null) {
-    parts.add(
-      'Tempo ${eccentricSec ?? 0}-${bottomPauseSec ?? 0}-${concentricSec ?? 0}-${topPauseSec ?? 0}',
-    );
-  }
-  if (restSeconds != null) parts.add('${_formatDuration(restSeconds)} rest');
-  return parts.join(' · ');
-}
-
-String _formatDuration(int seconds) {
-  final minutes = seconds ~/ 60;
-  final remaining = seconds % 60;
-  if (minutes <= 0) return '${seconds}s';
-  return remaining == 0 ? '${minutes}m' : '${minutes}m ${remaining}s';
-}
-
-String _formatDistance(double meters) {
-  if (meters >= 1000) return '${_trim(meters / 1000)} km';
-  return '${_trim(meters)} m';
-}
-
-String _trim(double value) =>
-    value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';

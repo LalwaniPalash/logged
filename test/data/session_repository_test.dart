@@ -321,58 +321,197 @@ void main() {
     expect(reordered.map((row) => row.id), [third, first, second]);
   });
 
+  test('reorderExercises rejects an id from a different session', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SessionRepository(database);
+
+    final exerciseId = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Squat',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'legs',
+          ),
+        );
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 9)));
+    final otherSessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 8)));
+
+    final ownLink = await database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+    final foreignLink = await database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: otherSessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+
+    expect(
+      () => repository.reorderExercises(sessionId, [foreignLink]),
+      throwsArgumentError,
+    );
+    // The valid-but-incomplete list (missing ownLink) must also fail rather
+    // than silently reordering a subset.
+    expect(
+      () => repository.reorderExercises(sessionId, [ownLink, foreignLink]),
+      throwsArgumentError,
+    );
+  });
+
+  test('finish without notes leaves an existing note untouched', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SessionRepository(database);
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(
+          SessionsCompanion.insert(
+            startedAt: DateTime(2026, 8, 14, 7),
+            notes: const Value('Felt strong today'),
+          ),
+        );
+
+    await repository.finish(sessionId, endedAt: DateTime(2026, 8, 14, 8));
+
+    final session = await (database.select(
+      database.sessions,
+    )..where((row) => row.id.equals(sessionId))).getSingle();
+    expect(session.endedAt, DateTime(2026, 8, 14, 8));
+    expect(session.notes, 'Felt strong today');
+  });
+
   test(
-    'reorderExercises rejects an id from a different session',
+    'addExercise uses max position plus one after a middle row was removed',
     () async {
       final database = AppDatabase(NativeDatabase.memory());
       addTearDown(database.close);
       final repository = SessionRepository(database);
-
-      final exerciseId = await database
-          .into(database.exercises)
-          .insert(
-            ExercisesCompanion.insert(
-              name: 'Squat',
-              category: ExerciseCategory.strength,
-              muscleGroup: 'legs',
-            ),
-          );
       final sessionId = await database
           .into(database.sessions)
-          .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 9)));
-      final otherSessionId = await database
-          .into(database.sessions)
-          .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 8)));
-
-      final ownLink = await database
-          .into(database.sessionExercises)
           .insert(
-            SessionExercisesCompanion.insert(
-              sessionId: sessionId,
-              exerciseId: exerciseId,
-              position: 0,
-            ),
+            SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 9)),
           );
-      final foreignLink = await database
-          .into(database.sessionExercises)
-          .insert(
-            SessionExercisesCompanion.insert(
-              sessionId: otherSessionId,
-              exerciseId: exerciseId,
-              position: 0,
-            ),
-          );
+      final exerciseIds = [
+        for (final name in ['A', 'B', 'C', 'D'])
+          await database
+              .into(database.exercises)
+              .insert(
+                ExercisesCompanion.insert(
+                  name: 'Exercise $name',
+                  category: ExerciseCategory.strength,
+                  muscleGroup: 'test',
+                ),
+              ),
+      ];
 
-      expect(
-        () => repository.reorderExercises(sessionId, [foreignLink]),
-        throwsArgumentError,
+      final linkIds = <int>[
+        for (var position = 0; position < 3; position++)
+          await database
+              .into(database.sessionExercises)
+              .insert(
+                SessionExercisesCompanion.insert(
+                  sessionId: sessionId,
+                  exerciseId: exerciseIds[position],
+                  position: position,
+                ),
+              ),
+      ];
+      await (database.delete(
+        database.sessionExercises,
+      )..where((row) => row.id.equals(linkIds[1]))).go();
+
+      final newLinkId = await repository.addExercise(
+        sessionId: sessionId,
+        exerciseId: exerciseIds[3],
       );
-      // The valid-but-incomplete list (missing ownLink) must also fail rather
-      // than silently reordering a subset.
-      expect(
-        () => repository.reorderExercises(sessionId, [ownLink, foreignLink]),
-        throwsArgumentError,
-      );
+
+      final rows =
+          await (database.select(database.sessionExercises)
+                ..where((row) => row.sessionId.equals(sessionId))
+                ..orderBy([(row) => OrderingTerm.asc(row.position)]))
+              .get();
+      final inserted = rows.singleWhere((row) => row.id == newLinkId);
+      expect(rows.map((row) => row.position), [0, 2, 3]);
+      expect(inserted.position, 3);
     },
   );
+
+  test('updatePrescription writes only the fields passed', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SessionRepository(database);
+    final exerciseId = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Front Squat',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'legs',
+          ),
+        );
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 10)));
+    final sessionExerciseId = await database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+            targetSets: const Value(4),
+            sidesPerSet: const Value(2),
+            minReps: const Value(6),
+            maxReps: const Value(8),
+            targetDurationSec: const Value(90),
+            targetDistanceMeters: const Value(25),
+            restSeconds: const Value(150),
+            eccentricSec: const Value(3),
+            bottomPauseSec: const Value(1),
+            concentricSec: const Value(2),
+            topPauseSec: const Value(1),
+            prescriptionNotes: const Value('RPE 8'),
+            formUrl: const Value('https://example.com/form'),
+          ),
+        );
+
+    await repository.updatePrescription(
+      sessionExerciseId,
+      maxReps: const Value(10),
+      targetDurationSec: const Value<int?>(null),
+      prescriptionNotes: const Value<String?>('Stay upright'),
+    );
+
+    final row = await (database.select(
+      database.sessionExercises,
+    )..where((item) => item.id.equals(sessionExerciseId))).getSingle();
+    expect(row.targetSets, 4);
+    expect(row.sidesPerSet, 2);
+    expect(row.minReps, 6);
+    expect(row.maxReps, 10);
+    expect(row.targetDurationSec, equals(null));
+    expect(row.targetDistanceMeters, 25);
+    expect(row.restSeconds, 150);
+    expect(row.eccentricSec, 3);
+    expect(row.bottomPauseSec, 1);
+    expect(row.concentricSec, 2);
+    expect(row.topPauseSec, 1);
+    expect(row.prescriptionNotes, 'Stay upright');
+    expect(row.formUrl, 'https://example.com/form');
+  });
 }

@@ -19,6 +19,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
+import '../../data/repositories/bodyweight_repository.dart';
 import '../../data/repositories/rest_day_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../data/services/backup_service.dart';
@@ -438,6 +439,19 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     Exercise exercise,
   ) async {
+    final existingNames = (await ref.read(exerciseRepositoryProvider).all())
+        .where((item) => item.id != exercise.id)
+        .map((item) => item.name)
+        .toList(growable: false);
+    if (!context.mounted) return;
+    final name = TextEditingController(text: exercise.name);
+    final bodyweightFactor = TextEditingController(
+      text: exercise.bodyweightFactor.toString(),
+    );
+    final videoUrl = TextEditingController(text: exercise.videoUrl ?? '');
+    var category = exercise.category;
+    var isTimed = exercise.isTimed;
+    var tracksDistance = exercise.tracksDistance;
     Set<MuscleId> primary;
     Set<MuscleId> secondary;
     try {
@@ -451,46 +465,250 @@ class SettingsScreen extends ConsumerWidget {
       secondary = {};
     }
 
-    final shouldSave = await showDialog<bool>(
+    final action = await showModalBottomSheet<_ExerciseEditorAction>(
       context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('${exercise.name} muscles'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _MuscleSelectionField(
-                label: 'Primary muscles',
-                selected: primary,
-                onTap: () async {
-                  final value = await _showMusclePicker(
-                    context,
-                    title: 'Primary muscles',
-                    selected: primary,
-                  );
-                  if (value == null) return;
-                  setDialogState(() {
-                    primary = value;
-                    secondary.removeAll(primary);
-                  });
-                },
+        builder: (context, setSheetState) {
+          final theme = Theme.of(context);
+          return SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              const SizedBox(height: 12),
-              _MuscleSelectionField(
-                label: 'Secondary muscles',
-                selected: secondary,
-                onTap: () async {
-                  final value = await _showMusclePicker(
-                    context,
-                    title: 'Secondary muscles',
-                    selected: secondary,
-                    excluded: primary,
-                  );
-                  if (value == null) return;
-                  setDialogState(() => secondary = value);
-                },
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            foregroundColor:
+                                theme.colorScheme.onPrimaryContainer,
+                            child: const Icon(AppIcons.edit, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Edit exercise',
+                              style: theme.textTheme.titleLarge,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              controller: name,
+                              autofocus: true,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                labelText: 'Name',
+                                errorText:
+                                    isDuplicateExerciseName(
+                                      name.text,
+                                      existingNames,
+                                    )
+                                    ? '"${name.text.trim()}" already exists'
+                                    : null,
+                              ),
+                              onChanged: (_) => setSheetState(() {}),
+                            ),
+                            const SizedBox(height: 20),
+                            const _FieldLabel('Category'),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final item in ExerciseCategory.values)
+                                  ChoiceChip(
+                                    label: Text(_titleCase(item.name)),
+                                    avatar: Icon(
+                                      AppIcons.forCategoryName(item.name),
+                                      size: 18,
+                                    ),
+                                    selected: category == item,
+                                    onSelected: (_) =>
+                                        setSheetState(() => category = item),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _categoryLoggingHelper(category),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Logged in seconds'),
+                              subtitle: const Text(
+                                'Show a duration field instead of reps for this exercise.',
+                              ),
+                              value: isTimed,
+                              onChanged: (value) =>
+                                  setSheetState(() => isTimed = value),
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Tracks distance'),
+                              subtitle: const Text(
+                                'Keep distance available even when this exercise is not cardio.',
+                              ),
+                              value: tracksDistance,
+                              onChanged: (value) =>
+                                  setSheetState(() => tracksDistance = value),
+                            ),
+                            const SizedBox(height: 20),
+                            TextField(
+                              controller: bodyweightFactor,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: const InputDecoration(
+                                labelText: 'Bodyweight factor',
+                                helperText:
+                                    '1.0 = full bodyweight; use lower values for partial-body movements.',
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            const _FieldLabel('Muscles worked'),
+                            const SizedBox(height: 8),
+                            _MuscleSelectionField(
+                              label: 'Primary muscles',
+                              selected: primary,
+                              onTap: () async {
+                                final value = await _showMusclePicker(
+                                  context,
+                                  title: 'Primary muscles',
+                                  selected: primary,
+                                );
+                                if (value == null) return;
+                                setSheetState(() {
+                                  primary = value;
+                                  secondary.removeAll(primary);
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            _MuscleSelectionField(
+                              label: 'Secondary muscles',
+                              selected: secondary,
+                              onTap: () async {
+                                final value = await _showMusclePicker(
+                                  context,
+                                  title: 'Secondary muscles',
+                                  selected: secondary,
+                                  excluded: primary,
+                                );
+                                if (value == null) return;
+                                setSheetState(() => secondary = value);
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            TextField(
+                              controller: videoUrl,
+                              keyboardType: TextInputType.url,
+                              decoration: const InputDecoration(
+                                labelText: 'Video link (optional)',
+                                hintText: 'YouTube or any demo link',
+                              ),
+                              onTapOutside: (_) =>
+                                  FocusManager.instance.primaryFocus?.unfocus(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(
+                                context,
+                                _ExerciseEditorAction.delete,
+                              ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: theme.colorScheme.error,
+                              ),
+                              child: const Text('Delete'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed:
+                                  name.text.trim().isEmpty ||
+                                      primary.isEmpty ||
+                                      isDuplicateExerciseName(
+                                        name.text,
+                                        existingNames,
+                                      )
+                                  ? null
+                                  : () => Navigator.pop(
+                                      context,
+                                      _ExerciseEditorAction.save,
+                                    ),
+                              child: const Text('Save'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
+          );
+        },
+      ),
+    );
+    if (action == null) {
+      name.dispose();
+      bodyweightFactor.dispose();
+      videoUrl.dispose();
+      return;
+    }
+    if (action == _ExerciseEditorAction.delete) {
+      name.dispose();
+      bodyweightFactor.dispose();
+      videoUrl.dispose();
+      if (!context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Delete ${exercise.name}?'),
+          content: const Text(
+            'This permanently removes the exercise if it is not used by any logged workouts or templates.',
           ),
           actions: [
             TextButton(
@@ -498,24 +716,85 @@ class SettingsScreen extends ConsumerWidget {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: primary.isEmpty
-                  ? null
-                  : () => Navigator.pop(context, true),
-              child: const Text('Save'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete'),
             ),
           ],
         ),
-      ),
-    );
-    if (shouldSave != true) return;
+      );
+      if (confirmed != true) return;
+      final repository = ref.read(exerciseRepositoryProvider);
+      final deleted = await repository.delete(exercise.id);
+      if (deleted) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Exercise deleted.')));
+        }
+        return;
+      }
+      if (!context.mounted) return;
+      final archiveInstead = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Archive instead?'),
+          content: const Text(
+            'This exercise is already used by logged workouts or templates, so it cannot be deleted. Archive it instead.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Keep it'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Archive'),
+            ),
+          ],
+        ),
+      );
+      if (archiveInstead == true) {
+        await repository.archive(exercise.id, archived: true);
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Exercise archived.')));
+        }
+      }
+      return;
+    }
     validateMuscleSelection(primary: primary, secondary: secondary);
-    await ref
-        .read(exerciseRepositoryProvider)
-        .updateMuscles(
-          exercise.id,
-          primaryMuscles: encodeMuscleIds(primary),
-          secondaryMuscles: encodeMuscleIds(secondary),
-        );
+    final factor = (double.tryParse(bodyweightFactor.text) ?? 1.0).clamp(
+      0.0,
+      1.0,
+    );
+    final trimmedVideoUrl = videoUrl.text.trim();
+    final repository = ref.read(exerciseRepositoryProvider);
+    await repository.updateDetails(
+      exercise.id,
+      name: name.text.trim(),
+      category: category,
+      bodyweightFactor: factor,
+      isTimed: isTimed,
+      tracksDistance: tracksDistance,
+    );
+    await repository.updateMuscles(
+      exercise.id,
+      primaryMuscles: encodeMuscleIds(primary),
+      secondaryMuscles: encodeMuscleIds(secondary),
+    );
+    await repository.updateVideoUrl(
+      exercise.id,
+      trimmedVideoUrl.isEmpty ? null : trimmedVideoUrl,
+    );
+    name.dispose();
+    bodyweightFactor.dispose();
+    videoUrl.dispose();
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Exercise updated.')));
+    }
   }
 
   Future<void> _manageExercises(BuildContext context, WidgetRef ref) async {
@@ -1020,6 +1299,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
+
+enum _ExerciseEditorAction { save, delete }
 
 String _categoryLoggingHelper(ExerciseCategory category) => switch (category) {
   ExerciseCategory.cardio =>
@@ -1595,6 +1876,36 @@ class _BodyweightSection extends ConsumerWidget {
   const _BodyweightSection({required this.onAdd});
   final VoidCallback onAdd;
 
+  Future<void> _deleteEntry(
+    BuildContext context,
+    BodyweightRepository repo,
+    BodyweightEntry entry,
+  ) async {
+    await repo.delete(entry.id);
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Deleted bodyweight entry from ${DateFormat.yMMMd().format(entry.date)}.',
+        ),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            unawaited(
+              repo.upsert(
+                date: entry.date,
+                value: entry.value,
+                unit: entry.unit,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -1628,7 +1939,7 @@ class _BodyweightSection extends ConsumerWidget {
               trailing: IconButton(
                 tooltip: 'Delete bodyweight entry',
                 icon: Icon(AppIcons.trash, color: theme.colorScheme.error),
-                onPressed: () => repo.delete(entries[i].id),
+                onPressed: () => _deleteEntry(context, repo, entries[i]),
               ),
             ),
           if (entries.length > 4)

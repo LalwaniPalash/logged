@@ -1900,3 +1900,39 @@ that the next migration should re-derive it rather than copy it.
 
 - **Still NOT done** (both carried from codex's record): the real-device Copenhagen Plank check and
   a real-device restore of a ≤11 backup. Neither is verified on hardware.
+
+## Audit remediation — PHASE 4 (spec: `tasks/spec-audit-fixes.md`) — 2026-08-14
+
+Implemented by Codex. Phase 4 landed within the stated scope:
+
+- [x] **4.1 F3+I3+D4** — `ExerciseRepository` now has `updateDetails(...)` with
+      `Value.absent()` semantics and a guarded `delete(...)` that refuses to remove exercises still
+      referenced by `session_exercises` or `template_exercises`. `settings_screen.dart`'s old
+      muscles-only dialog is now a full **Edit exercise** sheet for bundled and custom exercises:
+      name, category, bodyweight factor, timed/distance flags, muscles, video link, and delete with
+      archive fallback when history/templates block removal.
+- [x] **4.2 D1+D2+D3** — removing an exercise from an active workout now confirms the exact exercise
+      name and current set count. Set delete in the set editor is now `SnackBar` + **Undo**, and the
+      undo path re-inserts the original set values rather than a fresh default row. Bodyweight-entry
+      delete in Settings also uses `SnackBar` + **Undo**.
+- [x] **4.3 F5+A7** — finishing a workout now includes a multiline notes field and `SessionRepository.finish`
+      no longer nulls an existing note when the caller omits `notes`. Completed-session view
+      (`active_session_screen.dart` when `endedAt != null`) and `history_screen.dart` now display
+      saved session notes.
+- [x] **4.4 A3** — `SetRepository.edit` now uses `Value.absent()` for omitted fields and `Value<T?>`
+      for nullable ones, so callers can separately express **leave alone** vs **clear**. Both real
+      callers in `active_session_screen.dart` were updated deliberately.
+- [x] **4.5 A6** — `SessionRepository.addExercise` now assigns `max(position) + 1`, so adding after a
+      middle delete cannot collide with an existing position.
+- [x] **4.6 F7** — session prescriptions are now editable from the active workout screen through a
+      new `SessionRepository.updatePrescription(...)` method with `Value.absent()` semantics. The
+      active-session prescription line is tappable, and both the template editor and session screen
+      now use the same shared prescription sheet widget/formatter.
+
+- **Verified:** added the required repository tests for guarded exercise delete, `finish()` note
+  preservation, non-colliding `addExercise()` positions, `updatePrescription()` partial writes, and
+  `SetRepository.edit()` leave-alone vs clear semantics. `flutter analyze` is clean, and
+  `flutter test` is green at **272 tests**.
+- **NOT done:** the spec's manual Phase 4 flow checks — I did **not** manually remove an exercise
+  mid-session and inspect the confirmation dialog, delete a set and undo it in the running app,
+  rename a bundled exercise in Settings, or attempt a blocked delete and choose Archive in the UI.

@@ -50,35 +50,43 @@ class SetRepository {
   /// Edits the logged fields of an existing set.
   Future<void> edit(
     int setId, {
-    int? reps,
-    double? weightValue,
-    WeightUnit? unit,
+    Value<int?> reps = const Value.absent(),
+    Value<double?> weightValue = const Value.absent(),
+    Value<WeightUnit?> unit = const Value.absent(),
     WeightEntry? weightEntry,
     int? sideCount,
     LoadingMode? loadingMode,
-    double? distanceMeters,
-    int? durationSec,
-    double? rpe,
-    Map<MuscleId, double>? muscleBiasWeights,
+    Value<double?> distanceMeters = const Value.absent(),
+    Value<int?> durationSec = const Value.absent(),
+    Value<double?> rpe = const Value.absent(),
+    Value<Map<MuscleId, double>?> muscleBiasWeights = const Value.absent(),
     bool? isWarmup,
-    String? notes,
+    Value<String?> notes = const Value.absent(),
   }) =>
       (_database.update(
         _database.setEntries,
       )..where((row) => row.id.equals(setId))).write(
         SetEntriesCompanion(
-          reps: Value(reps),
-          weightValue: Value(weightValue),
-          unit: Value(unit),
-          weightEntry: Value(weightEntry ?? WeightEntry.total),
-          sideCount: Value(sideCount ?? 1),
-          loadingMode: Value(loadingMode ?? LoadingMode.external),
-          distanceMeters: Value(distanceMeters),
-          durationSec: Value(durationSec),
-          rpe: Value(rpe),
-          muscleBiasWeights: Value(encodeMuscleBiasWeights(muscleBiasWeights)),
-          isWarmup: Value(isWarmup ?? false),
-          notes: Value(notes),
+          reps: reps,
+          weightValue: weightValue,
+          unit: unit,
+          weightEntry: weightEntry == null
+              ? const Value.absent()
+              : Value(weightEntry),
+          sideCount: sideCount == null
+              ? const Value.absent()
+              : Value(sideCount),
+          loadingMode: loadingMode == null
+              ? const Value.absent()
+              : Value(loadingMode),
+          distanceMeters: distanceMeters,
+          durationSec: durationSec,
+          rpe: rpe,
+          muscleBiasWeights: muscleBiasWeights.present
+              ? Value(encodeMuscleBiasWeights(muscleBiasWeights.value))
+              : const Value.absent(),
+          isWarmup: isWarmup == null ? const Value.absent() : Value(isWarmup),
+          notes: notes,
         ),
       );
 

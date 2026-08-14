@@ -116,6 +116,7 @@ class _HistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final active = session.endedAt == null;
+    final note = session.notes?.trim();
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: AppListCard(
@@ -152,11 +153,28 @@ class _HistoryTile extends StatelessWidget {
           active ? 'Active session' : 'Workout',
           style: theme.textTheme.titleMedium,
         ),
-        subtitle: Text(
-          DateFormat.jm().format(session.startedAt),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              DateFormat.jm().format(session.startedAt),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (note != null && note.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                note,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
         ),
         trailing: Icon(
           active ? AppIcons.play : AppIcons.chevronRight,

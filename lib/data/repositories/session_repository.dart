@@ -186,7 +186,7 @@ class SessionRepository {
       )..where((row) => row.id.equals(sessionId))).write(
         SessionsCompanion(
           endedAt: Value(endedAt ?? DateTime.now()),
-          notes: Value(notes),
+          notes: notes == null ? const Value.absent() : Value(notes),
         ),
       );
 
@@ -197,16 +197,59 @@ class SessionRepository {
     final rows = await (_database.select(
       _database.sessionExercises,
     )..where((row) => row.sessionId.equals(sessionId))).get();
+    final nextPosition =
+        rows.fold<int>(
+          -1,
+          (maxPosition, row) =>
+              row.position > maxPosition ? row.position : maxPosition,
+        ) +
+        1;
     return _database
         .into(_database.sessionExercises)
         .insert(
           SessionExercisesCompanion.insert(
             sessionId: sessionId,
             exerciseId: exerciseId,
-            position: rows.length,
+            position: nextPosition,
           ),
         );
   }
+
+  Future<void> updatePrescription(
+    int sessionExerciseId, {
+    Value<int?> targetSets = const Value.absent(),
+    Value<int?> sidesPerSet = const Value.absent(),
+    Value<int?> minReps = const Value.absent(),
+    Value<int?> maxReps = const Value.absent(),
+    Value<int?> targetDurationSec = const Value.absent(),
+    Value<double?> targetDistanceMeters = const Value.absent(),
+    Value<int?> restSeconds = const Value.absent(),
+    Value<int?> eccentricSec = const Value.absent(),
+    Value<int?> bottomPauseSec = const Value.absent(),
+    Value<int?> concentricSec = const Value.absent(),
+    Value<int?> topPauseSec = const Value.absent(),
+    Value<String?> prescriptionNotes = const Value.absent(),
+    Value<String?> formUrl = const Value.absent(),
+  }) =>
+      (_database.update(
+        _database.sessionExercises,
+      )..where((row) => row.id.equals(sessionExerciseId))).write(
+        SessionExercisesCompanion(
+          targetSets: targetSets,
+          sidesPerSet: sidesPerSet,
+          minReps: minReps,
+          maxReps: maxReps,
+          targetDurationSec: targetDurationSec,
+          targetDistanceMeters: targetDistanceMeters,
+          restSeconds: restSeconds,
+          eccentricSec: eccentricSec,
+          bottomPauseSec: bottomPauseSec,
+          concentricSec: concentricSec,
+          topPauseSec: topPauseSec,
+          prescriptionNotes: prescriptionNotes,
+          formUrl: formUrl,
+        ),
+      );
 
   Future<void> swapExercise({
     required int sessionExerciseId,

@@ -137,7 +137,10 @@ void main() {
 
     await repository.edit(
       setId,
-      muscleBiasWeights: const {MuscleId.quads: 0.25, MuscleId.gluteMax: 0.75},
+      muscleBiasWeights: const Value<Map<MuscleId, double>?>({
+        MuscleId.quads: 0.25,
+        MuscleId.gluteMax: 0.75,
+      }),
     );
     set = await (database.select(
       database.setEntries,
@@ -146,5 +149,90 @@ void main() {
       MuscleId.quads: 0.25,
       MuscleId.gluteMax: 0.75,
     });
+  });
+
+  test('edit leaves unpassed fields untouched', () async {
+    final setId = await repository.add(
+      sessionExerciseId: sessionExerciseId,
+      setNumber: 1,
+      reps: 8,
+      weightValue: 60,
+      unit: WeightUnit.kg,
+      weightEntry: WeightEntry.perSide,
+      sideCount: 2,
+      loadingMode: LoadingMode.bodyweightAdded,
+      distanceMeters: 120,
+      durationSec: 45,
+      isWarmup: true,
+      rpe: 8.5,
+      muscleBiasWeights: const {MuscleId.quads: 1.5, MuscleId.gluteMax: 0.5},
+      notes: 'Original note',
+    );
+
+    await repository.edit(setId, reps: const Value(10));
+
+    final set = await (database.select(
+      database.setEntries,
+    )..where((row) => row.id.equals(setId))).getSingle();
+    expect(set.reps, 10);
+    expect(set.weightValue, 60);
+    expect(set.unit, WeightUnit.kg);
+    expect(set.weightEntry, WeightEntry.perSide);
+    expect(set.sideCount, 2);
+    expect(set.loadingMode, LoadingMode.bodyweightAdded);
+    expect(set.distanceMeters, 120);
+    expect(set.durationSec, 45);
+    expect(set.isWarmup, isTrue);
+    expect(set.rpe, 8.5);
+    expect(decodeMuscleBiasWeights(set.muscleBiasWeights), const {
+      MuscleId.quads: 1.5,
+      MuscleId.gluteMax: 0.5,
+    });
+    expect(set.notes, 'Original note');
+  });
+
+  test('edit can explicitly clear nullable fields', () async {
+    final setId = await repository.add(
+      sessionExerciseId: sessionExerciseId,
+      setNumber: 1,
+      reps: 8,
+      weightValue: 60,
+      unit: WeightUnit.kg,
+      weightEntry: WeightEntry.perSide,
+      sideCount: 2,
+      loadingMode: LoadingMode.bodyweightAdded,
+      distanceMeters: 120,
+      durationSec: 45,
+      isWarmup: true,
+      rpe: 8.5,
+      muscleBiasWeights: const {MuscleId.quads: 1.5, MuscleId.gluteMax: 0.5},
+      notes: 'Original note',
+    );
+
+    await repository.edit(
+      setId,
+      weightValue: const Value<double?>(null),
+      unit: const Value<WeightUnit?>(null),
+      distanceMeters: const Value<double?>(null),
+      durationSec: const Value<int?>(null),
+      rpe: const Value<double?>(null),
+      muscleBiasWeights: const Value<Map<MuscleId, double>?>(null),
+      notes: const Value<String?>(null),
+    );
+
+    final set = await (database.select(
+      database.setEntries,
+    )..where((row) => row.id.equals(setId))).getSingle();
+    expect(set.weightValue, equals(null));
+    expect(set.unit, equals(null));
+    expect(set.distanceMeters, equals(null));
+    expect(set.durationSec, equals(null));
+    expect(set.rpe, equals(null));
+    expect(set.muscleBiasWeights, equals(null));
+    expect(set.notes, equals(null));
+    expect(set.weightEntry, WeightEntry.perSide);
+    expect(set.sideCount, 2);
+    expect(set.loadingMode, LoadingMode.bodyweightAdded);
+    expect(set.isWarmup, isTrue);
   });
 }
