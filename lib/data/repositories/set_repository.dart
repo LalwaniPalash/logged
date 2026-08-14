@@ -11,6 +11,22 @@ class SetRepository {
 
   final AppDatabase _database;
 
+  Future<void> _renumber(int sessionExerciseId) async {
+    final rows =
+        await (_database.select(_database.setEntries)
+              ..where((row) => row.sessionExerciseId.equals(sessionExerciseId))
+              ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
+            .get();
+    for (var index = 0; index < rows.length; index++) {
+      final expectedNumber = index + 1;
+      if (rows[index].setNumber == expectedNumber) continue;
+      await update(
+        rows[index].id,
+        SetEntriesCompanion(setNumber: Value(expectedNumber)),
+      );
+    }
+  }
+
   Future<int> add({
     required int sessionExerciseId,
     required int setNumber,
@@ -149,7 +165,53 @@ class SetRepository {
     });
   }
 
-  Future<void> delete(int setId) => (_database.delete(
-    _database.setEntries,
-  )..where((row) => row.id.equals(setId))).go();
+  Future<int> restoreDeletedSet({
+    required int sessionExerciseId,
+    required int setNumber,
+    int? reps,
+    double? weightValue,
+    WeightUnit? unit,
+    WeightEntry weightEntry = WeightEntry.total,
+    int sideCount = 1,
+    LoadingMode loadingMode = LoadingMode.external,
+    double? distanceMeters,
+    int? durationSec,
+    bool isWarmup = false,
+    double? rpe,
+    Map<MuscleId, double>? muscleBiasWeights,
+    String? notes,
+  }) => _database.transaction(() async {
+    await shiftSetNumbers(
+      sessionExerciseId: sessionExerciseId,
+      by: 1,
+      fromNumber: setNumber,
+    );
+    return add(
+      sessionExerciseId: sessionExerciseId,
+      setNumber: setNumber,
+      reps: reps,
+      weightValue: weightValue,
+      unit: unit,
+      weightEntry: weightEntry,
+      sideCount: sideCount,
+      loadingMode: loadingMode,
+      distanceMeters: distanceMeters,
+      durationSec: durationSec,
+      isWarmup: isWarmup,
+      rpe: rpe,
+      muscleBiasWeights: muscleBiasWeights,
+      notes: notes,
+    );
+  });
+
+  Future<void> delete(int setId) => _database.transaction(() async {
+    final row = await (_database.select(
+      _database.setEntries,
+    )..where((entry) => entry.id.equals(setId))).getSingleOrNull();
+    if (row == null) return;
+    await (_database.delete(
+      _database.setEntries,
+    )..where((entry) => entry.id.equals(setId))).go();
+    await _renumber(row.sessionExerciseId);
+  });
 }

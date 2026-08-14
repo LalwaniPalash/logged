@@ -235,4 +235,149 @@ void main() {
     expect(set.loadingMode, LoadingMode.bodyweightAdded);
     expect(set.isWarmup, isTrue);
   });
+
+  test('delete renumbers the remaining sets contiguously', () async {
+    await database.batch((batch) {
+      batch.insertAll(database.setEntries, [
+        for (var setNumber = 1; setNumber <= 3; setNumber++)
+          SetEntriesCompanion.insert(
+            sessionExerciseId: sessionExerciseId,
+            setNumber: setNumber,
+            reps: const Value(5),
+            weightValue: const Value(80),
+            unit: const Value(WeightUnit.kg),
+          ),
+      ]);
+    });
+
+    final middleSet =
+        await (database.select(database.setEntries)
+              ..where((row) => row.sessionExerciseId.equals(sessionExerciseId))
+              ..where((row) => row.setNumber.equals(2)))
+            .getSingle();
+
+    await repository.delete(middleSet.id);
+
+    final rows =
+        await (database.select(database.setEntries)
+              ..where((row) => row.sessionExerciseId.equals(sessionExerciseId))
+              ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
+            .get();
+    expect(rows.map((row) => row.setNumber), [1, 2]);
+    expect(rows.map((row) => row.reps), [5, 5]);
+
+    await repository.add(
+      sessionExerciseId: sessionExerciseId,
+      setNumber: 3,
+      reps: 5,
+      weightValue: 80,
+      unit: WeightUnit.kg,
+    );
+
+    final renumbered =
+        await (database.select(database.setEntries)
+              ..where((row) => row.sessionExerciseId.equals(sessionExerciseId))
+              ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
+            .get();
+    expect(renumbered.map((row) => row.setNumber), [1, 2, 3]);
+  });
+
+  test('delete of a non-existent id is a no-op', () async {
+    await repository.add(
+      sessionExerciseId: sessionExerciseId,
+      setNumber: 1,
+      reps: 8,
+      weightValue: 60,
+      unit: WeightUnit.kg,
+    );
+
+    await repository.delete(999999);
+
+    final rows = await database.select(database.setEntries).get();
+    expect(rows, hasLength(1));
+    expect(rows.single.setNumber, 1);
+  });
+
+  test(
+    'undo re-insert restores the original ordinal without duplicating a set number',
+    () async {
+      await repository.add(
+        sessionExerciseId: sessionExerciseId,
+        setNumber: 1,
+        reps: 8,
+        weightValue: 40,
+        unit: WeightUnit.kg,
+        isWarmup: true,
+      );
+      final deletedId = await repository.add(
+        sessionExerciseId: sessionExerciseId,
+        setNumber: 2,
+        reps: 10,
+        weightValue: 60,
+        unit: WeightUnit.kg,
+        weightEntry: WeightEntry.perSide,
+        sideCount: 2,
+        loadingMode: LoadingMode.bodyweightAdded,
+        distanceMeters: 120,
+        durationSec: 45,
+        rpe: 8.5,
+        muscleBiasWeights: const {MuscleId.quads: 1.5, MuscleId.gluteMax: 0.5},
+        notes: 'Restore me',
+      );
+      await repository.add(
+        sessionExerciseId: sessionExerciseId,
+        setNumber: 3,
+        reps: 6,
+        weightValue: 80,
+        unit: WeightUnit.kg,
+      );
+
+      final deletedSet = await (database.select(
+        database.setEntries,
+      )..where((row) => row.id.equals(deletedId))).getSingle();
+
+      await repository.delete(deletedId);
+      await repository.restoreDeletedSet(
+        sessionExerciseId: deletedSet.sessionExerciseId,
+        setNumber: deletedSet.setNumber,
+        reps: deletedSet.reps,
+        weightValue: deletedSet.weightValue,
+        unit: deletedSet.unit,
+        weightEntry: deletedSet.weightEntry,
+        sideCount: deletedSet.sideCount,
+        loadingMode: deletedSet.loadingMode,
+        distanceMeters: deletedSet.distanceMeters,
+        durationSec: deletedSet.durationSec,
+        isWarmup: deletedSet.isWarmup,
+        rpe: deletedSet.rpe,
+        muscleBiasWeights: decodeMuscleBiasWeights(
+          deletedSet.muscleBiasWeights,
+        ),
+        notes: deletedSet.notes,
+      );
+
+      final rows =
+          await (database.select(database.setEntries)
+                ..where(
+                  (row) => row.sessionExerciseId.equals(sessionExerciseId),
+                )
+                ..orderBy([(row) => OrderingTerm.asc(row.setNumber)]))
+              .get();
+      expect(rows.map((row) => row.setNumber), [1, 2, 3]);
+      expect(rows.where((row) => row.setNumber == 2), hasLength(1));
+      final restored = rows.singleWhere((row) => row.setNumber == 2);
+      expect(restored.reps, 10);
+      expect(restored.weightEntry, WeightEntry.perSide);
+      expect(restored.sideCount, 2);
+      expect(restored.loadingMode, LoadingMode.bodyweightAdded);
+      expect(restored.distanceMeters, 120);
+      expect(restored.durationSec, 45);
+      expect(restored.rpe, 8.5);
+      expect(decodeMuscleBiasWeights(restored.muscleBiasWeights), const {
+        MuscleId.quads: 1.5,
+        MuscleId.gluteMax: 0.5,
+      });
+      expect(restored.notes, 'Restore me');
+    },
+  );
 }

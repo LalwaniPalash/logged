@@ -287,7 +287,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           onPressed: () {
             unawaited(
               repository
-                  .add(
+                  .restoreDeletedSet(
                     sessionExerciseId: detail.sessionExercise.id,
                     setNumber: set.setNumber,
                     reps: set.reps,
