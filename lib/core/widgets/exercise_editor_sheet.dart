@@ -125,7 +125,7 @@ Future<bool> showExerciseEditorSheet(
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _categoryLoggingHelper(category),
+                            categoryLoggingHelper(category),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -480,7 +480,9 @@ class ExerciseInfoSheet extends ConsumerWidget {
 
 enum _ExerciseEditorAction { save, delete }
 
-String _categoryLoggingHelper(ExerciseCategory category) => switch (category) {
+/// Explains what a category changes about logging. Shared by the exercise
+/// editor and the create-exercise sheet in Settings — keep one copy.
+String categoryLoggingHelper(ExerciseCategory category) => switch (category) {
   ExerciseCategory.cardio =>
     'Cardio sets need both a duration and a distance to count as complete.',
   ExerciseCategory.stretching =>

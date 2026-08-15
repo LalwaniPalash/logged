@@ -222,6 +222,15 @@ class NotificationService implements NotificationClient {
     }
   }
 
+  /// Known limitation: like [schedule], this anchors in UTC rather than the
+  /// device's IANA zone, which the app deliberately does not detect (it would
+  /// mean another native plugin). For a one-shot alert inside the rolling
+  /// window that is harmless — the window is rebuilt whenever the app opens.
+  /// A *repeating* alert has no such correction, so in a DST-observing zone the
+  /// backstop drifts by an hour after each transition and stays drifted until
+  /// the user next opens the app. Accepted: an hour-late nudge still nudges,
+  /// and the backstop only ever fires for someone who has stopped opening the
+  /// app anyway.
   @override
   Future<void> scheduleWeekly({
     required int id,

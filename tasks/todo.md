@@ -2156,3 +2156,39 @@ Implemented by Codex. Phase 7 landed within the stated scope:
   also did **not** run the broader deferred hardware/manual backlog listed above: the Phase 3
   Copenhagen/v11-restore checks, all Phase 4 manual flows, all Phase 5 manual flows, and all Phase 6
   notification behavior.
+
+### Phase 7 review fixes — 2026-08-15
+
+Claude reviewed all seven Phase 7 commits against `tasks/spec-phase7.md`. Two defects, one proven by
+a failing test written before the fix, plus one accepted limitation now documented in the code:
+
+1. **The anatomy dirty flag was set on every save (confirmed by test).** `updateMuscles(...)` wrote
+   `anatomyEditedByUser: true` unconditionally, but the editor sheet re-sends **every** field on
+   **every** save — so fixing a typo in an exercise name, changing its category, or pasting a video
+   link permanently opted that exercise out of all future library anatomy corrections. That defeats
+   the entire point of task 7.2, and task 7.3 had just moved the editor to one tap away on every
+   card in every workout, so the blast radius was large. `updateMuscles` now compares against the
+   stored anatomy and leaves the flag absent when nothing changed. Codex's own test covered only the
+   changed case; the regression test `re-saving unchanged muscles leaves anatomy eligible for
+   backfill` covers the other half.
+2. **`_categoryLoggingHelper` was duplicated by the extraction.** Task 7.3 moved the editor out of
+   `settings_screen.dart` but left a verbatim copy of the helper behind, still live in the
+   create-exercise sheet — a `switch` needing to stay in sync across two files. Now one public
+   `categoryLoggingHelper` in `exercise_editor_sheet.dart`, called from both.
+3. **Accepted and documented, not fixed:** the new weekly backstop anchors in UTC (like the existing
+   `schedule`), so in a DST-observing timezone it drifts an hour after each transition and does not
+   self-correct — the one-shot window self-corrects only because opening the app rebuilds it, and
+   the backstop exists precisely for users who have stopped opening the app. Fixing it means
+   detecting the device's IANA zone, which is another native plugin the app deliberately avoids.
+   Reasoning recorded above `scheduleWeekly`. No impact in India (no DST).
+
+Also checked and found correct, contrary to first reading: the v13 migration guard
+(`from >= 8 && from < 10` alterTable vs `from < 8 || from >= 10` addColumn are exact complements, so
+the column lands once on every upgrade path); `validateMuscleSelection` throwing out of the editor
+(both pickers prevent primary/secondary overlap, so it is unreachable); the backstop being cancelled
+before the `enabled` early-return; and `_applyAnatomyChanges`, which Codex revived as the shared
+batch instead of deleting it — better than the spec asked for. Task 7.6 is also better than specified:
+it suppresses the first set in a newly-switched entry mode, which keying alone would not have.
+
+`flutter analyze` clean, `flutter test` green at **323 tests**. The device verification listed in the
+Phase 7 record above remains **unverified**, and now leads into the full end-to-end run.

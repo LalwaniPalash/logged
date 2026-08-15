@@ -93,6 +93,41 @@ void main() {
     expect(row.read<int>('edited'), 1);
   });
 
+  test('re-saving unchanged muscles leaves anatomy eligible for backfill', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = ExerciseRepository(database);
+    final id = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Barbell Bench Press',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'chest',
+            primaryMuscles: const Value('["pec_sternal"]'),
+            secondaryMuscles: const Value('["triceps_long"]'),
+          ),
+        );
+    await _ensureAnatomyEditedByUserColumn(database);
+
+    // The editor sheet re-sends every field on every save, so a name-only edit
+    // still routes the untouched muscles back through updateMuscles.
+    await repository.updateDetails(id, name: 'Bench Press (Barbell)');
+    await repository.updateMuscles(
+      id,
+      primaryMuscles: '["pec_sternal"]',
+      secondaryMuscles: '["triceps_long"]',
+    );
+
+    final row = await database
+        .customSelect(
+          'SELECT anatomy_edited_by_user AS edited FROM exercises WHERE id = ?',
+          variables: [Variable<int>(id)],
+        )
+        .getSingle();
+    expect(row.read<int>('edited'), 0);
+  });
+
   test(
     'delete returns false and keeps the row when the exercise has logged sets',
     () async {

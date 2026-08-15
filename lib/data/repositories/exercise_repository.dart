@@ -70,20 +70,38 @@ class ExerciseRepository {
         ),
       );
 
+  /// Writes muscle anatomy and, **only when it actually changed**, marks the row
+  /// as user-edited so the versioned library backfill stops correcting it.
+  ///
+  /// The editor sheet re-sends every field on every save, so flagging on each
+  /// call would opt an exercise out of future library anatomy fixes just for
+  /// fixing a typo in its name — and the sheet is now one tap away on every
+  /// card in an active workout.
   Future<void> updateMuscles(
     int exerciseId, {
     required String primaryMuscles,
     required String secondaryMuscles,
-  }) =>
-      (_database.update(
-        _database.exercises,
-      )..where((row) => row.id.equals(exerciseId))).write(
-        ExercisesCompanion(
-          primaryMuscles: Value(primaryMuscles),
-          secondaryMuscles: Value(secondaryMuscles),
-          anatomyEditedByUser: const Value(true),
-        ),
-      );
+  }) async {
+    final existing =
+        await (_database.select(
+          _database.exercises,
+        )..where((row) => row.id.equals(exerciseId))).getSingleOrNull();
+    final unchanged =
+        existing != null &&
+        existing.primaryMuscles == primaryMuscles &&
+        existing.secondaryMuscles == secondaryMuscles;
+    await (_database.update(
+      _database.exercises,
+    )..where((row) => row.id.equals(exerciseId))).write(
+      ExercisesCompanion(
+        primaryMuscles: Value(primaryMuscles),
+        secondaryMuscles: Value(secondaryMuscles),
+        anatomyEditedByUser: unchanged
+            ? const Value.absent()
+            : const Value(true),
+      ),
+    );
+  }
 
   Future<void> archive(int exerciseId, {required bool archived}) =>
       (_database.update(_database.exercises)

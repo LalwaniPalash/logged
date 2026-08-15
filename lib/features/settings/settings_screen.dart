@@ -258,7 +258,7 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              _categoryLoggingHelper(category),
+                              categoryLoggingHelper(category),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -1277,16 +1277,6 @@ class _FieldLabel extends StatelessWidget {
 String _titleCase(String value) =>
     value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 
-String _categoryLoggingHelper(ExerciseCategory category) => switch (category) {
-  ExerciseCategory.cardio =>
-    'Cardio sets need both a duration and a distance to count as complete.',
-  ExerciseCategory.stretching =>
-    'Stretching sets are logged in seconds, not reps.',
-  ExerciseCategory.bodyweight =>
-    'Bodyweight sets count when you log reps or seconds.',
-  ExerciseCategory.strength =>
-    'Strength sets count when you log reps and load.',
-};
 
 class _MuscleSelectionField extends StatelessWidget {
   const _MuscleSelectionField({
