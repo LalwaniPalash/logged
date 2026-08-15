@@ -230,7 +230,7 @@ class NotificationService implements NotificationClient {
             scheduledDate: tz.TZDateTime.from(endTime.toUtc(), tz.UTC),
             title: title,
             body: body,
-            notificationDetails: _completionDetails('rest_timer', 'Rest timer'),
+            notificationDetails: _completionDetails(),
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           );
         default:
@@ -257,7 +257,7 @@ class NotificationService implements NotificationClient {
             id: id,
             title: title,
             body: body,
-            notificationDetails: _completionDetails('rest_timer', 'Rest timer'),
+            notificationDetails: _completionDetails(),
           );
         default:
           return;
@@ -278,50 +278,64 @@ class NotificationService implements NotificationClient {
     }
   }
 
-  NotificationDetails _countdownDetails(DateTime endTime) =>
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'rest_timer_progress',
-          'Rest timer countdown',
-          channelDescription: 'Logged rest timer countdown',
-          importance: Importance.low,
-          priority: Priority.low,
-          playSound: false,
-          enableVibration: false,
-          icon: _androidNotificationIcon,
-          color: _androidNotificationAccent,
-          colorized: false,
-          ongoing: true,
-          silent: true,
-          onlyAlertOnce: true,
-          when: endTime.millisecondsSinceEpoch,
-          usesChronometer: true,
-          chronometerCountDown: true,
-          category: AndroidNotificationCategory.stopwatch,
-          actions: const [
-            AndroidNotificationAction(
-              'rest_add_15',
-              '+15s',
-              showsUserInterface: false,
-              cancelNotification: false,
-            ),
-            AndroidNotificationAction(
-              'rest_skip',
-              'Skip',
-              showsUserInterface: false,
-              cancelNotification: false,
-            ),
-          ],
-        ),
-      );
+  /// Grace period between the chronometer hitting zero and Android reaping the
+  /// countdown on its own. Long enough that the completion alert reposted by
+  /// [showRestComplete] is never the thing that gets reaped; short enough that
+  /// a killed app leaves the shade tidy within a minute.
+  static const _countdownTimeoutGrace = Duration(minutes: 1);
 
-  NotificationDetails _completionDetails(
-    String channelId,
-    String channelName,
-  ) => NotificationDetails(
+  NotificationDetails _countdownDetails(DateTime endTime) {
+    // `ongoing: true` is not user-dismissible below Android 14, and nothing in
+    // Dart can cancel it once the process is gone — so hand Android its own
+    // deadline rather than leaving an orphan counting into negative time.
+    final timeoutAfter =
+        endTime.difference(DateTime.now()) + _countdownTimeoutGrace;
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'rest_timer_progress',
+        'Rest timer countdown',
+        channelDescription: 'Logged rest timer countdown',
+        importance: Importance.low,
+        priority: Priority.low,
+        playSound: false,
+        enableVibration: false,
+        icon: _androidNotificationIcon,
+        color: _androidNotificationAccent,
+        colorized: false,
+        ongoing: true,
+        silent: true,
+        onlyAlertOnce: true,
+        timeoutAfter: timeoutAfter.isNegative
+            ? _countdownTimeoutGrace.inMilliseconds
+            : timeoutAfter.inMilliseconds,
+        when: endTime.millisecondsSinceEpoch,
+          usesChronometer: true,
+        chronometerCountDown: true,
+        category: AndroidNotificationCategory.stopwatch,
+        actions: const [
+          AndroidNotificationAction(
+            'rest_add_15',
+            '+15s',
+            showsUserInterface: false,
+            cancelNotification: false,
+          ),
+          AndroidNotificationAction(
+            'rest_skip',
+            'Skip',
+            showsUserInterface: false,
+            cancelNotification: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The completion alert always lands on the pre-existing high-importance
+  /// `rest_timer` channel, so it is deliberately not parameterised.
+  NotificationDetails _completionDetails() => NotificationDetails(
     android: AndroidNotificationDetails(
-      channelId,
-      channelName,
+      'rest_timer',
+      'Rest timer',
       channelDescription: 'Logged workout reminders',
       importance: Importance.high,
       priority: Priority.high,

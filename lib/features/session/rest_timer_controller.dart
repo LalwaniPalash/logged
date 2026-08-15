@@ -193,13 +193,18 @@ class RestTimerController extends Notifier<RestTimerState>
       remainingSeconds: 0,
       running: false,
     );
-    await ref
-        .read(notificationServiceProvider)
-        .showRestComplete(
-          id: NotificationService.restTimerNotificationId,
-          title: 'Rest complete',
-          body: 'Time for your next set.',
-        );
+    // Same gate as the countdown: with rest-timer notifications switched off in
+    // settings the OS permission may still be granted for coaching reminders,
+    // and posting here would push a notification the user opted out of.
+    if (_notificationsAllowed) {
+      await ref
+          .read(notificationServiceProvider)
+          .showRestComplete(
+            id: NotificationService.restTimerNotificationId,
+            title: 'Rest complete',
+            body: 'Time for your next set.',
+          );
+    }
     await ref.read(restTimerFeedbackProvider)();
   }
 

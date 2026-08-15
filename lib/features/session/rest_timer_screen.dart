@@ -102,7 +102,7 @@ class _RestTimerScreenState extends ConsumerState<RestTimerScreen>
   }
 
   Duration _remainingDuration(DateTime endTime) {
-    final remaining = endTime.difference(DateTime.now());
+    final remaining = endTime.difference(ref.read(restTimerClockProvider)());
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
@@ -110,11 +110,22 @@ class _RestTimerScreenState extends ConsumerState<RestTimerScreen>
     if (!state.running || state.endTime == null) {
       return state.remainingSeconds;
     }
-    final milliseconds = state.endTime!
-        .difference(DateTime.now())
-        .inMilliseconds;
+    final milliseconds = _remainingDuration(state.endTime!).inMilliseconds;
     if (milliseconds <= 0) return 0;
     return (milliseconds / Duration.millisecondsPerSecond).ceil();
+  }
+
+  /// The vsync ticker is frozen while the app is backgrounded and the scheduler
+  /// resets the animation epoch on resume, so the controller silently loses
+  /// exactly the time spent away. [RestTimerState.endTime] stays authoritative,
+  /// so resync the ring whenever it has drifted away from it.
+  bool _animationDrifted(RestTimerState state) {
+    if (!state.running || state.endTime == null) return false;
+    final duration = _animationController.duration;
+    if (duration == null) return false;
+    final shown = duration * _animationController.value;
+    return (shown - _remainingDuration(state.endTime!)).abs() >
+        const Duration(seconds: 1);
   }
 
   String _formatDisplay(int remainingSeconds) {
@@ -126,7 +137,9 @@ class _RestTimerScreenState extends ConsumerState<RestTimerScreen>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(restTimerControllerProvider);
-    if (_syncedRunning != state.running || _syncedEndTime != state.endTime) {
+    if (_syncedRunning != state.running ||
+        _syncedEndTime != state.endTime ||
+        _animationDrifted(state)) {
       _syncAnimation(state);
     }
     if (state.sessionId != widget.sessionId) {

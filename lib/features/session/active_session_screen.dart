@@ -701,13 +701,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     if (!mounted) return;
     final timerState = ref.read(restTimerControllerProvider);
     if (!timerState.running || timerState.sessionId != widget.sessionId) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => RestTimerScreen(
-          sessionId: widget.sessionId,
-          exerciseName: detail.exercise.name,
-          nextSetNumber: _nextSetNumber(detail),
-          suggestion: suggestion,
+    // Not awaited: the caller refreshes the set list right after this returns,
+    // and awaiting the route would hold that refresh back for the whole rest.
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (context) => RestTimerScreen(
+            sessionId: widget.sessionId,
+            exerciseName: detail.exercise.name,
+            nextSetNumber: _nextSetNumber(detail),
+            suggestion: suggestion,
+          ),
         ),
       ),
     );

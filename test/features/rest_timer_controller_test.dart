@@ -193,6 +193,23 @@ void main() {
     expect(notifications.completionPosts, isEmpty);
   });
 
+  test('notifications disabled posts nothing at zero', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 12,
+      seconds: 30,
+      notificationsEnabled: false,
+    );
+    now = now.add(const Duration(seconds: 31));
+    controller.tick();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(restTimerControllerProvider).completed, isTrue);
+    expect(feedbackCount, 1);
+    expect(notifications.completionPosts, isEmpty);
+    expect(notifications.countdownPosts, isEmpty);
+  });
+
   test('state.completed is true after finish and false after skip', () async {
     final controller = container.read(restTimerControllerProvider.notifier);
     await controller.start(

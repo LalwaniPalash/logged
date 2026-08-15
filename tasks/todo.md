@@ -2017,3 +2017,78 @@ phase stands as written.
      on an active session. Not verified on device.
   4. "Set details" is now two taps (menu → item) where it was one tap on the ⋯ button. Row
      long-press still opens it directly.
+
+## Audit remediation — PHASE 6 (spec: `tasks/spec-phase6.md`) — 2026-08-14
+
+Implemented by Codex. Phase 6 landed within the stated scope:
+
+- [x] **6.1 C1** — `NotificationClient` now exposes `showRestCountdown(...)`,
+      `showRestComplete(...)`, and the foreground-isolate `actionSelections` stream. `NotificationService`
+      now posts the Android rest timer as an ongoing low-importance chronometer on the separate
+      `rest_timer_progress` channel, keeps iOS on the existing one-shot schedule path, uses a
+      time-sensitive completion alert on `rest_timer`, wires `onDidReceiveNotificationResponse`,
+      and deliberately does **not** register the background callback. The shared `schedule(...)`
+      path and its reminder-scheduler caller are unchanged.
+- [x] **6.2 lifecycle + C2** — `RestTimerController` now posts the countdown immediately and keeps it
+      up for the full rest instead of lifecycle-gating it. `didChangeAppLifecycleState(...)` now
+      ignores `inactive`/`hidden` churn, acts only on `paused` and `resumed`, routes notification
+      actions through the controller, and replaces the countdown with a completion alert at zero.
+      `RestTimerState.completed` and `acknowledge()` distinguish **finished** from **idle**, and
+      `RestTimerBar` now renders a stable completion row with **Done** instead of vanishing.
+- [x] **6.3 full-screen timer** — added `lib/features/session/rest_timer_screen.dart` and now push it
+      from `_startRestTimer(...)` only after `start()` succeeds and the timer is actually running.
+      The route is a full-screen `MaterialPageRoute` with chevron-down minimise, a confirm-on-cancel
+      path only when more than 30 seconds remain, the existing `-15s` / `+15s` / `Skip` controls,
+      next-set context from the already-computed `ProgressionSuggestion?`, and an
+      `AnimationController` + `AnimatedBuilder` countdown driven from `endTime` with **no**
+      `Timer.periodic`.
+
+- **Verified:** extended `test/features/rest_timer_controller_test.dart` for the immediate countdown,
+  resume/inactive lifecycle behavior, countdown repost on adjust, completion alert vs skip cancel,
+  `state.completed`, and notification Skip action. Added `test/features/rest_timer_bar_test.dart`
+  for the completion row and `test/features/rest_timer_screen_test.dart` for the `>30s` confirm /
+  `<30s` immediate-cancel branches. `flutter analyze` is clean, `flutter test` is green at
+  **300 tests**, and `flutter clean && flutter pub get && (cd ios && pod install)` completed on
+  Friday, August 14, 2026.
+- **NOT done:** the spec's required real-device notification checks. I did **not** verify on a real
+  Android device that the countdown appears in the shade and on the lock screen, that it flips to
+  **Rest complete** within a second or two of zero while the app is backgrounded, or that the
+  backgrounded `+15s` action extends the live countdown. I also did **not** verify the iOS
+  notification-centre pull behavior on hardware. This environment has no real-device interaction, so
+  those checks remain unverified.
+
+### Phase 6 review fixes — 2026-08-15
+
+Claude reviewed the three Phase 6 commits against `tasks/spec-phase6.md`. Three real defects, one
+proven by a failing test written before the fix:
+
+1. **Settings leak (confirmed by test).** `_finish()` called `showRestComplete(...)` unguarded while
+   `_postCountdownNotification()` gates on `_notificationsAllowed`. With rest-timer notifications
+   switched **off** in settings but the OS permission still granted for coaching reminders, the user
+   got a "Rest complete" notification they had opted out of. Now gated the same way; the haptic stays
+   unconditional. Regression test: `notifications disabled posts nothing at zero`.
+2. **Progress ring went stale after backgrounding.** `RestTimerScreen` only resynced its
+   `AnimationController` when `running` or `endTime` changed, and neither changes across
+   background → resume — but the vsync ticker is frozen while away and the scheduler resets the
+   animation epoch on return, so the ring lost exactly the backgrounded time and would still be part
+   full at zero. Added `_animationDrifted(...)`, which resyncs whenever the ring has drifted more
+   than a second from `endTime`. Digits were always correct (wall clock); only the ring was wrong.
+   **Not device-verified** — reasoned from the scheduler's resume behaviour.
+3. **Orphaned ongoing countdown.** `_countdownDetails` posted `ongoing: true` with no `timeoutAfter`,
+   and nothing cancels id 1001 at app start. Killing the app mid-rest left a notification that is not
+   user-dismissible below Android 14, counting into negative time, until the next completed rest.
+   Android now gets its own deadline: `endTime - now + 1 min`. **Not device-verified.**
+
+Also folded in: `_completionDetails` no longer takes two parameters both call sites filled with the
+same literals; `RestTimerScreen` reads `restTimerClockProvider` instead of `DateTime.now()` directly;
+and `_startRestTimer` no longer awaits `Navigator.push`, which had held the session screen's
+`setState(_refresh)` back for the entire rest period.
+
+Deliberately **not** changed: `didChangeAppLifecycleState` reposting the countdown on `paused`. The
+spec says "act only on `paused` and `resumed`", which sanctions a `paused` action, and the repost is
+a harmless silent update (`onlyAlertOnce`) that restores the notification if the user swiped it away
+on Android 14+.
+
+`flutter analyze` clean, `flutter test` green at **301 tests**. The spec's real-device notification
+checks (items 2–4 and 6 of Phase 6 verification) remain **unverified** — no Android or iOS hardware
+in this environment, and fixes 2 and 3 above are exactly the kind of thing only a device settles.
