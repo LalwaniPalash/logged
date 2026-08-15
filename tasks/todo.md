@@ -12,7 +12,8 @@ end. Baseline at the head of Phase 6: `flutter analyze` clean, `flutter test` **
 
 | File | What it is |
 |---|---|
-| **`tasks/spec-audit-fixes.md`** | **The active spec — Phase 7 lives at line 635 and has not been rewritten as a standalone brief yet.** Phases 1–6 are done; its Phase 5 and Phase 6 sections are superseded by `spec-phase5.md` / `spec-phase6.md`. |
+| **`tasks/spec-phase7.md`** | **The active implementation spec.** Standalone Phase 7 brief for Codex, grounded at `4206e28`. Start here. |
+| `tasks/spec-audit-fixes.md` | The full phased spec, Phases 1–7. Phases 1–6 are done; its Phase 5, 6 and 7 sections are superseded by `spec-phase5.md` / `spec-phase6.md` / `spec-phase7.md`. |
 | `tasks/spec-phase6.md` | Standalone Phase 6 brief, grounded at `3f41587`. Done — shipped in `6aad644`..`6477411` plus the review fixes in `eba9010`. |
 | `tasks/spec-phase5.md` | Standalone Phase 5 brief, grounded at `0be0ba9`. Done — shipped in `a9075ed`..`6e10c58` plus the review fix `3f41587`. |
 | `tasks/audit-2026-08-14.md` | Full audit: 50+ findings across 6 rounds, with evidence and file:line references. The spec's reasoning lives here. |
@@ -24,11 +25,12 @@ end. Baseline at the head of Phase 6: `flutter analyze` clean, `flutter test` **
 - ~~**Phase 5 — Flutter practice & set-list mechanics.**~~ Done 2026-08-14.
 - ~~**Phase 6 — Rest timer: persistent lock-screen countdown.**~~ Done 2026-08-15. Every code item
   landed; **none of its device verification has been run.**
-- **Phase 7 — Lower priority / deferrable. LAST PHASE.** L1, L2, M1, I2, N1, A9, A5 (+ a batch
-  pointing back at the audit doc), at `tasks/spec-audit-fixes.md:635`. Two things to settle before
-  building: **A5 is a product decision — confirm with Palash first**, and **I2 wants a new
-  per-exercise `anatomyEditedByUser` column**, which is the only item in the whole remediation that
-  would push the schema past **v12**. Decide whether that is worth a v13 before writing the spec.
+- **Phase 7 — LAST PHASE.** Spec written 2026-08-15 at `tasks/spec-phase7.md`, grounded at `4206e28`.
+  Seven tasks: A5 onboarding training days, I2 `anatomyEditedByUser` (**schema v13**), the new
+  in-session exercise info/edit sheet, L1/L2/L3 backup fixes, M1/M2 reminder backstop, A9 PRs across
+  `weightEntry`, N1/N3 accessibility + theme. Both open decisions were settled by Palash on
+  2026-08-15: **A5 → ask training days in onboarding** (not inferred), **I2 → yes, take v13**.
+  N2, A10, A11, G3, H4 are explicitly out of scope with reasons recorded in the spec.
 
 ### After Phase 7: the deferred verification reckoning
 
