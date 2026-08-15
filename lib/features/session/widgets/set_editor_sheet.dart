@@ -392,21 +392,21 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final editing = widget.existing != null;
+    final media = MediaQuery.of(context);
+    final useStackedLayout =
+        media.size.width < 360 || media.textScaler.scale(1) > 1.3;
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
+        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+        child: FractionallySizedBox(
+          heightFactor: useStackedLayout ? 0.9 : 0.85,
+          alignment: Alignment.bottomCenter,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             children: [
               _buildHeader(theme, editing),
-              Flexible(
+              Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
                   // Dragging the content down dismisses the keyboard — the
@@ -415,11 +415,11 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _buildSections(theme),
+                    children: _buildSections(theme, useStackedLayout),
                   ),
                 ),
               ),
-              _buildFooter(theme, editing),
+              _buildFooter(theme, editing, useStackedLayout),
             ],
           ),
         ),
@@ -456,13 +456,20 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
           ),
           // Destructive action lives away from Save, not beside it.
           if (editing)
-            IconButton(
-              onPressed: _delete,
-              tooltip: 'Delete set',
-              icon: Icon(
-                AppIcons.trash,
-                size: 20,
-                color: theme.colorScheme.error,
+            Semantics(
+              container: true,
+              button: true,
+              label: 'Delete logged set',
+              child: ExcludeSemantics(
+                child: IconButton(
+                  onPressed: _delete,
+                  tooltip: 'Delete set',
+                  icon: Icon(
+                    AppIcons.trash,
+                    size: 20,
+                    color: theme.colorScheme.error,
+                  ),
+                ),
               ),
             ),
         ],
@@ -470,7 +477,19 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
     );
   }
 
-  List<Widget> _buildSections(ThemeData theme) {
+  List<Widget> _buildSections(ThemeData theme, bool useStackedLayout) {
+    final weightUnitPicker = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 56),
+      child: SegmentedButton<WeightUnit>(
+        showSelectedIcon: false,
+        segments: const [
+          ButtonSegment(value: WeightUnit.kg, label: Text('kg')),
+          ButtonSegment(value: WeightUnit.lb, label: Text('lb')),
+        ],
+        selected: {_unit},
+        onSelectionChanged: (value) => setState(() => _unit = value.single),
+      ),
+    );
     return [
       if (_showsLoadingMode) ...[
         const _SectionLabel('How it is loaded'),
@@ -488,33 +507,31 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
 
       if (_showsWeight) ...[
         _SectionLabel(_loadingMode.label),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _NumberField(
-                controller: _weight,
-                hint: '0',
-                decimal: true,
-                onChanged: () => setState(() {}),
+        if (useStackedLayout) ...[
+          _NumberField(
+            controller: _weight,
+            hint: '0',
+            decimal: true,
+            onChanged: () => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          Align(alignment: Alignment.centerLeft, child: weightUnitPicker),
+        ] else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _NumberField(
+                  controller: _weight,
+                  hint: '0',
+                  decimal: true,
+                  onChanged: () => setState(() {}),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            SizedBox(
-              height: 56,
-              child: SegmentedButton<WeightUnit>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: WeightUnit.kg, label: Text('kg')),
-                  ButtonSegment(value: WeightUnit.lb, label: Text('lb')),
-                ],
-                selected: {_unit},
-                onSelectionChanged: (value) =>
-                    setState(() => _unit = value.single),
-              ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 10),
+              weightUnitPicker,
+            ],
+          ),
         const SizedBox(height: 10),
         // Attached to the weight field, because it multiplies the WEIGHT.
         _ChoiceRow<WeightEntry>(
@@ -590,56 +607,90 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
               ? 'Time & distance'
               : (_showsDuration ? 'Hold time' : 'Distance'),
         ),
-        Row(
-          children: [
-            if (_showsDuration)
-              Expanded(
-                child: _NumberField(
-                  controller: _duration,
-                  hint: 'Duration',
-                  suffix: 'sec',
-                  decimal: false,
-                  onChanged: () => setState(() {}),
+        if (_showsDuration && _showsDistance && useStackedLayout) ...[
+          _NumberField(
+            controller: _duration,
+            hint: 'Duration',
+            suffix: 'sec',
+            decimal: false,
+            onChanged: () => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          _NumberField(
+            controller: _distance,
+            hint: 'Distance',
+            suffix: 'm',
+            decimal: true,
+            onChanged: () => setState(() {}),
+          ),
+        ] else
+          Row(
+            children: [
+              if (_showsDuration)
+                Expanded(
+                  child: _NumberField(
+                    controller: _duration,
+                    hint: 'Duration',
+                    suffix: 'sec',
+                    decimal: false,
+                    onChanged: () => setState(() {}),
+                  ),
                 ),
-              ),
-            if (_showsDuration && _showsDistance) const SizedBox(width: 10),
-            if (_showsDistance)
-              Expanded(
-                child: _NumberField(
-                  controller: _distance,
-                  hint: 'Distance',
-                  suffix: 'm',
-                  decimal: true,
-                  onChanged: () => setState(() {}),
+              if (_showsDuration && _showsDistance) const SizedBox(width: 10),
+              if (_showsDistance)
+                Expanded(
+                  child: _NumberField(
+                    controller: _distance,
+                    hint: 'Distance',
+                    suffix: 'm',
+                    decimal: true,
+                    onChanged: () => setState(() {}),
+                  ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
         const SizedBox(height: 18),
       ],
 
       const _SectionLabel('Effort'),
-      Row(
-        children: [
-          SizedBox(
-            width: 116,
-            child: _NumberField(
-              controller: _rpe,
-              hint: 'RPE',
-              decimal: true,
-              onChanged: () {},
-            ),
+      if (useStackedLayout) ...[
+        _NumberField(
+          controller: _rpe,
+          hint: 'RPE',
+          decimal: true,
+          onChanged: () {},
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FilterChip(
+            label: const Text('Warm-up set'),
+            selected: _warmup,
+            onSelected: (value) => setState(() => _warmup = value),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: FilterChip(
-              label: const Text('Warm-up set'),
-              selected: _warmup,
-              onSelected: (value) => setState(() => _warmup = value),
+        ),
+      ] else
+        Row(
+          children: [
+            SizedBox(
+              width: 116,
+              child: _NumberField(
+                controller: _rpe,
+                hint: 'RPE',
+                decimal: true,
+                onChanged: () {},
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilterChip(
+                label: const Text('Warm-up set'),
+                selected: _warmup,
+                onSelected: (value) => setState(() => _warmup = value),
+              ),
+            ),
+          ],
+        ),
       const SizedBox(height: 18),
 
       const _SectionLabel('Notes'),
@@ -653,7 +704,7 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
     ];
   }
 
-  Widget _buildFooter(ThemeData theme, bool editing) {
+  Widget _buildFooter(ThemeData theme, bool editing, bool useStackedLayout) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
@@ -661,28 +712,47 @@ class _SetEditorSheetState extends State<SetEditorSheet> {
           top: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => Navigator.pop(context),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 54),
-                shape: const StadiumBorder(),
-              ),
-              child: const Text('Cancel'),
+      child: useStackedLayout
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilledButton(
+                  onPressed: _save,
+                  child: Text(editing ? 'Save set' : 'Add set'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 54),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 54),
+                      shape: const StadiumBorder(),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton(
+                    onPressed: _save,
+                    child: Text(editing ? 'Save set' : 'Add set'),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: FilledButton(
-              onPressed: _save,
-              child: Text(editing ? 'Save set' : 'Add set'),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

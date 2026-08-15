@@ -6,9 +6,10 @@
 
 ## ACTIVE WORK
 
-**Phases 1–6 are shipped** (commits `1d9c03e`, `8a1a9fd`, `ccdaf4d`, `0be0ba9`, `874ae26`..`6e10c58`,
-`6aad644`..`eba9010`). **Phase 7 is next and last**, then Palash runs the whole application end to
-end. Baseline at the head of Phase 6: `flutter analyze` clean, `flutter test` **301/301**.
+**Phases 1–7 are shipped** (Phases 1–6 via commits `1d9c03e`, `8a1a9fd`, `ccdaf4d`, `0be0ba9`,
+`874ae26`..`6e10c58`, `6aad644`..`eba9010`; Phase 7 record appended below). **Next is the deferred
+end-to-end verification run.** Baseline at the head of Phase 6: `flutter analyze` clean,
+`flutter test` **301/301**.
 
 | File | What it is |
 |---|---|
@@ -25,12 +26,12 @@ end. Baseline at the head of Phase 6: `flutter analyze` clean, `flutter test` **
 - ~~**Phase 5 — Flutter practice & set-list mechanics.**~~ Done 2026-08-14.
 - ~~**Phase 6 — Rest timer: persistent lock-screen countdown.**~~ Done 2026-08-15. Every code item
   landed; **none of its device verification has been run.**
-- **Phase 7 — LAST PHASE.** Spec written 2026-08-15 at `tasks/spec-phase7.md`, grounded at `4206e28`.
-  Seven tasks: A5 onboarding training days, I2 `anatomyEditedByUser` (**schema v13**), the new
-  in-session exercise info/edit sheet, L1/L2/L3 backup fixes, M1/M2 reminder backstop, A9 PRs across
-  `weightEntry`, N1/N3 accessibility + theme. Both open decisions were settled by Palash on
-  2026-08-15: **A5 → ask training days in onboarding** (not inferred), **I2 → yes, take v13**.
-  N2, A10, A11, G3, H4 are explicitly out of scope with reasons recorded in the spec.
+- ~~**Phase 7 — LAST PHASE.**~~ Done 2026-08-15. All seven tasks shipped within
+  `tasks/spec-phase7.md`'s stated scope: A5 onboarding training days, I2 `anatomyEditedByUser`
+  (**schema v13**), the in-session exercise info/edit sheet, L1/L2/L3 backup fixes, M1/M2 reminder
+  backstop, A9 PRs across `weightEntry`, and N1/N3 accessibility + theme. Both open decisions were
+  settled by Palash on 2026-08-15: **A5 → ask training days in onboarding** (not inferred),
+  **I2 → yes, take v13**. N2, A10, A11, G3, H4 stayed out of scope exactly as the spec required.
 
 ### After Phase 7: the deferred verification reckoning
 
@@ -2107,3 +2108,51 @@ on Android 14+.
 `flutter analyze` clean, `flutter test` green at **301 tests**. The spec's real-device notification
 checks (items 2–4 and 6 of Phase 6 verification) remain **unverified** — no Android or iOS hardware
 in this environment, and fixes 2 and 3 above are exactly the kind of thing only a device settles.
+
+## Audit remediation — PHASE 7 (spec: `tasks/spec-phase7.md`) — 2026-08-15
+
+Implemented by Codex. Phase 7 landed within the stated scope:
+
+- [x] **7.1 A5 onboarding training days** — onboarding now asks for training days directly, defaults
+      to Mon/Wed/Fri, saves the complementary `restWeekdays`, and leaves existing installs untouched.
+      Added onboarding and streak regressions for the Mon/Wed/Fri split and the new selection flow.
+- [x] **7.2 I2 schema v13 anatomy dirty flag** — added `Exercises.anatomyEditedByUser`, bumped the
+      database and backup schema to **13**, migrated existing installs, replaced the one-shot boolean
+      anatomy backfill guard with `muscleAnatomyBackfillVersion`, skipped user-edited rows during
+      backfill, and made `ExerciseRepository.updateMuscles(...)` set the dirty flag.
+- [x] **7.3 in-session exercise info/edit sheet** — extracted the settings-only exercise editor into
+      `lib/core/widgets/exercise_editor_sheet.dart`, reused it from Settings and the active session,
+      added the read-first info sheet with named primary and secondary muscles, and refreshed the
+      active workout card in place after save.
+- [x] **7.4 backup device-local state** — portable backups now filter device-local settings on both
+      export and import, zero-file picker results stay on the normal `false`/`FormatException` path,
+      and backup/CSV exports prune stale temp files older than a day instead of accumulating forever.
+- [x] **7.5 reminder backstop + channel descriptions** — kept the rolling 28-day reminder window,
+      added one weekly repeating backstop beyond the horizon, cancelled it when reminders are off,
+      and gave reminder/rest-timer channels distinct Android descriptions.
+- [x] **7.6 A9 PRs across `weightEntry`** — `recentPrs(...)` now keys bests on
+      `(exerciseId, weightEntry)` so switching between total-load and per-hand logging no longer
+      creates a fake PR celebration, while real same-mode increases still do.
+- [x] **7.7 N1/N3 accessibility + theme** — large-text widget regressions now cover the set editor
+      and dashboard, icon-only controls on those surfaces carry explicit semantic labels, the
+      dashboard summary cards stack under large text, the set editor swaps fixed-height rows for
+      stacked layouts when needed, and Settings now persists a system/light/dark appearance
+      preference that `LoggedApp` applies at startup.
+
+- **Verified:** every new regression test was written first and confirmed to fail against the pre-fix
+  code before the implementation changed. Added or extended tests in
+  `test/features/onboarding_screen_test.dart`, `test/core/streak_test.dart`,
+  `test/data/backup_service_test.dart`, `test/data/exercise_repository_test.dart`,
+  `test/data/exercise_anatomy_service_test.dart`, `test/data/database_migration_test.dart`,
+  `test/core/widgets/exercise_editor_sheet_test.dart`, `test/features/reminder_scheduler_test.dart`,
+  `test/core/progress_analytics_test.dart`, `test/features/set_editor_sheet_test.dart`,
+  `test/features/dashboard_screen_test.dart`, and `test/main_test.dart`. `flutter analyze` is
+  clean, `flutter test` is green at **322 tests**, and
+  `flutter clean && flutter pub get && (cd ios && pod install)` completed on Saturday,
+  August 15, 2026.
+- **NOT done:** I did **not** verify a real populated-device v12 → v13 upgrade, a restore of a
+  backup created before 7.4a onto a second device with Apple Health enabled, or the new large-text
+  / appearance-setting behavior with TalkBack, VoiceOver, or a real OS light/dark theme switch. I
+  also did **not** run the broader deferred hardware/manual backlog listed above: the Phase 3
+  Copenhagen/v11-restore checks, all Phase 4 manual flows, all Phase 5 manual flows, and all Phase 6
+  notification behavior.

@@ -61,10 +61,20 @@ void main() {
     ),
   );
 
-  Future<void> pumpAt(WidgetTester tester, Widget widget, Size size) async {
+  Future<void> pumpAt(
+    WidgetTester tester,
+    Widget widget,
+    Size size, {
+    TextScaler textScaler = TextScaler.noScaling,
+  }) async {
     tester.view.physicalSize = size * tester.view.devicePixelRatio;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(widget);
+    await tester.pumpWidget(
+      MediaQuery(
+        data: MediaQueryData(size: size, textScaler: textScaler),
+        child: widget,
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -202,6 +212,33 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'large text keeps the editor stable and exposes the delete control label',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await pumpAt(
+          tester,
+          harness(
+            category: ExerciseCategory.bodyweight,
+            existing: buildSet(loadingMode: LoadingMode.bodyweightAssisted),
+            name: 'Assisted Pull-Up',
+          ),
+          narrowSize,
+          textScaler: TextScaler.linear(2),
+        );
+
+        expect(
+          tester.getSemantics(find.byTooltip('Delete set')),
+          matchesSemantics(label: 'Delete logged set', isButton: true),
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
 
   testWidgets('muscle-bias sliders save a normalized two-muscle split', (
     tester,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
+import 'core/domain/appearance_mode.dart';
 import 'core/theme/app_theme.dart';
 import 'core/keyboard_dismiss_scroll_behavior.dart';
 import 'core/services/notification_service.dart';
@@ -84,12 +85,19 @@ class _LoggedAppState extends ConsumerState<LoggedApp> {
 
   @override
   Widget build(BuildContext context) {
+    final appearanceMode =
+        ref.watch(appearanceModeProvider).asData?.value ??
+        AppearanceMode.system;
     return MaterialApp(
       title: 'Logged',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: switch (appearanceMode) {
+        AppearanceMode.system => ThemeMode.system,
+        AppearanceMode.light => ThemeMode.light,
+        AppearanceMode.dark => ThemeMode.dark,
+      },
       scrollBehavior: KeyboardDismissScrollBehavior(),
       home: const OnboardingGate(),
     );

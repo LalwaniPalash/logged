@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/domain/appearance_mode.dart';
 import '../core/domain/live_muscle_state.dart';
 import '../core/domain/deload.dart';
 import '../core/domain/muscle.dart';
@@ -115,6 +116,9 @@ final plateInventoryProvider = StreamProvider<PlateInventory>(
 );
 final healthExportPreferencesProvider = StreamProvider<HealthExportPreferences>(
   (ref) => ref.watch(settingsRepositoryProvider).watchHealthExportPreferences(),
+);
+final appearanceModeProvider = StreamProvider<AppearanceMode>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchAppearanceMode(),
 );
 final effectiveVolumeLandmarksProvider =
     Provider<AsyncValue<Map<MuscleId, VolumeLandmarks>>>((ref) {

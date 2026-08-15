@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:intl/intl.dart';
 
 import '../../core/app_icons.dart';
+import '../../core/domain/appearance_mode.dart';
 import '../../core/domain/enums.dart';
 import '../../core/domain/exercise_muscle_suggestion.dart';
 import '../../core/domain/exercise_name_matcher.dart';
@@ -791,6 +792,9 @@ class SettingsScreen extends ConsumerWidget {
     final coaching =
         ref.watch(coachingPreferencesProvider).asData?.value ??
         const CoachingPreferences();
+    final appearanceMode =
+        ref.watch(appearanceModeProvider).asData?.value ??
+        AppearanceMode.system;
     final plateInventory =
         ref.watch(plateInventoryProvider).asData?.value ?? PlateInventory();
     final healthExport =
@@ -836,6 +840,12 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const SectionHeader('Rest day'),
           const _RestDaySection(),
+          const SizedBox(height: 24),
+          const SectionHeader('Appearance'),
+          _AppearanceSettingsCard(
+            selected: appearanceMode,
+            onChanged: repo.setAppearanceMode,
+          ),
           const SizedBox(height: 24),
           const SectionHeader('Units'),
           const _InfoCard(
@@ -1063,6 +1073,52 @@ class _RestTimerSettingsCard extends StatelessWidget {
                 onChanged: onNotificationsChanged,
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AppearanceSettingsCard extends StatelessWidget {
+  const _AppearanceSettingsCard({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final AppearanceMode selected;
+  final ValueChanged<AppearanceMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('App theme', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Follow your phone, or keep Logged in a fixed light or dark theme.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final mode in AppearanceMode.values)
+                  ChoiceChip(
+                    label: Text(mode.label),
+                    selected: selected == mode,
+                    onSelected: (_) => onChanged(mode),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

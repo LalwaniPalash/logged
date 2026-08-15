@@ -74,6 +74,9 @@ class DashboardScreen extends ConsumerWidget {
     final goal =
         ref.watch(coachingPreferencesProvider).asData?.value.trainingGoal ??
         TrainingGoal.build;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final stackSummaryTiles =
+        textScale > 1.3 || MediaQuery.sizeOf(context).width < 380;
 
     final daysThisWeek = trainingDaysThisWeek(days, today: now);
     final weekStates = _weekStates(
@@ -98,29 +101,33 @@ class DashboardScreen extends ConsumerWidget {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: SizedBox(
         width: MediaQuery.of(context).size.width - 40,
-        height: 58,
-        child: FilledButton(
-          onPressed: () => _start(context, ref),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                height: 26,
-                width: 26,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onPrimary,
-                  shape: BoxShape.circle,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 58),
+          child: FilledButton(
+            onPressed: () => _start(context, ref),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 6,
+              children: [
+                Container(
+                  height: 26,
+                  width: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    AppIcons.play,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
-                child: Icon(
-                  AppIcons.play,
-                  size: 14,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text('Start workout'),
-            ],
+                const Text('Start workout', textAlign: TextAlign.center),
+              ],
+            ),
           ),
         ),
       ),
@@ -134,29 +141,39 @@ class DashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _greeting(now),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _greeting(now),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      Text('Logged', style: theme.textTheme.headlineMedium),
-                    ],
+                        Text('Logged', style: theme.textTheme.headlineMedium),
+                      ],
+                    ),
                   ),
-                  IconButton.filledTonal(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const TemplatesScreen(),
+                  const SizedBox(width: 12),
+                  Semantics(
+                    container: true,
+                    button: true,
+                    label: 'Open workout templates',
+                    child: ExcludeSemantics(
+                      child: IconButton.filledTonal(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TemplatesScreen(),
+                          ),
+                        ),
+                        icon: const Icon(AppIcons.templates),
+                        tooltip: 'Templates',
                       ),
                     ),
-                    icon: const Icon(AppIcons.templates),
-                    tooltip: 'Templates',
                   ),
                 ],
               ),
@@ -169,29 +186,44 @@ class DashboardScreen extends ConsumerWidget {
                 ).push(MaterialPageRoute(builder: (_) => const RanksScreen())),
               ),
               const SizedBox(height: 14),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: StreakCard(
-                        streak: streak,
-                        trainedToday: trainedToday(days, today: now),
-                        isRestToday: restToday,
-                      ),
+              stackSummaryTiles
+                  ? Column(
+                      children: [
+                        StreakCard(
+                          streak: streak,
+                          trainedToday: trainedToday(days, today: now),
+                          isRestToday: restToday,
+                        ),
+                        const SizedBox(height: 14),
+                        StatTile(
+                          label: 'This week',
+                          value: '$daysThisWeek',
+                          unit: '/ ${settings.weeklyGoal}',
+                          icon: AppIcons.target,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: StreakCard(
+                            streak: streak,
+                            trainedToday: trainedToday(days, today: now),
+                            isRestToday: restToday,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: StatTile(
+                            label: 'This week',
+                            value: '$daysThisWeek',
+                            unit: '/ ${settings.weeklyGoal}',
+                            icon: AppIcons.target,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: StatTile(
-                        label: 'This week',
-                        value: '$daysThisWeek',
-                        unit: '/ ${settings.weeklyGoal}',
-                        icon: AppIcons.target,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 14),
               _NextFocusCard(summary: bodySummary.asData?.value),
               const SizedBox(height: 18),

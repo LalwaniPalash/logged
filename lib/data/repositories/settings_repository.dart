@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 
+import '../../core/domain/appearance_mode.dart';
 import '../../core/domain/health_export.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/muscle_progress.dart';
@@ -111,6 +112,7 @@ class SettingsRepository {
   static const _kPlateInventory = 'plateInventory';
   static const _kHealthExportEnabled = 'healthExportEnabled';
   static const _kHealthExportedSessionIds = 'healthExportedSessionIds';
+  static const _kThemeMode = 'themeMode';
 
   Stream<WorkoutSettings> watch() =>
       _database.select(_database.appSettings).watch().map(_fromRows);
@@ -180,6 +182,12 @@ class SettingsRepository {
       .map(_healthExportPreferencesFromRows)
       .distinct();
 
+  Stream<AppearanceMode> watchAppearanceMode() => _database
+      .select(_database.appSettings)
+      .watch()
+      .map(_appearanceModeFromRows)
+      .distinct();
+
   Future<CoachingPreferences> readCoachingPreferences() async =>
       _coachingPreferencesFromRows(
         await _database.select(_database.appSettings).get(),
@@ -193,6 +201,10 @@ class SettingsRepository {
       _healthExportPreferencesFromRows(
         await _database.select(_database.appSettings).get(),
       );
+
+  Future<AppearanceMode> readAppearanceMode() async => _appearanceModeFromRows(
+    await _database.select(_database.appSettings).get(),
+  );
 
   Future<void> setTrainingGoal(TrainingGoal goal) =>
       _put(_kTrainingGoal, goal.name);
@@ -210,6 +222,9 @@ class SettingsRepository {
 
   Future<void> setHealthExportedSessionIds(Iterable<int> sessionIds) =>
       _put(_kHealthExportedSessionIds, encodeExportedSessionIds(sessionIds));
+
+  Future<void> setAppearanceMode(AppearanceMode mode) =>
+      _put(_kThemeMode, mode.name);
 
   Future<String?> readDeloadDismissedWeek() async {
     final row =
@@ -352,6 +367,14 @@ class SettingsRepository {
           const HealthExportPreferences().enabled,
       exportedSessionIds: exportedIds,
     );
+  }
+
+  AppearanceMode _appearanceModeFromRows(List<AppSetting> rows) {
+    final map = {for (final row in rows) row.key: row.value};
+    return AppearanceMode.values.firstWhereOrNull(
+          (mode) => mode.name == map[_kThemeMode],
+        ) ??
+        AppearanceMode.system;
   }
 
   Future<void> _put(String key, String value) => _database
