@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
 import 'package:logged/core/domain/muscle.dart';
@@ -110,6 +113,88 @@ void main() {
     expect(bodyweights, hasLength(1));
     expect(bodyweights.single.value, 80);
   });
+
+  test('export payload omits device-local app settings', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+
+    await _putAppSetting(db, 'weeklyGoal', '4');
+    await _putAppSetting(db, 'onboardingComplete', 'true');
+    await _putAppSetting(db, 'healthExportedSessionIds', '[1,2]');
+    await _putAppSetting(db, 'muscleAnatomyBackfillVersion', '2');
+    await _putAppSetting(db, 'weightEntryBackfilled', 'true');
+    await _putAppSetting(db, 'pullUpExerciseBackfilled', 'true');
+    await _putAppSetting(db, 'timedExerciseBackfilled', 'true');
+
+    final payload = await BackupService(db).exportPayload();
+    final keys = (payload['appSettings'] as List<dynamic>)
+        .cast<Map<String, dynamic>>()
+        .map((row) => row['key'])
+        .toSet();
+
+    expect(keys, contains('weeklyGoal'));
+    expect(keys, isNot(contains('onboardingComplete')));
+    expect(keys, isNot(contains('healthExportedSessionIds')));
+    expect(keys, isNot(contains('muscleAnatomyBackfillVersion')));
+    expect(keys, isNot(contains('weightEntryBackfilled')));
+    expect(keys, isNot(contains('pullUpExerciseBackfilled')));
+    expect(keys, isNot(contains('timedExerciseBackfilled')));
+  });
+
+  test(
+    'import skips device-local app settings and preserves local markers',
+    () async {
+      final source = AppDatabase(NativeDatabase.memory());
+      final target = AppDatabase(NativeDatabase.memory());
+      addTearDown(source.close);
+      addTearDown(target.close);
+
+      await _putAppSetting(source, 'weeklyGoal', '4');
+      await _putAppSetting(source, 'onboardingComplete', 'false');
+      await _putAppSetting(source, 'healthExportedSessionIds', '[9]');
+      await _putAppSetting(source, 'muscleAnatomyBackfillVersion', '99');
+      await _putAppSetting(source, 'timedExerciseBackfilled', 'true');
+
+      await _putAppSetting(target, 'weeklyGoal', '6');
+      await _putAppSetting(target, 'onboardingComplete', 'true');
+      await _putAppSetting(target, 'healthExportedSessionIds', '[1,2]');
+      await _putAppSetting(target, 'muscleAnatomyBackfillVersion', '2');
+      await _putAppSetting(target, 'timedExerciseBackfilled', 'false');
+
+      final payload = await BackupService(source).exportPayload();
+      await BackupService(target).replaceFromPayload(payload);
+
+      final settings = await _appSettingsMap(target);
+      expect(settings['weeklyGoal'], '4');
+      expect(settings['onboardingComplete'], 'true');
+      expect(settings['healthExportedSessionIds'], '[1,2]');
+      expect(settings['muscleAnatomyBackfillVersion'], '2');
+      expect(settings['timedExerciseBackfilled'], 'false');
+    },
+  );
+
+  test(
+    'pre-v2 backup without appSettings preserves onboarding and backfill markers',
+    () async {
+      final source = AppDatabase(NativeDatabase.memory());
+      final target = AppDatabase(NativeDatabase.memory());
+      addTearDown(source.close);
+      addTearDown(target.close);
+
+      await _putAppSetting(target, 'onboardingComplete', 'true');
+      await _putAppSetting(target, 'muscleAnatomyBackfillVersion', '2');
+
+      final payload = await BackupService(source).exportPayload();
+      payload['schemaVersion'] = 1;
+      payload.remove('appSettings');
+
+      await BackupService(target).replaceFromPayload(payload);
+
+      final settings = await _appSettingsMap(target);
+      expect(settings['onboardingComplete'], 'true');
+      expect(settings['muscleAnatomyBackfillVersion'], '2');
+    },
+  );
 
   test(
     'v12 backup imports missing anatomyEditedByUser with a false default',
@@ -397,4 +482,130 @@ void main() {
     expect(csv, contains('"\'=HYPERLINK(""evil"")"'));
     expect(csv, isNot(contains(',=HYPERLINK')));
   });
+
+  test('importFromPicker returns false for an empty selection', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    FilePicker.platform = _FakeFilePicker(const FilePickerResult([]));
+
+    await expectLater(
+      BackupService(db).importFromPicker(),
+      completion(isFalse),
+    );
+  });
+
+  test('exports prune stale temp backup files before sharing', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final tempDir = await Directory.systemTemp.createTemp('logged-backup-test');
+    addTearDown(() async {
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+    _mockTemporaryDirectory(tempDir.path);
+    _mockShareSheet();
+
+    final staleBackup = File('${tempDir.path}/logged-backup-stale.zip')
+      ..writeAsStringSync('old')
+      ..setLastModifiedSync(DateTime.now().subtract(const Duration(days: 2)));
+    final freshBackup = File('${tempDir.path}/logged-backup-fresh.zip')
+      ..writeAsStringSync('fresh');
+    final keep = File('${tempDir.path}/keep.txt')..writeAsStringSync('keep');
+
+    await BackupService(db).exportAndShare();
+
+    expect(staleBackup.existsSync(), isFalse);
+    expect(freshBackup.existsSync(), isTrue);
+    expect(keep.existsSync(), isTrue);
+  });
+
+  test('CSV export prunes stale temp history files before sharing', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final tempDir = await Directory.systemTemp.createTemp('logged-csv-test');
+    addTearDown(() async {
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+    _mockTemporaryDirectory(tempDir.path);
+    _mockShareSheet();
+
+    final staleCsv = File('${tempDir.path}/logged-sets-stale.csv')
+      ..writeAsStringSync('old')
+      ..setLastModifiedSync(DateTime.now().subtract(const Duration(days: 2)));
+    final freshCsv = File('${tempDir.path}/logged-sets-fresh.csv')
+      ..writeAsStringSync('fresh');
+    final keep = File('${tempDir.path}/keep.txt')..writeAsStringSync('keep');
+
+    await BackupService(db).exportSetHistoryCsv();
+
+    expect(staleCsv.existsSync(), isFalse);
+    expect(freshCsv.existsSync(), isTrue);
+    expect(keep.existsSync(), isTrue);
+  });
+}
+
+const MethodChannel _pathProviderChannel = MethodChannel(
+  'plugins.flutter.io/path_provider',
+);
+const MethodChannel _shareChannel = MethodChannel(
+  'dev.fluttercommunity.plus/share',
+);
+
+Future<void> _putAppSetting(AppDatabase db, String key, String value) => db
+    .into(db.appSettings)
+    .insertOnConflictUpdate(
+      AppSettingsCompanion.insert(key: key, value: value),
+    );
+
+Future<Map<String, String>> _appSettingsMap(AppDatabase db) async => {
+  for (final row in await db.select(db.appSettings).get()) row.key: row.value,
+};
+
+void _mockTemporaryDirectory(String path) {
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(_pathProviderChannel, (call) async {
+    if (call.method == 'getTemporaryDirectory') return path;
+    return null;
+  });
+  addTearDown(
+    () => messenger.setMockMethodCallHandler(_pathProviderChannel, null),
+  );
+}
+
+void _mockShareSheet() {
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(_shareChannel, (call) async {
+    if (call.method == 'share') {
+      return 'dev.fluttercommunity.plus/share/unavailable';
+    }
+    return null;
+  });
+  addTearDown(() => messenger.setMockMethodCallHandler(_shareChannel, null));
+}
+
+class _FakeFilePicker extends FilePicker {
+  _FakeFilePicker(this.result);
+
+  final FilePickerResult? result;
+
+  @override
+  Future<FilePickerResult?> pickFiles({
+    String? dialogTitle,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Function(FilePickerStatus)? onFileLoading,
+    bool allowCompression = true,
+    int compressionQuality = 30,
+    bool allowMultiple = false,
+    bool withData = false,
+    bool withReadStream = false,
+    bool lockParentWindow = false,
+    bool readSequential = false,
+  }) async => result;
 }

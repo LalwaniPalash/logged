@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -42,10 +43,20 @@ class BackupService {
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';
+  static const Set<String> _deviceLocalSettingKeys = {
+    'healthExportedSessionIds',
+    'muscleAnatomyBackfilled',
+    'muscleAnatomyBackfillVersion',
+    'weightEntryBackfilled',
+    'pullUpExerciseBackfilled',
+    'timedExerciseBackfilled',
+    'onboardingComplete',
+  };
 
   Future<void> exportAndShare() async {
     final payload = await exportPayload();
     final directory = await getTemporaryDirectory();
+    await _pruneStaleExports(directory);
     final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
 
     // The backup is JSON (repeated keys, very compressible) so it is zipped —
@@ -72,6 +83,7 @@ class BackupService {
   Future<void> exportSetHistoryCsv() async {
     final csv = await setHistoryCsv();
     final directory = await getTemporaryDirectory();
+    await _pruneStaleExports(directory);
     final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
     final file = File('${directory.path}/logged-sets-$stamp.csv');
     await file.writeAsString(csv);
@@ -85,7 +97,7 @@ class BackupService {
       type: FileType.custom,
       allowedExtensions: ['zip', 'json'],
     );
-    final path = result?.files.single.path;
+    final path = result?.files.firstOrNull?.path;
     if (path == null) return false;
     final raw = _decodeBackup(await File(path).readAsBytes(), path);
     if (raw is! Map<String, dynamic> ||
@@ -239,6 +251,7 @@ class BackupService {
         .map((row) => row.toJson())
         .toList(),
     'appSettings': (await _database.select(_database.appSettings).get())
+        .where((row) => !_deviceLocalSettingKeys.contains(row.key))
         .map((row) => row.toJson())
         .toList(),
   };
@@ -260,6 +273,26 @@ class BackupService {
     final value = source[key];
     if (value is! List) return const [];
     return value.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<void> _pruneStaleExports(Directory directory) async {
+    final cutoff = DateTime.now().subtract(const Duration(days: 1));
+    await for (final entity in directory.list()) {
+      if (entity is! File) continue;
+      final name = entity.uri.pathSegments.last;
+      final managedExport =
+          (name.startsWith('logged-backup-') && name.endsWith('.zip')) ||
+          (name.startsWith('logged-sets-') && name.endsWith('.csv'));
+      if (!managedExport) continue;
+      try {
+        final modified = await entity.lastModified();
+        if (modified.isBefore(cutoff)) {
+          await entity.delete();
+        }
+      } on FileSystemException {
+        // Cleanup failure should not block exporting the fresh file.
+      }
+    }
   }
 
   Exercise _exerciseFromBackup(Map<String, dynamic> source) =>
@@ -328,7 +361,22 @@ class BackupService {
     final setRows = _rows(source, 'setEntries');
     final exercisesById = _rowsById(exerciseRows);
     final sessionExercisesById = _rowsById(sessionExerciseRows);
+    final preservedDeviceLocalSettings =
+        (await (_database.select(_database.appSettings)..where(
+                  (row) => row.key.isIn(_deviceLocalSettingKeys.toList()),
+                ))
+                .get())
+            .map((row) => row.toJson())
+            .toList(growable: false);
     final version = source['schemaVersion'] as int? ?? 1;
+    final portableAppSettings = _optionalRows(source, 'appSettings')
+        .where(
+          (row) =>
+              row['key'] is! String ||
+              !_deviceLocalSettingKeys.contains(row['key']),
+        )
+        .map(AppSetting.fromJson)
+        .toList(growable: false);
 
     await _database.transaction(() async {
       await _database.delete(_database.setEntries).go();
@@ -397,14 +445,10 @@ class BackupService {
           _optionalRows(source, 'restDays').map(RestDay.fromJson).toList(),
           mode: InsertMode.insertOrReplace,
         );
-        batch.insertAll(
-          _database.appSettings,
-          _optionalRows(
-            source,
-            'appSettings',
-          ).map(AppSetting.fromJson).toList(),
-          mode: InsertMode.insertOrReplace,
-        );
+        batch.insertAll(_database.appSettings, [
+          ...portableAppSettings,
+          ...preservedDeviceLocalSettings.map(AppSetting.fromJson),
+        ], mode: InsertMode.insertOrReplace);
       });
       // Inside the transaction on purpose. The imported rows are already at
       // v11 schema, so a crash between the commit and a later rescale would
