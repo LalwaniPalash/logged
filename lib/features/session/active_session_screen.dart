@@ -17,6 +17,7 @@ import '../../core/domain/training_goal.dart';
 import '../../core/domain/warmup.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../../core/widgets/app_widgets.dart';
+import '../../core/widgets/exercise_editor_sheet.dart';
 import '../../core/widgets/prescription_editor_sheet.dart';
 import '../../core/widgets/exercise_picker.dart';
 import '../../data/database/app_database.dart';
@@ -865,6 +866,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     setState(_refresh);
   }
 
+  Future<void> _openExerciseInfo(Exercise exercise) async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => ExerciseInfoSheet(exercise: exercise),
+    );
+    if (changed == true && mounted) {
+      setState(_refresh);
+    }
+  }
+
   Future<void> _deleteWorkout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -1029,6 +1042,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                   onOpenWarmup: _previewWarmup,
                                   onSwap: () => _swapExercise(detail),
                                   onRemove: () => _removeExercise(detail),
+                                  onOpenInfo: () =>
+                                      _openExerciseInfo(detail.exercise),
                                   onEditVideoUrl: () => _editVideoUrl(detail),
                                   onEditPrescription: () =>
                                       _editPrescription(detail),
@@ -1143,6 +1158,7 @@ class _ExerciseCard extends StatelessWidget {
     required this.onSwap,
     required this.onEditVideoUrl,
     required this.onEditPrescription,
+    required this.onOpenInfo,
     required this.prescriptionEditable,
     required this.progressionAggressiveness,
     required this.inventory,
@@ -1174,6 +1190,7 @@ class _ExerciseCard extends StatelessWidget {
   final ValueChanged<_WarmupRequest> onOpenWarmup;
   final VoidCallback onRemove;
   final VoidCallback onSwap;
+  final VoidCallback onOpenInfo;
   final VoidCallback onEditVideoUrl;
   final VoidCallback onEditPrescription;
   final bool prescriptionEditable;
@@ -1358,6 +1375,16 @@ class _ExerciseCard extends StatelessWidget {
                         ],
                       ],
                     ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onOpenInfo,
+                    icon: Icon(
+                      AppIcons.info,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    tooltip: 'Exercise info',
                   ),
                   // A per-template link (formUrl) overrides the exercise's own
                   // saved video; either one shows a one-tap play button that

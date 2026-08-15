@@ -28,6 +28,7 @@ class AppIcons {
   static const more = PhosphorIconsRegular.dotsThreeOutline;
   static const search = PhosphorIconsRegular.magnifyingGlass;
   static const edit = PhosphorIconsRegular.pencilSimple;
+  static const info = PhosphorIconsRegular.info;
   static const trash = PhosphorIconsRegular.trash;
   static const drag = PhosphorIconsRegular.dotsSixVertical;
   static const refresh = PhosphorIconsRegular.arrowClockwise;
