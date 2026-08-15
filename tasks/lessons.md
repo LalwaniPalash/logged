@@ -532,3 +532,32 @@ Format: [date] | what went wrong | rule to prevent it
   double-pop on `acknowledge()` turned out not to reproduce because `canPop()` is already false by
   then). Rule: when reviewing, do not argue a suspected defect from reading alone. Write the probe,
   run it, then either promote it into the suite or delete it and say the concern was disproved.
+- 2026-08-15 | The exercise editor's save path called `updateMuscles(...)` on every save, and
+  `updateMuscles` unconditionally set the new `anatomyEditedByUser` flag — so a name-only or
+  video-link-only edit permanently opted that exercise out of every future library anatomy
+  correction. The suite was green at 322 and the test that existed covered only the case where the
+  muscles DID change. Rule: when a sheet re-sends every field on every save, any write that carries
+  a side effect must compare before it fires. And test the "nothing changed" path explicitly —
+  "with the feature ON, assert something happened" is half a test; the other half is "with nothing
+  changed, assert nothing happened."
+- 2026-08-15 | Four bugs in the first hour on real hardware that 323 green tests and a full diff
+  review both missed: an autofocused name field whose keyboard covered the muscle pickers the sheet
+  was opened for, and a FAB laid out on top of the minimised rest bar hiding −15s/+15s/Skip
+  completely. Rule: `flutter test` proves a widget is in the tree, never that it is reachable on a
+  screen. Layout occlusion, focus, and keyboard behaviour are device-only classes of bug — run a
+  device pass per phase rather than banking them all to the end, and drive it over `adb`
+  (`input tap`, `exec-out screencap`, `dumpsys input_method | grep mInputShown`) so the diagnosis is
+  confirmed rather than guessed from a description.
+- 2026-08-15 | The FAB-over-rest-bar bug existed because `RestTimerBar` was the last child of the
+  Scaffold's `body` Column instead of its `bottomNavigationBar`. Flutter already lays an `endFloat`
+  FAB above a `bottomNavigationBar`; as a body child it floats over everything. Rule: when a
+  framework has a designated slot for a thing (bottom bar, app bar, FAB), put it in the slot — the
+  layout relationships you get free are the reason the slot exists. Reaching for manual bottom
+  padding to dodge a FAB is the signal you skipped the slot.
+- 2026-08-15 | Phase 6 deliberately made "Rest complete" persist until acknowledged, because the
+  original bug (C2) was the bar vanishing silently. First real use, Palash asked for it to
+  auto-dismiss. Both are right: the spec fixed "you never knew it finished", the request fixes "now
+  it nags". Rule: a decision recorded in a spec is a decision made without the product in your
+  hands — when the user contradicts one after using it, that is data, not a regression. Implement
+  it, but say plainly which earlier decision is being reversed so the reasoning is not silently lost
+  (here: auto-dismiss is foreground-only, so the backgrounded notification still waits for them).

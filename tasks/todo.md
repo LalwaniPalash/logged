@@ -6,14 +6,17 @@
 
 ## ACTIVE WORK
 
-**Phases 1–7 are shipped** (Phases 1–6 via commits `1d9c03e`, `8a1a9fd`, `ccdaf4d`, `0be0ba9`,
-`874ae26`..`6e10c58`, `6aad644`..`eba9010`; Phase 7 record appended below). **Next is the deferred
-end-to-end verification run.** Baseline at the head of Phase 6: `flutter analyze` clean,
-`flutter test` **301/301**.
+**ALL SEVEN PHASES ARE SHIPPED.** The audit remediation is complete: `flutter analyze` clean,
+`flutter test` **325/325**, schema **v13**. The suite was 230 tests when the audit was written.
+
+**The live work is now the device pass**, recorded at the bottom of this file. Palash's Vivo V2143
+(Android 13) has the current build sideloaded, and four bugs have already come out of it that
+neither the test suite nor the per-phase diff reviews could catch.
 
 | File | What it is |
 |---|---|
-| **`tasks/spec-phase7.md`** | **The active implementation spec.** Standalone Phase 7 brief for Codex, grounded at `4206e28`. Start here. |
+| **`tasks/todo.md`** (this file) | **Start here.** All specs are spent; the live work is the device pass at the bottom of this file. |
+| `tasks/spec-phase7.md` | Standalone Phase 7 brief, grounded at `4206e28`. Done — shipped in `0985833`..`6e3ef05` plus review fixes `b54ccfd`, `70a4e09`, `8111d7c`. |
 | `tasks/spec-audit-fixes.md` | The full phased spec, Phases 1–7. Phases 1–6 are done; its Phase 5, 6 and 7 sections are superseded by `spec-phase5.md` / `spec-phase6.md` / `spec-phase7.md`. |
 | `tasks/spec-phase6.md` | Standalone Phase 6 brief, grounded at `3f41587`. Done — shipped in `6aad644`..`6477411` plus the review fixes in `eba9010`. |
 | `tasks/spec-phase5.md` | Standalone Phase 5 brief, grounded at `0be0ba9`. Done — shipped in `a9075ed`..`6e10c58` plus the review fix `3f41587`. |
