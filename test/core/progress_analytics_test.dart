@@ -13,14 +13,16 @@ WorkoutSetRecord rec(
   int eid,
   String name,
   double kg,
-  int reps,
-) => WorkoutSetRecord(
+  int reps, {
+  WeightEntry weightEntry = WeightEntry.total,
+}) => WorkoutSetRecord(
   date: date,
   muscleGroup: mg,
   exerciseId: eid,
   exerciseName: name,
   weightKg: kg,
   reps: reps,
+  weightEntry: weightEntry,
 );
 
 void main() {
@@ -37,6 +39,62 @@ void main() {
       final prs = recentPrs(records);
       expect(prs, hasLength(2));
       expect(prs.first.date, d(14)); // most recent PR first
+    });
+
+    test('switching weight-entry modes does not create a fake PR', () {
+      final records = [
+        rec(
+          d(13),
+          'shoulders',
+          7,
+          'Dumbbell Press',
+          30,
+          8,
+          weightEntry: WeightEntry.perSide,
+        ),
+        rec(
+          d(14),
+          'shoulders',
+          7,
+          'Dumbbell Press',
+          60,
+          8,
+          weightEntry: WeightEntry.total,
+        ),
+      ];
+
+      final prs = recentPrs(records);
+
+      expect(prs, hasLength(1));
+      expect(prs.single.date, d(13));
+    });
+
+    test('a real increase within one weight-entry mode still counts', () {
+      final records = [
+        rec(
+          d(13),
+          'shoulders',
+          7,
+          'Dumbbell Press',
+          30,
+          8,
+          weightEntry: WeightEntry.perSide,
+        ),
+        rec(
+          d(14),
+          'shoulders',
+          7,
+          'Dumbbell Press',
+          32.5,
+          8,
+          weightEntry: WeightEntry.perSide,
+        ),
+      ];
+
+      final prs = recentPrs(records);
+
+      expect(prs, hasLength(2));
+      expect(prs.first.date, d(14));
     });
   });
 

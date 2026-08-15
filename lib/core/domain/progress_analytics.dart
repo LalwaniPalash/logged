@@ -1,3 +1,4 @@
+import 'enums.dart';
 import '../../data/repositories/analytics_repository.dart';
 import 'streak.dart';
 
@@ -77,23 +78,30 @@ Map<String, double> muscleVolumeThisWeek(
 /// Recent personal records: each time an exercise's estimated 1RM reached a new
 /// all-time high. Most recent first, capped at [limit].
 List<PrEvent> recentPrs(List<WorkoutSetRecord> records, {int limit = 8}) {
-  final best = <int, double>{}; // exerciseId -> best 1RM so far
+  final best = <(int, WeightEntry), double>{};
+  final seenExercises = <int>{};
   final events = <PrEvent>[];
   for (final r in records) {
     if (r.weightKg <= 0) continue;
-    final current = best[r.exerciseId] ?? 0;
+    final key = (r.exerciseId, r.weightEntry);
+    final current = best[key] ?? 0;
+    final hadEntryMode = best.containsKey(key);
+    final hadExerciseHistory = seenExercises.contains(r.exerciseId);
     if (r.estimatedOneRepMaxKg > current + 0.001) {
-      best[r.exerciseId] = r.estimatedOneRepMaxKg;
-      events.add(
-        PrEvent(
-          exerciseName: r.exerciseName,
-          oneRepMaxKg: r.estimatedOneRepMaxKg,
-          date: r.date,
-          weightKg: r.weightKg,
-          reps: r.reps,
-        ),
-      );
+      best[key] = r.estimatedOneRepMaxKg;
+      if (hadEntryMode || !hadExerciseHistory) {
+        events.add(
+          PrEvent(
+            exerciseName: r.exerciseName,
+            oneRepMaxKg: r.estimatedOneRepMaxKg,
+            date: r.date,
+            weightKg: r.weightKg,
+            reps: r.reps,
+          ),
+        );
+      }
     }
+    seenExercises.add(r.exerciseId);
   }
   events.sort((a, b) => b.date.compareTo(a.date));
   return events.take(limit).toList();
