@@ -82,7 +82,7 @@ void main() {
           ),
         );
     final payload = await BackupService(source).exportPayload();
-    expect(payload['schemaVersion'], 12);
+    expect(payload['schemaVersion'], 13);
     await BackupService(target).replaceFromPayload(payload);
     final exercises = await target.select(target.exercises).get();
     expect(exercises, hasLength(1));
@@ -110,6 +110,43 @@ void main() {
     expect(bodyweights, hasLength(1));
     expect(bodyweights.single.value, 80);
   });
+
+  test(
+    'v12 backup imports missing anatomyEditedByUser with a false default',
+    () async {
+      final source = AppDatabase(NativeDatabase.memory());
+      final target = AppDatabase(NativeDatabase.memory());
+      addTearDown(source.close);
+      addTearDown(target.close);
+
+      await source
+          .into(source.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Legacy Pec Deck',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+            ),
+          );
+
+      final payload = await BackupService(source).exportPayload();
+      payload['schemaVersion'] = 12;
+      for (final exercise
+          in (payload['exercises'] as List<dynamic>)
+              .cast<Map<String, dynamic>>()) {
+        exercise.remove('anatomyEditedByUser');
+      }
+
+      await BackupService(target).replaceFromPayload(payload);
+
+      final row = await target
+          .customSelect(
+            'SELECT anatomy_edited_by_user AS edited FROM exercises',
+          )
+          .getSingle();
+      expect(row.read<int>('edited'), 0);
+    },
+  );
 
   test(
     'v11 backup imports missing timed/distance keys with false defaults',

@@ -36,8 +36,9 @@ class BackupService {
     10,
     11,
     12,
+    13,
   };
-  static const int _schemaVersion = 12;
+  static const int _schemaVersion = 13;
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';
@@ -271,6 +272,7 @@ class BackupService {
         'bodyweightFactor': source['bodyweightFactor'] ?? 1.0,
         'isTimed': source['isTimed'] ?? false,
         'tracksDistance': source['tracksDistance'] ?? false,
+        'anatomyEditedByUser': source['anatomyEditedByUser'] ?? false,
       });
 
   SetEntry _setEntryFromBackup(

@@ -326,7 +326,7 @@ void main() {
     final exercise = await database.select(database.exercises).getSingle();
     expect(exercise.name, 'Legacy Row');
     expect(exercise.videoUrl, isNull);
-    expect(database.schemaVersion, 12);
+    expect(database.schemaVersion, 13);
   });
 
   test(
@@ -448,7 +448,7 @@ void main() {
       expect(set.reps, 12);
       expect(set.weightValue, 180);
       expect(set.muscleBiasWeights, isNull);
-      expect(database.schemaVersion, 12);
+      expect(database.schemaVersion, 13);
     },
   );
 
@@ -597,7 +597,7 @@ void main() {
         'quads': 0.75,
         'glute_max': 1.25,
       });
-      expect(database.schemaVersion, 12);
+      expect(database.schemaVersion, 13);
     },
   );
 
@@ -727,7 +727,7 @@ void main() {
       expect(weights['quads']!.toDouble(), closeTo(1.5, 1e-9));
       expect(weights['glute_max']!.toDouble(), closeTo(0.9, 1e-9));
       expect(weights['hamstrings']!.toDouble(), closeTo(0.6, 1e-9));
-      expect(database.schemaVersion, 12);
+      expect(database.schemaVersion, 13);
     },
   );
 
@@ -866,7 +866,84 @@ void main() {
         columns.map((row) => row.read<String>('name')),
         containsAll(['is_timed', 'tracks_distance']),
       );
-      expect(database.schemaVersion, 12);
+      expect(database.schemaVersion, 13);
+    },
+  );
+
+  test(
+    'v12 gains anatomyEditedByUser without losing existing exercise rows',
+    () async {
+      final executor = NativeDatabase.memory(
+        setup: (database) {
+          database.execute('''
+          CREATE TABLE exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            category TEXT NOT NULL,
+            muscle_group TEXT NOT NULL,
+            primary_muscles TEXT NOT NULL DEFAULT '[]',
+            secondary_muscles TEXT NOT NULL DEFAULT '[]',
+            default_unit TEXT NOT NULL DEFAULT 'kg',
+            weight_entry TEXT NOT NULL DEFAULT 'total',
+            preferred_loading_mode TEXT NOT NULL DEFAULT 'external',
+            bodyweight_factor REAL NOT NULL DEFAULT 1.0,
+            is_timed INTEGER NOT NULL DEFAULT 0,
+            tracks_distance INTEGER NOT NULL DEFAULT 0,
+            video_url TEXT,
+            is_custom INTEGER NOT NULL DEFAULT 0,
+            is_archived INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE sessions (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            started_at INTEGER NOT NULL,
+            ended_at INTEGER,
+            template_id INTEGER,
+            notes TEXT
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE session_exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            exercise_id INTEGER NOT NULL,
+            position INTEGER NOT NULL
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE set_entries (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_exercise_id INTEGER NOT NULL,
+            set_number INTEGER NOT NULL
+          )
+        ''');
+          database.execute('''
+          INSERT INTO exercises (name, category, muscle_group)
+          VALUES ('Legacy Pec Deck', 'strength', 'chest')
+        ''');
+          database.userVersion = 12;
+        },
+      );
+      final database = AppDatabase(executor);
+      addTearDown(database.close);
+
+      final columns = await database
+          .customSelect("PRAGMA table_info('exercises')")
+          .get();
+      final row = await database
+          .customSelect(
+            'SELECT anatomy_edited_by_user AS edited FROM exercises',
+          )
+          .getSingle();
+
+      expect(
+        columns.map((entry) => entry.read<String>('name')),
+        contains('anatomy_edited_by_user'),
+      );
+      expect(row.read<int>('edited'), 0);
+      expect(database.schemaVersion, 13);
     },
   );
 }

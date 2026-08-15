@@ -81,6 +81,7 @@ class ExerciseRepository {
         ExercisesCompanion(
           primaryMuscles: Value(primaryMuscles),
           secondaryMuscles: Value(secondaryMuscles),
+          anatomyEditedByUser: const Value(true),
         ),
       );
 

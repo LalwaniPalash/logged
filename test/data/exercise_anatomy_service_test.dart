@@ -288,6 +288,88 @@ void main() {
     },
   );
 
+  test(
+    'versioned anatomy backfill skips user-edited rows and corrects clean ones',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final protectedId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Pec Deck',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'chest',
+              primaryMuscles: const Value('["mid_lower_chest"]'),
+              secondaryMuscles: const Value('["front_delts","triceps"]'),
+            ),
+          );
+      final cleanId = await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              name: 'Leg Press',
+              category: ExerciseCategory.strength,
+              muscleGroup: 'legs',
+              primaryMuscles: const Value('["quads"]'),
+              secondaryMuscles: const Value('["hamstrings"]'),
+            ),
+          );
+      await _ensureAnatomyEditedByUserColumn(database);
+      await database.customStatement(
+        'UPDATE exercises SET anatomy_edited_by_user = 1 WHERE id = ?',
+        [protectedId],
+      );
+      await database
+          .into(database.appSettings)
+          .insertOnConflictUpdate(
+            AppSettingsCompanion.insert(
+              key: 'muscleAnatomyBackfilled',
+              value: 'true',
+            ),
+          );
+
+      final service = ExerciseAnatomyService(
+        database,
+        loadAsset: () async => jsonEncode([
+          {
+            'name': 'Pec Deck',
+            'primaryMuscles': ['mid_lower_chest', 'upper_chest'],
+            'secondaryMuscles': ['front_delts'],
+          },
+          {
+            'name': 'Leg Press',
+            'primaryMuscles': ['quads', 'glute_max'],
+            'secondaryMuscles': ['hamstrings', 'adductors'],
+          },
+        ]),
+      );
+
+      expect(await service.backfillMuscleAnatomyOnce(), 1);
+
+      final rows = await database
+          .customSelect(
+            'SELECT id, primary_muscles, secondary_muscles, '
+            'anatomy_edited_by_user AS edited '
+            'FROM exercises ORDER BY id',
+          )
+          .get();
+      final protected = rows.singleWhere((row) => row.read<int>('id') == protectedId);
+      final clean = rows.singleWhere((row) => row.read<int>('id') == cleanId);
+      expect(
+        protected.read<String>('primary_muscles'),
+        '["mid_lower_chest"]',
+      );
+      expect(
+        protected.read<String>('secondary_muscles'),
+        '["front_delts","triceps"]',
+      );
+      expect(protected.read<int>('edited'), 1);
+      expect(clean.read<String>('primary_muscles'), '["quads","glute_max"]');
+      expect(clean.read<String>('secondary_muscles'), '["hamstrings","adductors"]');
+    },
+  );
+
   test('backfills Pull-Up once for existing installs', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
@@ -520,5 +602,19 @@ void main() {
       expect(bridge.isTimed, isTrue);
       expect(bridge.tracksDistance, isFalse);
     },
+  );
+}
+
+Future<void> _ensureAnatomyEditedByUserColumn(AppDatabase database) async {
+  final columns = await database
+      .customSelect("PRAGMA table_info('exercises')")
+      .get();
+  final hasColumn = columns.any(
+    (row) => row.read<String>('name') == 'anatomy_edited_by_user',
+  );
+  if (hasColumn) return;
+  await database.customStatement(
+    'ALTER TABLE exercises '
+    'ADD COLUMN anatomy_edited_by_user INTEGER NOT NULL DEFAULT 0',
   );
 }

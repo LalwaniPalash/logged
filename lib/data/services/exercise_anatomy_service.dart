@@ -18,7 +18,10 @@ class ExerciseAnatomyService {
   final AppDatabase _database;
   final Future<String> Function() _loadAsset;
 
-  static const _muscleAnatomyBackfillKey = 'muscleAnatomyBackfilled';
+  static const _legacyMuscleAnatomyBackfillKey = 'muscleAnatomyBackfilled';
+  static const _muscleAnatomyBackfillVersionKey =
+      'muscleAnatomyBackfillVersion';
+  static const _anatomyBackfillVersion = 2;
   static const _weightEntryBackfillKey = 'weightEntryBackfilled';
   static const _pullUpBackfillKey = 'pullUpExerciseBackfilled';
   static const _timedExerciseBackfillKey = 'timedExerciseBackfilled';
@@ -31,42 +34,39 @@ class ExerciseAnatomyService {
     return changes.length;
   }
 
-  /// One-time backfill of bundled primary/secondary muscles from the asset.
+  /// Versioned backfill of bundled primary/secondary muscles from the asset.
   ///
   /// Seeding uses [InsertMode.insertOrIgnore], so anatomy edits shipped after a
   /// user's first launch never reach the already-seeded bundled rows.
   ///
-  /// Like [backfillWeightEntryOnce], this runs exactly once behind an app
-  /// setting because bundled exercise anatomy is user-editable from Settings.
-  /// Re-running it every launch would silently undo the user's later anatomy
-  /// edits to bundled exercises. Custom exercises are never touched.
+  /// Like [backfillWeightEntryOnce], this is guarded in app settings because
+  /// bundled exercise anatomy is user-editable from Settings. Unlike the older
+  /// boolean guard, the version can advance when the reviewed library changes.
+  /// Rows explicitly edited by the user are skipped so newer library fixes do
+  /// not silently undo their anatomy choices. Custom exercises are never
+  /// touched.
   Future<int> backfillMuscleAnatomyOnce() async {
-    final alreadyRun =
-        await (_database.select(_database.appSettings)
-              ..where((row) => row.key.equals(_muscleAnatomyBackfillKey)))
-            .getSingleOrNull();
-    if (alreadyRun != null) return 0;
+    final currentVersion = await _readMuscleAnatomyBackfillVersion();
+    if (currentVersion >= _anatomyBackfillVersion) return 0;
 
-    final changes = await _bundledAnatomyChanges();
-    await _database.batch((batch) {
-      for (final change in changes) {
-        batch.update(
-          _database.exercises,
-          ExercisesCompanion(
-            primaryMuscles: Value(change.$2),
-            secondaryMuscles: Value(change.$3),
-          ),
-          where: (exercise) => exercise.id.equals(change.$1),
-        );
+    final changes = await _bundledAnatomyChanges(skipUserEdited: true);
+    await _database.transaction(() async {
+      if (changes.isNotEmpty) {
+        await _applyAnatomyChanges(changes);
       }
-      batch.insert(
-        _database.appSettings,
-        AppSettingsCompanion.insert(
-          key: _muscleAnatomyBackfillKey,
-          value: 'true',
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
+      await _database
+          .into(_database.appSettings)
+          .insertOnConflictUpdate(
+            AppSettingsCompanion.insert(
+              key: _muscleAnatomyBackfillVersionKey,
+              value: '$_anatomyBackfillVersion',
+            ),
+          );
+      await (_database.delete(_database.appSettings)
+            ..where(
+              (row) => row.key.equals(_legacyMuscleAnatomyBackfillKey),
+            ))
+          .go();
     });
     return changes.length;
   }
@@ -265,13 +265,35 @@ class ExerciseAnatomyService {
     };
   }
 
-  Future<List<(int, String, String)>> _bundledAnatomyChanges() async {
+  Future<int> _readMuscleAnatomyBackfillVersion() async {
+    final versionRow =
+        await (_database.select(_database.appSettings)
+              ..where(
+                (row) => row.key.equals(_muscleAnatomyBackfillVersionKey),
+              ))
+            .getSingleOrNull();
+    final parsed = int.tryParse(versionRow?.value ?? '');
+    if (parsed != null) return parsed;
+
+    final legacyRow =
+        await (_database.select(_database.appSettings)
+              ..where(
+                (row) => row.key.equals(_legacyMuscleAnatomyBackfillKey),
+              ))
+            .getSingleOrNull();
+    return bool.tryParse(legacyRow?.value ?? '') == true ? 1 : 0;
+  }
+
+  Future<List<(int, String, String)>> _bundledAnatomyChanges({
+    bool skipUserEdited = false,
+  }) async {
     final anatomyByName = await _assetAnatomyByName();
     final bundled = await (_database.select(
       _database.exercises,
     )..where((exercise) => exercise.isCustom.equals(false))).get();
     final changes = <(int, String, String)>[];
     for (final exercise in bundled) {
+      if (skipUserEdited && exercise.anatomyEditedByUser) continue;
       final anatomy = anatomyByName[exercise.name];
       if (anatomy == null) continue;
       if (exercise.primaryMuscles == anatomy.primary &&

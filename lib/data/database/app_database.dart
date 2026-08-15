@@ -24,6 +24,8 @@ class Exercises extends Table {
   BoolColumn get isTimed => boolean().withDefault(const Constant(false))();
   BoolColumn get tracksDistance =>
       boolean().withDefault(const Constant(false))();
+  BoolColumn get anatomyEditedByUser =>
+      boolean().withDefault(const Constant(false))();
   // Optional demo/form video (e.g. a YouTube link) that belongs to the exercise
   // itself, so it shows in any workout the exercise appears in. A per-template
   // override still lives on TemplateExercises/SessionExercises.formUrl.
@@ -153,7 +155,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'logged'));
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -323,7 +325,11 @@ class AppDatabase extends _$AppDatabase {
         await migrator.alterTable(
           TableMigration(
             exercises,
-            newColumns: [exercises.isTimed, exercises.tracksDistance],
+            newColumns: [
+              exercises.isTimed,
+              exercises.tracksDistance,
+              exercises.anatomyEditedByUser,
+            ],
           ),
         );
       }
@@ -333,6 +339,17 @@ class AppDatabase extends _$AppDatabase {
       if (from < 12 && (from < 8 || from >= 10)) {
         await migrator.addColumn(exercises, exercises.isTimed);
         await migrator.addColumn(exercises, exercises.tracksDistance);
+      }
+      if (from < 13 && (from < 8 || from >= 10)) {
+        // Existing rows default to false on purpose: assuming "not user-edited"
+        // lets this first versioned backfill land newer library corrections,
+        // even though pre-flag user edits may be overwritten once. Defaulting
+        // every legacy row to true would permanently freeze stale anatomy on
+        // every existing install, which is the bug this migration fixes.
+        await migrator.addColumn(
+          exercises,
+          exercises.anatomyEditedByUser,
+        );
       }
     },
     beforeOpen: (details) async {

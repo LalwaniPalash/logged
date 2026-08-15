@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
@@ -59,6 +59,38 @@ void main() {
     final exercise = await database.select(database.exercises).getSingle();
     expect(exercise.primaryMuscles, '["quads","glute_max","hamstrings"]');
     expect(exercise.secondaryMuscles, '["adductors"]');
+  });
+
+  test('updates muscles marks anatomy as user-edited', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = ExerciseRepository(database);
+    final id = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Chest Supported Row',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'back',
+            primaryMuscles: const Value('["lats"]'),
+            secondaryMuscles: const Value('["biceps"]'),
+          ),
+        );
+    await _ensureAnatomyEditedByUserColumn(database);
+
+    await repository.updateMuscles(
+      id,
+      primaryMuscles: '["lats","rhomboids"]',
+      secondaryMuscles: '["biceps"]',
+    );
+
+    final row = await database
+        .customSelect(
+          'SELECT anatomy_edited_by_user AS edited FROM exercises WHERE id = ?',
+          variables: [Variable<int>(id)],
+        )
+        .getSingle();
+    expect(row.read<int>('edited'), 1);
   });
 
   test(
@@ -166,5 +198,19 @@ void main() {
       expect(deleted, isTrue);
       expect(remaining, isEmpty);
     },
+  );
+}
+
+Future<void> _ensureAnatomyEditedByUserColumn(AppDatabase database) async {
+  final columns = await database
+      .customSelect("PRAGMA table_info('exercises')")
+      .get();
+  final hasColumn = columns.any(
+    (row) => row.read<String>('name') == 'anatomy_edited_by_user',
+  );
+  if (hasColumn) return;
+  await database.customStatement(
+    'ALTER TABLE exercises '
+    'ADD COLUMN anatomy_edited_by_user INTEGER NOT NULL DEFAULT 0',
   );
 }

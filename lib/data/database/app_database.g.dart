@@ -148,6 +148,20 @@ class $ExercisesTable extends Exercises
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _anatomyEditedByUserMeta =
+      const VerificationMeta('anatomyEditedByUser');
+  @override
+  late final GeneratedColumn<bool> anatomyEditedByUser = GeneratedColumn<bool>(
+    'anatomy_edited_by_user',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("anatomy_edited_by_user" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _videoUrlMeta = const VerificationMeta(
     'videoUrl',
   );
@@ -215,6 +229,7 @@ class $ExercisesTable extends Exercises
     bodyweightFactor,
     isTimed,
     tracksDistance,
+    anatomyEditedByUser,
     videoUrl,
     isCustom,
     isArchived,
@@ -293,6 +308,15 @@ class $ExercisesTable extends Exercises
         tracksDistance.isAcceptableOrUnknown(
           data['tracks_distance']!,
           _tracksDistanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anatomy_edited_by_user')) {
+      context.handle(
+        _anatomyEditedByUserMeta,
+        anatomyEditedByUser.isAcceptableOrUnknown(
+          data['anatomy_edited_by_user']!,
+          _anatomyEditedByUserMeta,
         ),
       );
     }
@@ -386,6 +410,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}tracks_distance'],
       )!,
+      anatomyEditedByUser: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}anatomy_edited_by_user'],
+      )!,
       videoUrl: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}video_url'],
@@ -437,6 +465,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final double bodyweightFactor;
   final bool isTimed;
   final bool tracksDistance;
+  final bool anatomyEditedByUser;
   final String? videoUrl;
   final bool isCustom;
   final bool isArchived;
@@ -454,6 +483,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.bodyweightFactor,
     required this.isTimed,
     required this.tracksDistance,
+    required this.anatomyEditedByUser,
     this.videoUrl,
     required this.isCustom,
     required this.isArchived,
@@ -492,6 +522,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     map['bodyweight_factor'] = Variable<double>(bodyweightFactor);
     map['is_timed'] = Variable<bool>(isTimed);
     map['tracks_distance'] = Variable<bool>(tracksDistance);
+    map['anatomy_edited_by_user'] = Variable<bool>(anatomyEditedByUser);
     if (!nullToAbsent || videoUrl != null) {
       map['video_url'] = Variable<String>(videoUrl);
     }
@@ -515,6 +546,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       bodyweightFactor: Value(bodyweightFactor),
       isTimed: Value(isTimed),
       tracksDistance: Value(tracksDistance),
+      anatomyEditedByUser: Value(anatomyEditedByUser),
       videoUrl: videoUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(videoUrl),
@@ -549,6 +581,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       bodyweightFactor: serializer.fromJson<double>(json['bodyweightFactor']),
       isTimed: serializer.fromJson<bool>(json['isTimed']),
       tracksDistance: serializer.fromJson<bool>(json['tracksDistance']),
+      anatomyEditedByUser: serializer.fromJson<bool>(
+        json['anatomyEditedByUser'],
+      ),
       videoUrl: serializer.fromJson<String?>(json['videoUrl']),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
@@ -581,6 +616,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'bodyweightFactor': serializer.toJson<double>(bodyweightFactor),
       'isTimed': serializer.toJson<bool>(isTimed),
       'tracksDistance': serializer.toJson<bool>(tracksDistance),
+      'anatomyEditedByUser': serializer.toJson<bool>(anatomyEditedByUser),
       'videoUrl': serializer.toJson<String?>(videoUrl),
       'isCustom': serializer.toJson<bool>(isCustom),
       'isArchived': serializer.toJson<bool>(isArchived),
@@ -601,6 +637,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     double? bodyweightFactor,
     bool? isTimed,
     bool? tracksDistance,
+    bool? anatomyEditedByUser,
     Value<String?> videoUrl = const Value.absent(),
     bool? isCustom,
     bool? isArchived,
@@ -618,6 +655,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     bodyweightFactor: bodyweightFactor ?? this.bodyweightFactor,
     isTimed: isTimed ?? this.isTimed,
     tracksDistance: tracksDistance ?? this.tracksDistance,
+    anatomyEditedByUser: anatomyEditedByUser ?? this.anatomyEditedByUser,
     videoUrl: videoUrl.present ? videoUrl.value : this.videoUrl,
     isCustom: isCustom ?? this.isCustom,
     isArchived: isArchived ?? this.isArchived,
@@ -653,6 +691,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       tracksDistance: data.tracksDistance.present
           ? data.tracksDistance.value
           : this.tracksDistance,
+      anatomyEditedByUser: data.anatomyEditedByUser.present
+          ? data.anatomyEditedByUser.value
+          : this.anatomyEditedByUser,
       videoUrl: data.videoUrl.present ? data.videoUrl.value : this.videoUrl,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
       isArchived: data.isArchived.present
@@ -677,6 +718,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('bodyweightFactor: $bodyweightFactor, ')
           ..write('isTimed: $isTimed, ')
           ..write('tracksDistance: $tracksDistance, ')
+          ..write('anatomyEditedByUser: $anatomyEditedByUser, ')
           ..write('videoUrl: $videoUrl, ')
           ..write('isCustom: $isCustom, ')
           ..write('isArchived: $isArchived, ')
@@ -699,6 +741,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     bodyweightFactor,
     isTimed,
     tracksDistance,
+    anatomyEditedByUser,
     videoUrl,
     isCustom,
     isArchived,
@@ -720,6 +763,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.bodyweightFactor == this.bodyweightFactor &&
           other.isTimed == this.isTimed &&
           other.tracksDistance == this.tracksDistance &&
+          other.anatomyEditedByUser == this.anatomyEditedByUser &&
           other.videoUrl == this.videoUrl &&
           other.isCustom == this.isCustom &&
           other.isArchived == this.isArchived &&
@@ -739,6 +783,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<double> bodyweightFactor;
   final Value<bool> isTimed;
   final Value<bool> tracksDistance;
+  final Value<bool> anatomyEditedByUser;
   final Value<String?> videoUrl;
   final Value<bool> isCustom;
   final Value<bool> isArchived;
@@ -756,6 +801,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.bodyweightFactor = const Value.absent(),
     this.isTimed = const Value.absent(),
     this.tracksDistance = const Value.absent(),
+    this.anatomyEditedByUser = const Value.absent(),
     this.videoUrl = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -774,6 +820,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.bodyweightFactor = const Value.absent(),
     this.isTimed = const Value.absent(),
     this.tracksDistance = const Value.absent(),
+    this.anatomyEditedByUser = const Value.absent(),
     this.videoUrl = const Value.absent(),
     this.isCustom = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -794,6 +841,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<double>? bodyweightFactor,
     Expression<bool>? isTimed,
     Expression<bool>? tracksDistance,
+    Expression<bool>? anatomyEditedByUser,
     Expression<String>? videoUrl,
     Expression<bool>? isCustom,
     Expression<bool>? isArchived,
@@ -813,6 +861,8 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (bodyweightFactor != null) 'bodyweight_factor': bodyweightFactor,
       if (isTimed != null) 'is_timed': isTimed,
       if (tracksDistance != null) 'tracks_distance': tracksDistance,
+      if (anatomyEditedByUser != null)
+        'anatomy_edited_by_user': anatomyEditedByUser,
       if (videoUrl != null) 'video_url': videoUrl,
       if (isCustom != null) 'is_custom': isCustom,
       if (isArchived != null) 'is_archived': isArchived,
@@ -833,6 +883,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<double>? bodyweightFactor,
     Value<bool>? isTimed,
     Value<bool>? tracksDistance,
+    Value<bool>? anatomyEditedByUser,
     Value<String?>? videoUrl,
     Value<bool>? isCustom,
     Value<bool>? isArchived,
@@ -851,6 +902,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       bodyweightFactor: bodyweightFactor ?? this.bodyweightFactor,
       isTimed: isTimed ?? this.isTimed,
       tracksDistance: tracksDistance ?? this.tracksDistance,
+      anatomyEditedByUser: anatomyEditedByUser ?? this.anatomyEditedByUser,
       videoUrl: videoUrl ?? this.videoUrl,
       isCustom: isCustom ?? this.isCustom,
       isArchived: isArchived ?? this.isArchived,
@@ -907,6 +959,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (tracksDistance.present) {
       map['tracks_distance'] = Variable<bool>(tracksDistance.value);
     }
+    if (anatomyEditedByUser.present) {
+      map['anatomy_edited_by_user'] = Variable<bool>(anatomyEditedByUser.value);
+    }
     if (videoUrl.present) {
       map['video_url'] = Variable<String>(videoUrl.value);
     }
@@ -937,6 +992,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('bodyweightFactor: $bodyweightFactor, ')
           ..write('isTimed: $isTimed, ')
           ..write('tracksDistance: $tracksDistance, ')
+          ..write('anatomyEditedByUser: $anatomyEditedByUser, ')
           ..write('videoUrl: $videoUrl, ')
           ..write('isCustom: $isCustom, ')
           ..write('isArchived: $isArchived, ')
@@ -5375,6 +5431,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<double> bodyweightFactor,
       Value<bool> isTimed,
       Value<bool> tracksDistance,
+      Value<bool> anatomyEditedByUser,
       Value<String?> videoUrl,
       Value<bool> isCustom,
       Value<bool> isArchived,
@@ -5394,6 +5451,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<double> bodyweightFactor,
       Value<bool> isTimed,
       Value<bool> tracksDistance,
+      Value<bool> anatomyEditedByUser,
       Value<String?> videoUrl,
       Value<bool> isCustom,
       Value<bool> isArchived,
@@ -5516,6 +5574,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get tracksDistance => $composableBuilder(
     column: $table.tracksDistance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get anatomyEditedByUser => $composableBuilder(
+    column: $table.anatomyEditedByUser,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5659,6 +5722,11 @@ class $$ExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get anatomyEditedByUser => $composableBuilder(
+    column: $table.anatomyEditedByUser,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get videoUrl => $composableBuilder(
     column: $table.videoUrl,
     builder: (column) => ColumnOrderings(column),
@@ -5741,6 +5809,11 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<bool> get tracksDistance => $composableBuilder(
     column: $table.tracksDistance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get anatomyEditedByUser => $composableBuilder(
+    column: $table.anatomyEditedByUser,
     builder: (column) => column,
   );
 
@@ -5853,6 +5926,7 @@ class $$ExercisesTableTableManager
                 Value<double> bodyweightFactor = const Value.absent(),
                 Value<bool> isTimed = const Value.absent(),
                 Value<bool> tracksDistance = const Value.absent(),
+                Value<bool> anatomyEditedByUser = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -5870,6 +5944,7 @@ class $$ExercisesTableTableManager
                 bodyweightFactor: bodyweightFactor,
                 isTimed: isTimed,
                 tracksDistance: tracksDistance,
+                anatomyEditedByUser: anatomyEditedByUser,
                 videoUrl: videoUrl,
                 isCustom: isCustom,
                 isArchived: isArchived,
@@ -5889,6 +5964,7 @@ class $$ExercisesTableTableManager
                 Value<double> bodyweightFactor = const Value.absent(),
                 Value<bool> isTimed = const Value.absent(),
                 Value<bool> tracksDistance = const Value.absent(),
+                Value<bool> anatomyEditedByUser = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -5906,6 +5982,7 @@ class $$ExercisesTableTableManager
                 bodyweightFactor: bodyweightFactor,
                 isTimed: isTimed,
                 tracksDistance: tracksDistance,
+                anatomyEditedByUser: anatomyEditedByUser,
                 videoUrl: videoUrl,
                 isCustom: isCustom,
                 isArchived: isArchived,
