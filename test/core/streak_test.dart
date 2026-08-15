@@ -82,6 +82,17 @@ void main() {
         1,
       );
     });
+
+    test('a Mon/Wed/Fri split stays alive across Tue/Thu and the weekend', () {
+      expect(
+        computeStreak(
+          trainingDays: [d(20), d(22), d(24)],
+          restWeekdays: {2, 4, 6, 7},
+          today: DateTime(2026, 7, 27, 9),
+        ),
+        3,
+      );
+    });
   });
 
   group('week helpers', () {

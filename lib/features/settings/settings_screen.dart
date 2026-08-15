@@ -2158,8 +2158,12 @@ class _ScheduleCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
+          // Existing installs keep the pre-Phase-7 Sunday-only default until
+          // the user updates it here. We do not migrate from workout history:
+          // inferring a split from old logs would guess at the worst possible
+          // moment and repeat the "infer instead of ask" audit mistake.
           Text(
-            'Rest days keep your streak alive.',
+            'Pick every weekly rest day so your streak matches your split.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

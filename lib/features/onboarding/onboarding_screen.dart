@@ -79,6 +79,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   var _index = 0;
   var _saving = false;
   var _goal = TrainingGoal.build;
+  var _trainingDays = _defaultTrainingDays;
+
+  static const _weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  static const _defaultTrainingDays = {1, 3, 5};
 
   static const _pages = [
     _OnboardingPageData(
@@ -103,10 +107,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           'The live 3D muscle model reacts this week, helping you see what is trained and what needs attention.',
     ),
     _OnboardingPageData(
+      icon: AppIcons.calendarCheck,
+      eyebrow: 'YOUR WEEKLY RHYTHM',
+      title: 'Which days do you train?',
+      body:
+          'Pick your usual training days. Logged uses the other days as rest days so your streak matches your split.',
+      kind: _OnboardingPageKind.trainingDays,
+    ),
+    _OnboardingPageData(
       icon: AppIcons.target,
       eyebrow: 'YOUR COACHING PROFILE',
       title: 'What are you training for?',
       body: 'Choose an intent now. You can change it any time in Settings.',
+      kind: _OnboardingPageKind.goal,
     ),
   ];
 
@@ -114,6 +127,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     await ref.read(settingsRepositoryProvider).setTrainingGoal(_goal);
+    await ref
+        .read(settingsRepositoryProvider)
+        .setRestWeekdays(_restWeekdaysForTrainingDays(_trainingDays));
     await widget.onComplete();
   }
 
@@ -148,9 +164,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPageChanged: (index) => setState(() => _index = index),
                 itemBuilder: (context, index) => _OnboardingPage(
                   data: _pages[index],
-                  goal: index == _pages.length - 1 ? _goal : null,
-                  onGoalChanged: index == _pages.length - 1
+                  goal: _pages[index].kind == _OnboardingPageKind.goal
+                      ? _goal
+                      : null,
+                  onGoalChanged: _pages[index].kind == _OnboardingPageKind.goal
                       ? (goal) => setState(() => _goal = goal)
+                      : null,
+                  trainingDays:
+                      _pages[index].kind == _OnboardingPageKind.trainingDays
+                      ? _trainingDays
+                      : null,
+                  onTrainingDaysChanged:
+                      _pages[index].kind == _OnboardingPageKind.trainingDays
+                      ? (day) => setState(() {
+                          final next = {..._trainingDays};
+                          if (!next.remove(day)) next.add(day);
+                          _trainingDays = next;
+                        })
                       : null,
                 ),
               ),
@@ -204,11 +234,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 }
 
 class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.data, this.goal, this.onGoalChanged});
+  const _OnboardingPage({
+    required this.data,
+    this.goal,
+    this.onGoalChanged,
+    this.trainingDays,
+    this.onTrainingDaysChanged,
+  });
 
   final _OnboardingPageData data;
   final TrainingGoal? goal;
   final ValueChanged<TrainingGoal>? onGoalChanged;
+  final Set<int>? trainingDays;
+  final ValueChanged<int>? onTrainingDaysChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -252,11 +290,35 @@ class _OnboardingPage extends StatelessWidget {
           Text(
             data.body,
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.5,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
             ),
-          ),
+          if (trainingDays != null) ...[
+            const SizedBox(height: 24),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (var weekday = 1; weekday <= 7; weekday++)
+                  _OnboardingDayToggle(
+                    label: _OnboardingScreenState._weekdayLabels[weekday - 1],
+                    selected: trainingDays!.contains(weekday),
+                    onTap: () => onTrainingDaysChanged?.call(weekday),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Default: Mon, Wed, Fri. You can change this any time in Settings.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           if (goal != null) ...[
             const SizedBox(height: 24),
             SegmentedButton<TrainingGoal>(
@@ -310,10 +372,64 @@ class _OnboardingPageData {
     required this.eyebrow,
     required this.title,
     required this.body,
+    this.kind = _OnboardingPageKind.info,
   });
 
   final IconData icon;
   final String eyebrow;
   final String title;
   final String body;
+  final _OnboardingPageKind kind;
 }
+
+enum _OnboardingPageKind { info, trainingDays, goal }
+
+class _OnboardingDayToggle extends StatelessWidget {
+  const _OnboardingDayToggle({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        width: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surfaceContainerHigh,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outlineVariant,
+          ),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: selected
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Set<int> _restWeekdaysForTrainingDays(Set<int> trainingDays) => {
+  for (var weekday = 1; weekday <= 7; weekday++)
+    if (!trainingDays.contains(weekday)) weekday,
+};
