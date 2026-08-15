@@ -6,14 +6,15 @@
 
 ## ACTIVE WORK
 
-**Phases 1–4 are shipped** (commits `1d9c03e`, `8a1a9fd`, `ccdaf4d`, `0be0ba9`). **Phase 5 is next**,
-then 6, then 7. Baseline at the head of Phase 4: `flutter analyze` clean, `flutter test` **272/272**.
+**Phases 1–6 are shipped** (commits `1d9c03e`, `8a1a9fd`, `ccdaf4d`, `0be0ba9`, `874ae26`..`6e10c58`,
+`6aad644`..`eba9010`). **Phase 7 is next and last**, then Palash runs the whole application end to
+end. Baseline at the head of Phase 6: `flutter analyze` clean, `flutter test` **301/301**.
 
 | File | What it is |
 |---|---|
-| **`tasks/spec-phase6.md`** | **The active implementation spec.** Standalone Phase 6 brief for Codex, grounded at `3f41587`. Start here. |
+| **`tasks/spec-audit-fixes.md`** | **The active spec — Phase 7 lives at line 635 and has not been rewritten as a standalone brief yet.** Phases 1–6 are done; its Phase 5 and Phase 6 sections are superseded by `spec-phase5.md` / `spec-phase6.md`. |
+| `tasks/spec-phase6.md` | Standalone Phase 6 brief, grounded at `3f41587`. Done — shipped in `6aad644`..`6477411` plus the review fixes in `eba9010`. |
 | `tasks/spec-phase5.md` | Standalone Phase 5 brief, grounded at `0be0ba9`. Done — shipped in `a9075ed`..`6e10c58` plus the review fix `3f41587`. |
-| `tasks/spec-audit-fixes.md` | The full phased spec, Phases 1–7. Phases 1–5 are done; its Phase 5 section is superseded by `spec-phase5.md` and its Phase 6 section by `spec-phase6.md`. Phase 7 still lives here. |
 | `tasks/audit-2026-08-14.md` | Full audit: 50+ findings across 6 rounds, with evidence and file:line references. The spec's reasoning lives here. |
 | `tasks/lessons.md` | Read before touching anything. |
 | `tasks/spec-set-logging.md` | Earlier set-logging spec (historical). |
@@ -21,15 +22,27 @@ then 6, then 7. Baseline at the head of Phase 4: `flutter analyze` clean, `flutt
 ### Remaining phases at a glance
 
 - ~~**Phase 5 — Flutter practice & set-list mechanics.**~~ Done 2026-08-14.
-- **Phase 6 — Rest timer: persistent lock-screen countdown.** C1/C2. Android ongoing chronometer
-  notification, controller inversion, full-screen timer route. iOS Live Activities are **out of
-  scope**, cut to a `.timeSensitive` interim — see `tasks/spec-phase6.md`.
-  **Ground rule 6 applies — needs a real backgrounded device.**
-- **Phase 7 — Lower priority / deferrable.** L1, L2, M1, I2, N1, A9, A5 (+ a batch pointing back at
-  the audit doc). **A5 is a product decision — confirm before building.**
+- ~~**Phase 6 — Rest timer: persistent lock-screen countdown.**~~ Done 2026-08-15. Every code item
+  landed; **none of its device verification has been run.**
+- **Phase 7 — Lower priority / deferrable. LAST PHASE.** L1, L2, M1, I2, N1, A9, A5 (+ a batch
+  pointing back at the audit doc), at `tasks/spec-audit-fixes.md:635`. Two things to settle before
+  building: **A5 is a product decision — confirm with Palash first**, and **I2 wants a new
+  per-exercise `anatomyEditedByUser` column**, which is the only item in the whole remediation that
+  would push the schema past **v12**. Decide whether that is worth a v13 before writing the spec.
 
-Carried forward, still unverified on hardware: the Copenhagen Plank check and a real-device restore
-of a ≤11 backup.
+### After Phase 7: the deferred verification reckoning
+
+Palash decided on 2026-08-14 to defer all manual and on-device checks until every phase had landed,
+then run the application end to end. That debt comes due after Phase 7. What has never touched
+hardware, oldest first:
+
+- The Copenhagen Plank check and a real-device restore of a **≤ v11** backup (carried since Phase 3).
+- None of Phase 4's manual flow checks.
+- None of Phase 5's manual checks.
+- **All of Phase 6** — the lock-screen countdown, the flip to "Rest complete" at zero, the
+  backgrounded +15s action, the iOS notification-centre pull, and both review fixes that only a
+  device can settle (the ring resync after backgrounding, and `timeoutAfter` reaping an orphaned
+  `ongoing` notification).
 
 ## Where the audit came from
 

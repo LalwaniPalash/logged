@@ -506,3 +506,29 @@ Format: [date] | what went wrong | rule to prevent it
   open) is invisible to any test that does not raise the keyboard. Rule: lifecycle bugs and
   keyboard-inset layout bugs are structurally invisible to this project's test suite. Review diffs
   for them by hand, and do not read a green suite as coverage of either category.
+- 2026-08-15 | Phase 6 gated the rest countdown notification on `_notificationsAllowed` but posted
+  the *completion* notification unguarded, so a user who switched rest-timer notifications off in
+  settings still got "Rest complete" whenever the OS permission was granted for coaching reminders.
+  The suite was green at 300 and the guard was correct three lines away in the sibling method.
+  Rule: when a preference gates one call into a service, grep every other call into that same
+  service and check each one honours the same gate. A permission flag applied in one place and
+  forgotten in its sibling is invisible to tests that only assert the happy path — write the test as
+  "with the feature OFF, assert nothing was sent", not "with it ON, assert something was".
+- 2026-08-15 | The full-screen rest timer drove its ring from an `AnimationController` seeded once
+  from `endTime` and only resynced when `running` or `endTime` changed. Neither changes across
+  background → resume, but the vsync ticker is frozen while backgrounded and `SchedulerBinding`
+  resets the animation epoch on return — so the controller silently loses exactly the time spent
+  away and the ring was still part-full at zero. The digits were right the whole time because they
+  read the wall clock. Rule: an `AnimationController` is a repaint clock, never a source of truth
+  for elapsed time. If a value must survive backgrounding, derive it from an absolute timestamp on
+  every build and treat any drift from the animation as a resync trigger.
+- 2026-08-15 | An Android notification posted with `ongoing: true` and no `timeoutAfter` outlives the
+  Dart process that posted it: nothing in the app can cancel it once killed, and below Android 14 the
+  user cannot swipe it away either. Rule: any `ongoing` notification needs a self-destruct
+  (`timeoutAfter`) sized to the work it represents. Assume the process dies at the worst moment —
+  "the app will clean this up" is only true while the app exists.
+- 2026-08-15 | Two of three Phase 6 review findings were settled by writing a throwaway test that
+  either failed against the current code (real bug) or passed (suspicion, dropped — the suspected
+  double-pop on `acknowledge()` turned out not to reproduce because `canPop()` is already false by
+  then). Rule: when reviewing, do not argue a suspected defect from reading alone. Write the probe,
+  run it, then either promote it into the suite or delete it and say the concern was disproved.
