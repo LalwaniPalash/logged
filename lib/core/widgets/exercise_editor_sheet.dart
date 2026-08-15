@@ -89,7 +89,13 @@ Future<bool> showExerciseEditorSheet(
                         children: [
                           TextField(
                             controller: name,
-                            autofocus: true,
+                            // Deliberately NOT autofocused, unlike the
+                            // create-exercise sheet where the name is the first
+                            // thing you type. Here the name is already filled
+                            // and the keyboard would cover the muscle pickers —
+                            // the reason this sheet is usually opened at all,
+                            // now that it is one tap from every card in a
+                            // workout.
                             textCapitalization: TextCapitalization.words,
                             decoration: InputDecoration(
                               labelText: 'Name',

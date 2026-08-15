@@ -2192,3 +2192,27 @@ it suppresses the first set in a newly-switched entry mode, which keying alone w
 
 `flutter analyze` clean, `flutter test` green at **323 tests**. The device verification listed in the
 Phase 7 record above remains **unverified**, and now leads into the full end-to-end run.
+
+### Phase 7 device check — 2026-08-15 (Vivo V2143, Android 13)
+
+First real-device run of the whole remediation, sideloaded over the 2026-08-09 build.
+
+- **VERIFIED on device:** the **v12 → v13 migration** ran clean on an existing populated install —
+  app launched with no crash, no `SqliteException`, and the rank card rendered real history
+  (26 muscles trained) off the upgraded schema. This was Phase 7's headline unverified item.
+- **VERIFIED on device:** task 7.3's in-workout exercise info sheet. The ⓘ renders on every exercise
+  card in a live session and opens a sheet showing category, logging traits, **primary muscles**
+  ("Mid / lower chest", "Upper chest") and **secondary muscles** ("Front delts") as named chips,
+  bodyweight factor, and an Edit button that opens the full extracted editor in place.
+- **FOUND AND FIXED on device — nothing in the suite could have caught it:** the editor sheet
+  autofocused its name field, so opening it from a workout immediately raised the keyboard over the
+  muscle pickers (`dumpsys input_method` → `mInputShown=true`). Inherited verbatim from the Settings
+  version, where it is correct because creating an exercise starts with typing a name; editing an
+  existing one does not. `autofocus` removed from the extracted editor only; the create-exercise
+  sheet in Settings keeps it.
+
+Still **not** verified on device: everything notification-shaped from Phase 6 (lock-screen countdown,
+the flip to "Rest complete" at zero, the backgrounded +15s action, `timeoutAfter` reaping an orphaned
+`ongoing` notification — this Android 13 handset is the right device for that last one, since ongoing
+notifications are non-dismissible below Android 14), the reminder backstop, backup export/restore
+across devices, large-text and TalkBack behaviour, and all iOS behaviour.
