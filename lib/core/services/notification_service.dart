@@ -33,6 +33,15 @@ abstract interface class NotificationClient {
     required String channelName,
   });
 
+  Future<void> scheduleWeekly({
+    required int id,
+    required DateTime firstAt,
+    required String title,
+    required String body,
+    required String channelId,
+    required String channelName,
+  });
+
   /// Posts (or updates) the ongoing rest countdown. Android renders a
   /// system-ticked chronometer counting down to [endTime]; iOS has no
   /// equivalent, so it schedules a one-shot alert at [endTime] instead.
@@ -171,7 +180,11 @@ class NotificationService implements NotificationClient {
         id: id,
         title: title,
         body: body,
-        notificationDetails: _details(channelId, channelName),
+        notificationDetails: _details(
+          channelId,
+          channelName,
+          channelDescription: _channelDescriptionFor(channelId),
+        ),
       );
     } on PlatformException catch (error) {
       debugPrint('Could not show notification: $error');
@@ -197,11 +210,45 @@ class NotificationService implements NotificationClient {
         scheduledDate: tz.TZDateTime.from(at.toUtc(), tz.UTC),
         title: title,
         body: body,
-        notificationDetails: _details(channelId, channelName),
+        notificationDetails: _details(
+          channelId,
+          channelName,
+          channelDescription: _channelDescriptionFor(channelId),
+        ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } on PlatformException catch (error) {
       debugPrint('Could not schedule notification: $error');
+    }
+  }
+
+  @override
+  Future<void> scheduleWeekly({
+    required int id,
+    required DateTime firstAt,
+    required String title,
+    required String body,
+    required String channelId,
+    required String channelName,
+  }) async {
+    await init();
+    if (!_initialized || !firstAt.isAfter(DateTime.now())) return;
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        scheduledDate: tz.TZDateTime.from(firstAt.toUtc(), tz.UTC),
+        title: title,
+        body: body,
+        notificationDetails: _details(
+          channelId,
+          channelName,
+          channelDescription: _channelDescriptionFor(channelId),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    } on PlatformException catch (error) {
+      debugPrint('Could not schedule weekly notification: $error');
     }
   }
 
@@ -309,7 +356,7 @@ class NotificationService implements NotificationClient {
             ? _countdownTimeoutGrace.inMilliseconds
             : timeoutAfter.inMilliseconds,
         when: endTime.millisecondsSinceEpoch,
-          usesChronometer: true,
+        usesChronometer: true,
         chronometerCountDown: true,
         category: AndroidNotificationCategory.stopwatch,
         actions: const [
@@ -336,7 +383,7 @@ class NotificationService implements NotificationClient {
     android: AndroidNotificationDetails(
       'rest_timer',
       'Rest timer',
-      channelDescription: 'Logged workout reminders',
+      channelDescription: 'Logged rest timer alerts',
       importance: Importance.high,
       priority: Priority.high,
       enableVibration: true,
@@ -353,26 +400,35 @@ class NotificationService implements NotificationClient {
     ),
   );
 
-  NotificationDetails _details(String channelId, String channelName) =>
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          channelId,
-          channelName,
-          channelDescription: 'Logged workout reminders',
-          importance: Importance.high,
-          priority: Priority.high,
-          enableVibration: true,
-          // Set per-notification as well as at init: a notification posted
-          // before init ran would otherwise fall back to the launcher icon.
-          icon: _androidNotificationIcon,
-          color: _androidNotificationAccent,
-          colorized: false,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBanner: true,
-          presentList: true,
-          presentSound: true,
-        ),
-      );
+  String _channelDescriptionFor(String channelId) => switch (channelId) {
+    'training_reminders' => 'Logged training reminders',
+    'training_reminders_backstop' => 'Logged weekly training reminder backstop',
+    _ => 'Logged workout reminders',
+  };
+
+  NotificationDetails _details(
+    String channelId,
+    String channelName, {
+    String channelDescription = 'Logged workout reminders',
+  }) => NotificationDetails(
+    android: AndroidNotificationDetails(
+      channelId,
+      channelName,
+      channelDescription: channelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+      enableVibration: true,
+      // Set per-notification as well as at init: a notification posted
+      // before init ran would otherwise fall back to the launcher icon.
+      icon: _androidNotificationIcon,
+      color: _androidNotificationAccent,
+      colorized: false,
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBanner: true,
+      presentList: true,
+      presentSound: true,
+    ),
+  );
 }

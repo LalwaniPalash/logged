@@ -9,6 +9,7 @@ import '../../data/repositories/settings_repository.dart';
 
 const _reminderHorizonDays = 28;
 const _reminderIdBase = 200000000;
+const _reminderBackstopId = 199999999;
 
 final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) {
   return ReminderScheduler(
@@ -68,6 +69,38 @@ List<DateTime> buildReminderSchedule({
   return result;
 }
 
+/// Finds the first eligible reminder slot beyond the rolling window and uses
+/// that weekday/time as a low-maintenance weekly floor. It is intentionally
+/// outside the one-shot horizon so explicit future rest/training markers inside
+/// the window still win.
+DateTime? buildReminderBackstop({
+  required DateTime now,
+  required int hour,
+  required int minute,
+  required Set<int> restWeekdays,
+  required Set<DateTime> trainingDays,
+  required Set<DateTime> loggedRestDays,
+  int horizonDays = _reminderHorizonDays,
+  int searchDays = 366,
+}) {
+  final today = dateOnly(now);
+  for (var offset = horizonDays; offset < horizonDays + searchDays; offset++) {
+    final day = DateTime(today.year, today.month, today.day + offset);
+    final at = DateTime(day.year, day.month, day.day, hour, minute);
+    if (!at.isAfter(now) ||
+        !shouldRemindOnDay(
+          day: day,
+          restWeekdays: restWeekdays,
+          trainingDays: trainingDays,
+          loggedRestDays: loggedRestDays,
+        )) {
+      continue;
+    }
+    return at;
+  }
+  return null;
+}
+
 class ReminderScheduler {
   const ReminderScheduler({
     required NotificationClient notifications,
@@ -93,6 +126,7 @@ class ReminderScheduler {
       final day = DateTime(current.year, current.month, current.day + offset);
       await _notifications.cancel(_notificationId(day));
     }
+    await _notifications.cancel(_reminderBackstopId);
 
     if (!preferences.enabled) return;
     final workoutSettings = await _settings.read();
@@ -116,6 +150,23 @@ class ReminderScheduler {
         channelName: 'Training reminders',
       );
     }
+    final backstop = buildReminderBackstop(
+      now: current,
+      hour: preferences.hour,
+      minute: preferences.minute,
+      restWeekdays: workoutSettings.restWeekdays,
+      trainingDays: trainingDays,
+      loggedRestDays: loggedRestDays,
+    );
+    if (backstop == null) return;
+    await _notifications.scheduleWeekly(
+      id: _reminderBackstopId,
+      firstAt: backstop,
+      title: 'Train today',
+      body: 'A small session still counts. Ready when you are.',
+      channelId: 'training_reminders_backstop',
+      channelName: 'Training reminder backstop',
+    );
   }
 }
 

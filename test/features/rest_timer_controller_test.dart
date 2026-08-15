@@ -319,6 +319,16 @@ class _FakeNotificationClient implements NotificationClient {
   }) async {}
 
   @override
+  Future<void> scheduleWeekly({
+    required int id,
+    required DateTime firstAt,
+    required String title,
+    required String body,
+    required String channelId,
+    required String channelName,
+  }) async {}
+
+  @override
   Future<void> showNow({
     required int id,
     required String title,
