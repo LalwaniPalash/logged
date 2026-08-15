@@ -2216,3 +2216,29 @@ the flip to "Rest complete" at zero, the backgrounded +15s action, `timeoutAfter
 `ongoing` notification — this Android 13 handset is the right device for that last one, since ongoing
 notifications are non-dismissible below Android 14), the reminder backstop, backup export/restore
 across devices, large-text and TalkBack behaviour, and all iOS behaviour.
+
+### Device-driven rest timer fixes — 2026-08-15 (Vivo V2143, Android 13)
+
+Three findings from Palash using the build on a real phone. None were reachable from the test suite.
+
+1. **The FAB covered the minimised timer's controls.** `RestTimerBar` was the last child of the
+   session `Scaffold`'s **body** `Column`, so the "Add exercise" floating button was laid out over
+   it — hiding −15s, +15s and Skip outright, leaving the minimised bar with no working controls at
+   all. That silently broke Phase 6's rule that every full-screen control also exists on the bar:
+   they existed in the widget tree and were unreachable on screen. The bar is now the Scaffold's
+   `bottomNavigationBar`, which is exactly the case Flutter's FAB layout already accounts for. The
+   set list already reserved 96px for the FAB, so nothing else moved.
+2. **Tapping the minimised bar now reopens the full-screen timer** (user-requested). The timer state
+   carries only a `sessionId`, not which exercise it was started for, so `_startRestTimer` remembers
+   the exercise name / next set number / suggestion in a `_RestTimerContext` and both the initial
+   push and the reopen go through one `_openRestTimerScreen()`. Only the label and countdown are
+   tappable — the −15s / +15s / Skip controls keep their own taps.
+3. **"Rest complete" auto-dismisses after 12s** (user-requested). Phase 6 deliberately made it
+   persist, because C2 was the bar vanishing with nothing to show rest had finished; in use it just
+   sat there needing a tap. It now clears itself, **but only when the app is foregrounded** — if the
+   phone is in a pocket the notification is the only thing that reached the user, so backgrounded it
+   waits for them. The ticker stays alive past `_finish()` to count that window down, so it is
+   driven by the injected clock and stays testable. The full-screen route follows the bar and closes
+   with it, which does reverse Phase 6's "do not auto-pop" instruction — flagged rather than assumed.
+
+`flutter analyze` clean, `flutter test` green at **325 tests**.

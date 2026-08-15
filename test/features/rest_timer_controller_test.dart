@@ -210,6 +210,37 @@ void main() {
     expect(notifications.countdownPosts, isEmpty);
   });
 
+  test('the completed state clears itself after the dismiss window', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 21,
+      seconds: 30,
+      notificationsEnabled: true,
+    );
+    now = now.add(const Duration(seconds: 31));
+    controller.tick();
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(restTimerControllerProvider).completed, isTrue);
+
+    // Still inside the window.
+    now = now.add(RestTimerController.autoDismissAfter - const Duration(seconds: 1));
+    controller.tick();
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(restTimerControllerProvider).completed, isTrue);
+
+    now = now.add(const Duration(seconds: 2));
+    controller.tick();
+    await Future<void>.delayed(Duration.zero);
+
+    final state = container.read(restTimerControllerProvider);
+    expect(state.completed, isFalse);
+    expect(state.sessionId, isNull);
+    expect(
+      notifications.cancelled,
+      contains(NotificationService.restTimerNotificationId),
+    );
+  });
+
   test('state.completed is true after finish and false after skip', () async {
     final controller = container.read(restTimerControllerProvider.notifier);
     await controller.start(

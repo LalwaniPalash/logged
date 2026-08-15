@@ -54,6 +54,7 @@ bool _timedForDetail(SessionExerciseDetails detail) => isTimedExercise(
 
 class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   late Future<_SessionView> _future;
+  _RestTimerContext? _restContext;
 
   @override
   void initState() {
@@ -702,17 +703,29 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     if (!mounted) return;
     final timerState = ref.read(restTimerControllerProvider);
     if (!timerState.running || timerState.sessionId != widget.sessionId) return;
+    // Remembered so tapping the minimised bar can reopen the same screen: the
+    // timer state carries only a sessionId, not which exercise it was started
+    // for, and recomputing that after a minimise would guess.
+    _restContext = _RestTimerContext(
+      exerciseName: detail.exercise.name,
+      nextSetNumber: _nextSetNumber(detail),
+      suggestion: suggestion,
+    );
     // Not awaited: the caller refreshes the set list right after this returns,
     // and awaiting the route would hold that refresh back for the whole rest.
-    unawaited(
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (context) => RestTimerScreen(
-            sessionId: widget.sessionId,
-            exerciseName: detail.exercise.name,
-            nextSetNumber: _nextSetNumber(detail),
-            suggestion: suggestion,
-          ),
+    unawaited(_openRestTimerScreen());
+  }
+
+  Future<void> _openRestTimerScreen() {
+    final context_ = _restContext;
+    if (context_ == null) return Future<void>.value();
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => RestTimerScreen(
+          sessionId: widget.sessionId,
+          exerciseName: context_.exerciseName,
+          nextSetNumber: context_.nextSetNumber,
+          suggestion: context_.suggestion,
         ),
       ),
     );
@@ -949,6 +962,16 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             icon: const Icon(AppIcons.add),
             label: const Text('Add exercise'),
           ),
+          // The rest bar is the Scaffold's bottom bar rather than the last child
+          // of the body, so the FAB is laid out above it instead of on top of
+          // it. As a body child the FAB covered −15s / +15s / Skip outright,
+          // leaving the minimised timer with no working controls at all.
+          bottomNavigationBar: RestTimerBar(
+            sessionId: widget.sessionId,
+            onTap: _restContext == null
+                ? null
+                : () => unawaited(_openRestTimerScreen()),
+          ),
           body: Column(
             children: [
               Expanded(
@@ -1073,13 +1096,26 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                         ],
                       ),
               ),
-              RestTimerBar(sessionId: widget.sessionId),
             ],
           ),
         );
       },
     );
   }
+}
+
+/// What the full-screen rest timer needs beyond the timer state itself, kept so
+/// a minimised timer can be reopened showing the same next-set context.
+class _RestTimerContext {
+  const _RestTimerContext({
+    required this.exerciseName,
+    required this.nextSetNumber,
+    required this.suggestion,
+  });
+
+  final String exerciseName;
+  final int nextSetNumber;
+  final ProgressionSuggestion? suggestion;
 }
 
 /// Next set number for an exercise. Derived from the highest existing number

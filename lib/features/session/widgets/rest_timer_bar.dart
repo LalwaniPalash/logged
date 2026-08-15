@@ -5,9 +5,14 @@ import '../../../core/app_icons.dart';
 import '../rest_timer_controller.dart';
 
 class RestTimerBar extends ConsumerWidget {
-  const RestTimerBar({super.key, required this.sessionId});
+  const RestTimerBar({super.key, required this.sessionId, this.onTap});
 
   final int sessionId;
+
+  /// Reopens the full-screen timer. Only the label and countdown are tappable —
+  /// the −15s / +15s / Skip controls keep their own taps, so maximising never
+  /// steals a press meant for them.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,18 +58,36 @@ class RestTimerBar extends ConsumerWidget {
                 )
               : Row(
                   children: [
-                    Icon(AppIcons.rest, color: colors.onSecondaryContainer),
-                    const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        'Rest · ${state.display}',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: colors.onSecondaryContainer,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
+                      child: InkWell(
+                        onTap: onTap,
+                        child: Semantics(
+                          button: onTap != null,
+                          label: onTap == null
+                              ? null
+                              : 'Rest ${state.display}, open the full timer',
+                          child: Row(
+                            children: [
+                              Icon(
+                                AppIcons.rest,
+                                color: colors.onSecondaryContainer,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Rest · ${state.display}',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        color: colors.onSecondaryContainer,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     IconButton(

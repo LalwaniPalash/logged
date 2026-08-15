@@ -44,6 +44,45 @@ void main() {
     expect(find.text('Rest complete'), findsNothing);
     expect(find.text('Done'), findsNothing);
   });
+
+  testWidgets('tapping the running bar reopens the full timer', (tester) async {
+    var taps = 0;
+    final controller = _TestRestTimerController(
+      RestTimerState(
+        sessionId: 3,
+        remainingSeconds: 45,
+        running: true,
+        endTime: DateTime(2026, 8, 15, 12),
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [restTimerControllerProvider.overrideWith(() => controller)],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: RestTimerBar(
+              sessionId: 3,
+              onTap: () => taps++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Rest \u00b7 0:45'));
+    await tester.pump();
+    expect(taps, 1);
+
+    // The controls must keep their own taps rather than maximising.
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+    expect(taps, 1);
+  });
 }
 
 class _TestRestTimerController extends RestTimerController {
@@ -51,6 +90,7 @@ class _TestRestTimerController extends RestTimerController {
 
   final RestTimerState _initialState;
   int acknowledgeCount = 0;
+  int cancelCount = 0;
 
   @override
   RestTimerState build() => _initialState;
@@ -58,5 +98,10 @@ class _TestRestTimerController extends RestTimerController {
   @override
   Future<void> acknowledge() async {
     acknowledgeCount++;
+  }
+
+  @override
+  Future<void> cancel({int? sessionId}) async {
+    cancelCount++;
   }
 }

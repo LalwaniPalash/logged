@@ -82,8 +82,15 @@ class RestTimerState {
 /// number of elapsed Dart ticks, is authoritative when the app resumes.
 class RestTimerController extends Notifier<RestTimerState>
     with WidgetsBindingObserver {
+  /// How long the "Rest complete" state lingers before it clears itself, when
+  /// the app is in the foreground. Long enough to be seen, short enough not to
+  /// need dismissing. Backgrounded, it never auto-clears — the notification is
+  /// the only thing that reached the user, so it waits for them.
+  static const autoDismissAfter = Duration(seconds: 12);
+
   RestTimerTicker? _ticker;
   StreamSubscription<String>? _actionSubscription;
+  DateTime? _completedAt;
   bool _notificationsAllowed = false;
 
   @override
@@ -122,6 +129,7 @@ class RestTimerController extends Notifier<RestTimerState>
       return false;
     }
     _ticker?.cancel();
+    _completedAt = null;
     final now = ref.read(restTimerClockProvider)();
     state = RestTimerState(
       sessionId: sessionId,
@@ -142,6 +150,24 @@ class RestTimerController extends Notifier<RestTimerState>
   }
 
   void tick() {
+    final completedAt = _completedAt;
+    if (state.completed && completedAt != null) {
+      // Only while the user can actually see it — see [autoDismissAfter].
+      // Phrased as "unless we know we are backgrounded" rather than "only when
+      // resumed": lifecycleState is null until the first lifecycle event, and
+      // that null must not mean the completion state never clears.
+      const backgrounded = {
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.detached,
+      };
+      if (backgrounded.contains(WidgetsBinding.instance.lifecycleState)) {
+        return;
+      }
+      final elapsed = ref.read(restTimerClockProvider)().difference(completedAt);
+      if (elapsed >= autoDismissAfter) unawaited(acknowledge());
+      return;
+    }
     if (!state.running || state.endTime == null) return;
     final remaining = _remainingAt(
       now: ref.read(restTimerClockProvider)(),
@@ -177,6 +203,7 @@ class RestTimerController extends Notifier<RestTimerState>
     if (sessionId != null && state.sessionId != sessionId) return;
     _ticker?.cancel();
     _ticker = null;
+    _completedAt = null;
     state = RestTimerState.idle;
     await ref
         .read(notificationServiceProvider)
@@ -185,8 +212,9 @@ class RestTimerController extends Notifier<RestTimerState>
 
   Future<void> _finish() async {
     if (!state.running) return;
-    _ticker?.cancel();
-    _ticker = null;
+    // The ticker deliberately keeps running: it is what counts down the
+    // auto-dismiss window in [tick].
+    _completedAt = ref.read(restTimerClockProvider)();
     final sessionId = state.sessionId;
     state = RestTimerState(
       sessionId: sessionId,
