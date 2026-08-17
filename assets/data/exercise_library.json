@@ -8795,6 +8795,17 @@
     "defaultUnit": "kg"
   },
   {
+    "name": "Lying Leg Raise",
+    "category": "bodyweight",
+    "muscleGroup": "core",
+    "primaryMuscles": [
+      "hip_flexors",
+      "abs"
+    ],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg"
+  },
+  {
     "name": "Lying Machine Squat",
     "category": "strength",
     "muscleGroup": "quads",

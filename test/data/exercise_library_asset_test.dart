@@ -36,7 +36,7 @@ void main() {
     final data = jsonDecode(assetFile.readAsStringSync()) as List<dynamic>;
     expect(
       data,
-      hasLength(1278),
+      hasLength(1279),
       reason: 'Every bundled exercise must have reviewed anatomy metadata',
     );
 
