@@ -41,6 +41,12 @@ class _RestTimerScreenState extends ConsumerState<RestTimerScreen>
     super.dispose();
   }
 
+  // Neither of these pops the route itself — build() below already does that
+  // reactively the moment state.sessionId stops matching widget.sessionId
+  // (the same mechanism Skip relies on via controller.skip alone). Popping
+  // here too raced that reactive pop: whichever fired second found the rest
+  // timer route already gone and popped whatever was now on top instead —
+  // the active session screen — landing back two screens too far.
   Future<void> _cancelTimer(RestTimerState state) async {
     final remaining = _remainingSeconds(state);
     if (remaining > 30) {
@@ -68,16 +74,10 @@ class _RestTimerScreenState extends ConsumerState<RestTimerScreen>
     await ref
         .read(restTimerControllerProvider.notifier)
         .cancel(sessionId: widget.sessionId);
-    if (mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
   }
 
   Future<void> _acknowledge() async {
     await ref.read(restTimerControllerProvider.notifier).acknowledge();
-    if (mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
   }
 
   void _syncAnimation(RestTimerState state) {
@@ -89,14 +89,21 @@ class _RestTimerScreenState extends ConsumerState<RestTimerScreen>
       return;
     }
     final remaining = _remainingDuration(state.endTime!);
-    final duration = remaining <= Duration.zero
-        ? const Duration(milliseconds: 1)
-        : remaining;
+    // duration spans the *whole* rest (not just what's left) so the ring
+    // reflects how much of the total has elapsed — reopening mid-rest must
+    // not redraw it as a fresh, fully-full timer. reverse(from:) then scales
+    // the actual playback time to just the remaining fraction of that span.
+    final total = Duration(
+      seconds: state.totalSeconds > 0 ? state.totalSeconds : 1,
+    );
+    final progress = remaining <= Duration.zero
+        ? 0.0
+        : (remaining.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0);
     _animationController
       ..stop()
-      ..duration = duration
-      ..value = 1
-      ..reverse(from: 1);
+      ..duration = total
+      ..value = progress
+      ..reverse(from: progress);
     _syncedRunning = state.running;
     _syncedEndTime = state.endTime;
   }

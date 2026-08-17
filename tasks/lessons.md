@@ -561,3 +561,43 @@ Format: [date] | what went wrong | rule to prevent it
   hands — when the user contradicts one after using it, that is data, not a regression. Implement
   it, but say plainly which earlier decision is being reversed so the reasoning is not silently lost
   (here: auto-dismiss is foreground-only, so the backgrounded notification still waits for them).
+- 2026-08-17 | Any screen that reacts to a "set became complete" transition (`_startRestTimer`) needs
+  to know whether the session it's editing is the active one, not just whether the set changed.
+  `ActiveSessionScreen` is reused to edit *finished* sessions too (fixing a missed set from last
+  week), and the rest timer fired there with no guard. Rule: a completion-triggered side effect
+  belongs behind an "is this actually in progress" check, not just an "did this field change" check
+  — a screen name like "ActiveSessionScreen" is not proof the session it's showing is active.
+- 2026-08-17 | Two independent pop triggers on the same state change is a race, not a redundancy.
+  `RestTimerScreen.build()` already auto-pops reactively when `state.sessionId` stops matching (the
+  mechanism Skip correctly relied on alone); `_acknowledge`/`_cancelTimer` also popped explicitly
+  right after mutating that same state. Depending on await timing, both fired — the second pop
+  landed on whatever was now on top, one screen too far. Rule: when a widget already reacts to a
+  state change by unmounting/navigating itself, don't also navigate imperatively from the action
+  that caused the state change — pick one owner for the transition.
+- 2026-08-17 | `SnackBar.duration` is not the real timeout on Android: the OS's accessibility timeout
+  setting silently stretches it, so "Undo — deleted" sat on screen indefinitely on a real device even
+  with a normal duration passed. Rule: for a UI element that MUST disappear on a schedule (not just
+  "usually"), drive the dismissal with your own `Timer` and `.close()` rather than trusting a
+  framework/OS-owned duration you don't have final control over.
+- 2026-08-17 | A screen "looking empty" after a data change is not automatically a bug — it can be
+  correct math reacting to genuinely different input. The Dashboard's rank/streak/week cards read
+  as broken after a backup import (pull-to-refresh and cold restart didn't fix it, which correctly
+  ruled out provider staleness) but the actual cause was that streak needs contiguity with *today*
+  and muscle progress is a rolling *current-week* window — imported history with a gap up to now
+  legitimately zeroes both. Rule: before chasing a caching/reactivity bug, check whether the
+  underlying computation is intentionally windowed (this week / contiguous-to-today) rather than
+  all-time — a screen split between "shows everything" (History) and "shows current state" (Dashboard)
+  will always look inconsistent right after importing old data, with no bug present.
+- 2026-08-17 | Bumping `schemaVersion` isn't enough on its own for anything backup-related: this repo
+  also hardcodes the writer version and the accepted-reader set in `BackupService._schemaVersion` /
+  `_supportedSchemaVersions`, completely separate from `AppDatabase.schemaVersion`. Missing that bump
+  means a freshly-exported backup fails to re-import with "not a valid Logged backup file" against
+  its own build. Rule: grep for the old version number everywhere, not just in the migration file —
+  test fixtures (`expect(database.schemaVersion, ...)`, `expect(payload['schemaVersion'], ...)`) and
+  the backup writer/reader both hardcode it and go stale silently until a test or a real export fails.
+- 2026-08-17 | Screenshotting a real iOS device from the CLI needs a mounted Developer Disk Image;
+  `idevicescreenshot` (libimobiledevice) fails with "Invalid service" without one, and there's no
+  quick CLI fix — chasing it further than 1-2 attempts is a dead end when the user is holding the
+  actual device and can just look at it. Rule: for real-device iOS visual verification, ask the user
+  directly rather than building a screenshot pipeline; reserve that effort for cases with no human
+  looking at the screen already.

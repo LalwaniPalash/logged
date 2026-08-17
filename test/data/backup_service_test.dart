@@ -85,7 +85,7 @@ void main() {
           ),
         );
     final payload = await BackupService(source).exportPayload();
-    expect(payload['schemaVersion'], 13);
+    expect(payload['schemaVersion'], 14);
     await BackupService(target).replaceFromPayload(payload);
     final exercises = await target.select(target.exercises).get();
     expect(exercises, hasLength(1));

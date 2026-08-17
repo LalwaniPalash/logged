@@ -129,6 +129,13 @@ class _HistoryTile extends StatelessWidget {
     final theme = Theme.of(context);
     final active = session.endedAt == null;
     final note = session.notes?.trim();
+    final customTitle = session.title?.trim();
+    final title = customTitle != null && customTitle.isNotEmpty
+        ? customTitle
+        : (active ? 'Active session' : 'Workout');
+    final durationMinutes = session.endedAt
+        ?.difference(session.startedAt)
+        .inMinutes;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: AppListCard(
@@ -161,16 +168,15 @@ class _HistoryTile extends StatelessWidget {
             ],
           ),
         ),
-        title: Text(
-          active ? 'Active session' : 'Workout',
-          style: theme.textTheme.titleMedium,
-        ),
+        title: Text(title, style: theme.textTheme.titleMedium),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              DateFormat.jm().format(session.startedAt),
+              durationMinutes == null
+                  ? DateFormat.jm().format(session.startedAt)
+                  : '${DateFormat.jm().format(session.startedAt)} · $durationMinutes min',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

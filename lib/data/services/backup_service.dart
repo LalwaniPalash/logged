@@ -38,8 +38,9 @@ class BackupService {
     11,
     12,
     13,
+    14,
   };
-  static const int _schemaVersion = 13;
+  static const int _schemaVersion = 14;
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';

@@ -190,6 +190,19 @@ class SessionRepository {
         ),
       );
 
+  /// Blank clears back to the "Active workout"/"Workout" fallback shown at
+  /// display time, rather than storing an empty string as a real title.
+  Future<void> updateTitle(int sessionId, String? title) {
+    final trimmed = title?.trim();
+    return (_database.update(
+      _database.sessions,
+    )..where((row) => row.id.equals(sessionId))).write(
+      SessionsCompanion(
+        title: Value(trimmed == null || trimmed.isEmpty ? null : trimmed),
+      ),
+    );
+  }
+
   Future<int> addExercise({
     required int sessionId,
     required int exerciseId,

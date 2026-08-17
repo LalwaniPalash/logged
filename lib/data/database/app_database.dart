@@ -68,6 +68,9 @@ class Sessions extends Table {
   DateTimeColumn get endedAt => dateTime().nullable()();
   IntColumn get templateId => integer().nullable().references(Templates, #id)();
   TextColumn get notes => text().nullable()();
+  /// User-set name. Null/blank falls back to "Active workout"/"Workout" at
+  /// display time — most sessions never get one.
+  TextColumn get title => text().nullable()();
 }
 
 class SessionExercises extends Table {
@@ -155,7 +158,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'logged'));
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -350,6 +353,9 @@ class AppDatabase extends _$AppDatabase {
           exercises,
           exercises.anatomyEditedByUser,
         );
+      }
+      if (from < 14) {
+        await migrator.addColumn(sessions, sessions.title);
       }
     },
     beforeOpen: (details) async {

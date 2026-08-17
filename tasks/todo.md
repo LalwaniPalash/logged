@@ -7,11 +7,14 @@
 ## ACTIVE WORK
 
 **ALL SEVEN PHASES ARE SHIPPED.** The audit remediation is complete: `flutter analyze` clean,
-`flutter test` **325/325**, schema **v13**. The suite was 230 tests when the audit was written.
+`flutter test` **327/327**, schema **v14**. The suite was 230 tests when the audit was written.
 
-**The live work is now the device pass**, recorded at the bottom of this file. Palash's Vivo V2143
-(Android 13) has the current build sideloaded, and four bugs have already come out of it that
-neither the test suite nor the per-phase diff reviews could catch.
+**The live work is the device pass**, recorded at the bottom of this file. As of 2026-08-17 it has
+run on Palash's Vivo V2143 (Android 13) AND his iPhone 14 Pro (real device, not simulator) — nine
+bugs total have come out of it that neither the test suite nor the per-phase diff reviews could
+catch. **Uncommitted right now**: 11 files changed on `feat/set-editor-backup-ux`, covering today's
+fixes plus two new features (workout rename, logged duration in History) — see the
+2026-08-17 section at the bottom before committing. Nothing today has been committed yet.
 
 | File | What it is |
 |---|---|
@@ -2245,3 +2248,75 @@ Three findings from Palash using the build on a real phone. None were reachable 
    with it, which does reverse Phase 6's "do not auto-pop" instruction — flagged rather than assumed.
 
 `flutter analyze` clean, `flutter test` green at **325 tests**.
+
+### Device pass continued — 2026-08-17 (Vivo V2143 Android 13, then iPhone 14 Pro real device)
+
+Ran the phase-by-phase device checklist from the "deferred verification reckoning" above. Palash
+verified Phases 3, 4, and 5 manually (Copenhagen Plank duration/DB check, CRUD confirmations incl.
+archive-fallback, set list mechanics) — no findings, no notes needed beyond what the spec already
+said. Phase 6 notifications also verified: lock-screen/notification-centre countdown visible, flips
+to "Rest complete" correctly at zero. **Not separately re-verified**: ring resync specifically after
+OS-level backgrounding (distinct from the reopen-ring bug fixed below), and `timeoutAfter` reaping an
+orphaned `ongoing` notification after a force-killed app — both still open, Vivo is still the right
+device for the second one (non-dismissible ongoing notifications below Android 14).
+
+**Five bugs found and fixed, all device-confirmed after the fix:**
+
+1. **Rest timer often didn't start.** `_startRestTimer` only fired on the incomplete→complete
+   *transition* when saving a set via the bottom-sheet editor. "+ Add Set", "Repeat set", and
+   "Insert set above" all create a set that's already complete the instant it lands (seeded from
+   real history), so no transition ever happens on that path — which is the common one. New
+   `_startRestTimerIfComplete` checks completeness directly on creation for those three.
+2. **Rest ring showed full on reopen.** Minimizing and maximizing the timer redrew the countdown
+   ring from `value: 1` every time, regardless of how much rest had actually elapsed. Added
+   `RestTimerState.totalSeconds` (set on start, adjusted with ±15s) so the ring can compute
+   `remaining / total` on reopen instead of assuming a fresh full rest.
+3. **"Done" on the full-screen timer over-popped, landing on History instead of the session.**
+   `_acknowledge`/`_cancelTimer` each called `Navigator.pop()` explicitly right after mutating
+   timer state — but `RestTimerScreen.build()` *already* auto-pops reactively the moment
+   `state.sessionId` stops matching (the mechanism Skip already relied on, correctly, by never
+   popping manually). Both pops could fire, popping the session screen too. Fix: deleted the manual
+   pops; all three exits (Skip/Done/Cancel) now go through the one reactive path.
+4. **Undo-delete-set snackbar never went away.** Android's accessibility timeout setting silently
+   stretches `SnackBar.duration` past whatever value is passed, so "Undo" sat there indefinitely.
+   `_showDeletedSetSnackBar` now drives dismissal with its own `Timer(6s)` calling `controller.close()`
+   instead of trusting the framework's duration.
+5. **Rest timer fired when editing a finished/historical session.** `ActiveSessionScreen` is reused
+   to view AND edit any past session (e.g. logging a set you forgot last Friday), and every
+   completion-triggers-rest-timer path applied there too, with no active/finished distinction. Guard
+   added at the top of `_startRestTimer`: bails immediately if `session.endedAt != null`.
+
+**Two features added** (user request, not bug-driven):
+- **Workout rename.** `sessions.title` (nullable), **schema v14**. "Rename workout" in the session's
+  overflow menu; falls back to "Active workout"/"Workout" when unset. Shown in both the session app
+  bar and History rows.
+- **Logged duration in History.** `endedAt.difference(startedAt).inMinutes` shown next to the time
+  for finished sessions, e.g. "6:26 PM · 42 min". No schema change — both timestamps already existed.
+
+**Backup schema bump**: `BackupService._schemaVersion` and `_supportedSchemaVersions` both moved
+13→14 alongside the sessions.title migration — a title-less v13 backup still imports fine (column is
+nullable), and a v14 backup exported from this build round-trips the title correctly.
+
+**Investigated and found NOT a bug** (iOS, after importing a Vivo-exported backup): the Dashboard's
+top cards (streak, rank, week progress) looked "empty" after import even after pull-to-refresh and a
+cold restart — ruled out provider staleness, since both are pure Riverpod `StreamProvider`s backed by
+reactive Drift `.watch()` queries with no manual invalidation needed. Root cause is date math, not
+data loss: `computeStreak` needs training days contiguous with *today*, and `watchMuscleProgress`
+(`analytics_repository.dart:312`) is a **rolling current-week window**, not all-time — so importing
+history with a gap up to today, or with no sessions logged in the current calendar week, correctly
+zeroes both out. History shows everything regardless of date/completion by design, which is why it
+looked inconsistent side-by-side. Confirmed by the Vivo's own History screen showing 2 of 5 sessions
+tagged "Active session" (never finished, so excluded from `trainingDaysProvider` too) alongside the
+"3 workouts logged" stat. Should resolve itself once a workout is logged in the current week — not
+re-checked after that.
+
+**Still fully unverified**: backup restore across devices for a **≤v11** backup specifically (the
+Android→iOS restore that surfaced the Dashboard question above used a recent-schema backup, not an
+old one), large text + TalkBack (Palash approved these as verified without an on-device pass — worth
+a real check if anything text-heavy changes), and all iOS behaviour beyond what's noted above (this
+was the first real-iPhone run of the whole app — no crashes, migration/import worked, but nothing
+iOS-specific like the Simulator-vs-device gap has been stress-tested).
+
+`flutter analyze` clean, `flutter test` green at **327 tests** (added: total-tracking assertion in
+`rest_timer_controller_test.dart`, a v13→v14 migration test, schemaVersion bumps in existing
+migration/backup tests). **Not yet committed** — 11 modified files sitting on `feat/set-editor-backup-ux`.

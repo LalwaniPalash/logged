@@ -68,6 +68,24 @@ void main() {
     expect(notifications.cancelled, contains(1001));
   });
 
+  test('total tracks the original rest, adjusted alongside +15/-15', () async {
+    final controller = container.read(restTimerControllerProvider.notifier);
+    await controller.start(
+      sessionId: 1,
+      seconds: 60,
+      notificationsEnabled: false,
+    );
+    expect(container.read(restTimerControllerProvider).totalSeconds, 60);
+
+    await controller.adjust(15);
+    expect(container.read(restTimerControllerProvider).totalSeconds, 75);
+
+    now = now.add(const Duration(seconds: 30));
+    controller.tick();
+    // Ticking down must not touch the total — only remainingSeconds moves.
+    expect(container.read(restTimerControllerProvider).totalSeconds, 75);
+  });
+
   test('start posts an ongoing countdown immediately', () async {
     final controller = container.read(restTimerControllerProvider.notifier);
     await controller.start(

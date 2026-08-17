@@ -2384,6 +2384,15 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2391,6 +2400,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     endedAt,
     templateId,
     notes,
+    title,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2433,6 +2443,12 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
     return context;
   }
 
@@ -2462,6 +2478,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      ),
     );
   }
 
@@ -2477,12 +2497,17 @@ class Session extends DataClass implements Insertable<Session> {
   final DateTime? endedAt;
   final int? templateId;
   final String? notes;
+
+  /// User-set name. Null/blank falls back to "Active workout"/"Workout" at
+  /// display time — most sessions never get one.
+  final String? title;
   const Session({
     required this.id,
     required this.startedAt,
     this.endedAt,
     this.templateId,
     this.notes,
+    this.title,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2497,6 +2522,9 @@ class Session extends DataClass implements Insertable<Session> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
     }
     return map;
   }
@@ -2514,6 +2542,9 @@ class Session extends DataClass implements Insertable<Session> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      title: title == null && nullToAbsent
+          ? const Value.absent()
+          : Value(title),
     );
   }
 
@@ -2528,6 +2559,7 @@ class Session extends DataClass implements Insertable<Session> {
       endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
       templateId: serializer.fromJson<int?>(json['templateId']),
       notes: serializer.fromJson<String?>(json['notes']),
+      title: serializer.fromJson<String?>(json['title']),
     );
   }
   @override
@@ -2539,6 +2571,7 @@ class Session extends DataClass implements Insertable<Session> {
       'endedAt': serializer.toJson<DateTime?>(endedAt),
       'templateId': serializer.toJson<int?>(templateId),
       'notes': serializer.toJson<String?>(notes),
+      'title': serializer.toJson<String?>(title),
     };
   }
 
@@ -2548,12 +2581,14 @@ class Session extends DataClass implements Insertable<Session> {
     Value<DateTime?> endedAt = const Value.absent(),
     Value<int?> templateId = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    Value<String?> title = const Value.absent(),
   }) => Session(
     id: id ?? this.id,
     startedAt: startedAt ?? this.startedAt,
     endedAt: endedAt.present ? endedAt.value : this.endedAt,
     templateId: templateId.present ? templateId.value : this.templateId,
     notes: notes.present ? notes.value : this.notes,
+    title: title.present ? title.value : this.title,
   );
   Session copyWithCompanion(SessionsCompanion data) {
     return Session(
@@ -2564,6 +2599,7 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.templateId.value
           : this.templateId,
       notes: data.notes.present ? data.notes.value : this.notes,
+      title: data.title.present ? data.title.value : this.title,
     );
   }
 
@@ -2574,13 +2610,15 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('startedAt: $startedAt, ')
           ..write('endedAt: $endedAt, ')
           ..write('templateId: $templateId, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('title: $title')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, startedAt, endedAt, templateId, notes);
+  int get hashCode =>
+      Object.hash(id, startedAt, endedAt, templateId, notes, title);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2589,7 +2627,8 @@ class Session extends DataClass implements Insertable<Session> {
           other.startedAt == this.startedAt &&
           other.endedAt == this.endedAt &&
           other.templateId == this.templateId &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.title == this.title);
 }
 
 class SessionsCompanion extends UpdateCompanion<Session> {
@@ -2598,12 +2637,14 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<DateTime?> endedAt;
   final Value<int?> templateId;
   final Value<String?> notes;
+  final Value<String?> title;
   const SessionsCompanion({
     this.id = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.endedAt = const Value.absent(),
     this.templateId = const Value.absent(),
     this.notes = const Value.absent(),
+    this.title = const Value.absent(),
   });
   SessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -2611,6 +2652,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.endedAt = const Value.absent(),
     this.templateId = const Value.absent(),
     this.notes = const Value.absent(),
+    this.title = const Value.absent(),
   }) : startedAt = Value(startedAt);
   static Insertable<Session> custom({
     Expression<int>? id,
@@ -2618,6 +2660,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<DateTime>? endedAt,
     Expression<int>? templateId,
     Expression<String>? notes,
+    Expression<String>? title,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2625,6 +2668,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (endedAt != null) 'ended_at': endedAt,
       if (templateId != null) 'template_id': templateId,
       if (notes != null) 'notes': notes,
+      if (title != null) 'title': title,
     });
   }
 
@@ -2634,6 +2678,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<DateTime?>? endedAt,
     Value<int?>? templateId,
     Value<String?>? notes,
+    Value<String?>? title,
   }) {
     return SessionsCompanion(
       id: id ?? this.id,
@@ -2641,6 +2686,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       endedAt: endedAt ?? this.endedAt,
       templateId: templateId ?? this.templateId,
       notes: notes ?? this.notes,
+      title: title ?? this.title,
     );
   }
 
@@ -2662,6 +2708,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
     return map;
   }
 
@@ -2672,7 +2721,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('startedAt: $startedAt, ')
           ..write('endedAt: $endedAt, ')
           ..write('templateId: $templateId, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('title: $title')
           ..write(')'))
         .toString();
   }
@@ -7123,6 +7173,7 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<DateTime?> endedAt,
       Value<int?> templateId,
       Value<String?> notes,
+      Value<String?> title,
     });
 typedef $$SessionsTableUpdateCompanionBuilder =
     SessionsCompanion Function({
@@ -7131,6 +7182,7 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<DateTime?> endedAt,
       Value<int?> templateId,
       Value<String?> notes,
+      Value<String?> title,
     });
 
 final class $$SessionsTableReferences
@@ -7201,6 +7253,11 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7282,6 +7339,11 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TemplatesTableOrderingComposer get templateId {
     final $$TemplatesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -7326,6 +7388,9 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
 
   $$TemplatesTableAnnotationComposer get templateId {
     final $$TemplatesTableAnnotationComposer composer = $composerBuilder(
@@ -7409,12 +7474,14 @@ class $$SessionsTableTableManager
                 Value<DateTime?> endedAt = const Value.absent(),
                 Value<int?> templateId = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> title = const Value.absent(),
               }) => SessionsCompanion(
                 id: id,
                 startedAt: startedAt,
                 endedAt: endedAt,
                 templateId: templateId,
                 notes: notes,
+                title: title,
               ),
           createCompanionCallback:
               ({
@@ -7423,12 +7490,14 @@ class $$SessionsTableTableManager
                 Value<DateTime?> endedAt = const Value.absent(),
                 Value<int?> templateId = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> title = const Value.absent(),
               }) => SessionsCompanion.insert(
                 id: id,
                 startedAt: startedAt,
                 endedAt: endedAt,
                 templateId: templateId,
                 notes: notes,
+                title: title,
               ),
           withReferenceMapper: (p0) => p0
               .map(

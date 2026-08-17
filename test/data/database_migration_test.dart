@@ -326,7 +326,7 @@ void main() {
     final exercise = await database.select(database.exercises).getSingle();
     expect(exercise.name, 'Legacy Row');
     expect(exercise.videoUrl, isNull);
-    expect(database.schemaVersion, 13);
+    expect(database.schemaVersion, 14);
   });
 
   test(
@@ -448,7 +448,7 @@ void main() {
       expect(set.reps, 12);
       expect(set.weightValue, 180);
       expect(set.muscleBiasWeights, isNull);
-      expect(database.schemaVersion, 13);
+      expect(database.schemaVersion, 14);
     },
   );
 
@@ -597,7 +597,7 @@ void main() {
         'quads': 0.75,
         'glute_max': 1.25,
       });
-      expect(database.schemaVersion, 13);
+      expect(database.schemaVersion, 14);
     },
   );
 
@@ -727,7 +727,7 @@ void main() {
       expect(weights['quads']!.toDouble(), closeTo(1.5, 1e-9));
       expect(weights['glute_max']!.toDouble(), closeTo(0.9, 1e-9));
       expect(weights['hamstrings']!.toDouble(), closeTo(0.6, 1e-9));
-      expect(database.schemaVersion, 13);
+      expect(database.schemaVersion, 14);
     },
   );
 
@@ -866,7 +866,7 @@ void main() {
         columns.map((row) => row.read<String>('name')),
         containsAll(['is_timed', 'tracks_distance']),
       );
-      expect(database.schemaVersion, 13);
+      expect(database.schemaVersion, 14);
     },
   );
 
@@ -943,7 +943,65 @@ void main() {
         contains('anatomy_edited_by_user'),
       );
       expect(row.read<int>('edited'), 0);
-      expect(database.schemaVersion, 13);
+      expect(database.schemaVersion, 14);
+    },
+  );
+
+  test(
+    'v13 gains a nullable session title without losing existing sessions',
+    () async {
+      final executor = NativeDatabase.memory(
+        setup: (database) {
+          database.execute('''
+          CREATE TABLE sessions (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            started_at INTEGER NOT NULL,
+            ended_at INTEGER,
+            template_id INTEGER,
+            notes TEXT
+          )
+        ''');
+          // beforeOpen indexes these regardless of which migration is under
+          // test, so they must exist even though this test doesn't use them.
+          database.execute('''
+          CREATE TABLE session_exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            exercise_id INTEGER NOT NULL,
+            position INTEGER NOT NULL
+          )
+        ''');
+          database.execute('''
+          CREATE TABLE set_entries (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_exercise_id INTEGER NOT NULL,
+            set_number INTEGER NOT NULL
+          )
+        ''');
+          database.execute('''
+          INSERT INTO sessions (started_at, notes)
+          VALUES (strftime('%s', 'now'), 'Legacy session')
+        ''');
+          database.userVersion = 13;
+        },
+      );
+      final database = AppDatabase(executor);
+      addTearDown(database.close);
+
+      final columns = await database
+          .customSelect("PRAGMA table_info('sessions')")
+          .get();
+      final row = await database
+          .customSelect('SELECT notes, title FROM sessions')
+          .getSingle();
+
+      expect(
+        columns.map((entry) => entry.read<String>('name')),
+        contains('title'),
+      );
+      expect(row.read<String>('notes'), 'Legacy session');
+      expect(row.readNullable<String>('title'), isNull);
+      expect(database.schemaVersion, 14);
     },
   );
 }

@@ -282,8 +282,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     // touching `ref` from the Undo callback throws once the screen unmounts.
     final repository = ref.read(setRepositoryProvider);
     messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
+    // SnackBar.duration alone isn't reliable here: Android stretches it to the
+    // system's accessibility timeout setting, which left "Undo" on screen
+    // indefinitely on-device. A long nominal duration plus our own timer
+    // guarantees the ~6s we actually want regardless of that OS setting.
+    final controller = messenger.showSnackBar(
       SnackBar(
+        duration: const Duration(minutes: 10),
         content: Text('${detail.exercise.name} set ${set.setNumber} deleted.'),
         action: SnackBarAction(
           label: 'Undo',
@@ -317,6 +322,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         ),
       ),
     );
+    Timer(const Duration(seconds: 6), controller.close);
   }
 
   Future<void> _reorderExercises(
@@ -544,6 +550,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           durationSec: seed.durationSec,
           muscleBiasWeights: seed.muscleBiasWeights,
         );
+    await _startRestTimerIfComplete(
+      detail,
+      loadingMode: seed.loadingMode,
+      reps: seed.reps,
+      weightValue: seed.weightValue,
+      durationSec: seed.durationSec,
+      distanceMeters: seed.distanceMeters,
+    );
+    if (!mounted) return;
     setState(_refresh);
   }
 
@@ -568,6 +583,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           muscleBiasWeights: decodeMuscleBiasWeights(last.muscleBiasWeights),
           notes: last.notes,
         );
+    await _startRestTimerIfComplete(
+      detail,
+      loadingMode: last.loadingMode,
+      reps: last.reps,
+      weightValue: last.weightValue,
+      durationSec: last.durationSec,
+      distanceMeters: last.distanceMeters,
+    );
+    if (!mounted) return;
     setState(_refresh);
   }
 
@@ -610,6 +634,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           durationSec: seed.durationSec,
           muscleBiasWeights: seed.muscleBiasWeights,
         );
+    await _startRestTimerIfComplete(
+      detail,
+      loadingMode: seed.loadingMode,
+      reps: seed.reps,
+      weightValue: seed.weightValue,
+      durationSec: seed.durationSec,
+      distanceMeters: seed.distanceMeters,
+    );
     if (!mounted) return;
     setState(_refresh);
   }
@@ -679,10 +711,43 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     setState(_refresh);
   }
 
+  /// Add-set, repeat-set and insert-above all create a set that is complete
+  /// the moment it lands — seeded or copied from real prior values, with no
+  /// incomplete draft in between. `_openSet`/`_updateInlineSet` start the rest
+  /// timer on the incomplete → complete *transition*, which never happens
+  /// here, so those three call this directly instead.
+  Future<void> _startRestTimerIfComplete(
+    SessionExerciseDetails detail, {
+    required LoadingMode loadingMode,
+    int? reps,
+    double? weightValue,
+    int? durationSec,
+    double? distanceMeters,
+  }) async {
+    final complete = isSetComplete(
+      category: detail.exercise.category,
+      loadingMode: loadingMode,
+      reps: reps,
+      weightValue: weightValue,
+      durationSec: durationSec,
+      distanceMeters: distanceMeters,
+      timed: _timedForDetail(detail),
+      tracksDistance: detail.exercise.tracksDistance,
+    );
+    if (complete) await _startRestTimer(detail);
+  }
+
   Future<void> _startRestTimer(
     SessionExerciseDetails detail, {
     ProgressionSuggestion? suggestion,
   }) async {
+    // This screen also opens finished sessions — logging a set you missed
+    // last Friday must stay editable without popping a rest timer meant for
+    // the workout you're doing right now.
+    final session = await ref
+        .read(sessionRepositoryProvider)
+        .getSession(widget.sessionId);
+    if (session?.endedAt != null) return;
     final preferences = await ref
         .read(settingsRepositoryProvider)
         .readRestTimerPreferences();
@@ -891,6 +956,38 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     }
   }
 
+  Future<void> _renameWorkout(String? currentTitle) async {
+    final controller = TextEditingController(text: currentTitle ?? '');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename workout'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 60,
+          decoration: const InputDecoration(hintText: 'e.g. Push day'),
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result == null) return;
+    await ref.read(sessionRepositoryProvider).updateTitle(widget.sessionId, result);
+    if (!mounted) return;
+    setState(_refresh);
+  }
+
   Future<void> _deleteWorkout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -934,10 +1031,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         final details = view?.details ?? const <SessionExerciseDetails>[];
         final completed = view?.session?.endedAt != null;
         final sessionNote = view?.session?.notes?.trim();
+        final sessionTitle = view?.session?.title?.trim();
+        final displayTitle = sessionTitle != null && sessionTitle.isNotEmpty
+            ? sessionTitle
+            : (completed ? 'Workout' : 'Active workout');
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(completed ? 'Workout' : 'Active workout'),
+            title: Text(displayTitle),
             actions: [
               IconButton(
                 onPressed: completed ? null : _addForMuscle,
@@ -946,9 +1047,14 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
               ),
               PopupMenuButton<String>(
                 onSelected: (value) {
+                  if (value == 'rename') _renameWorkout(sessionTitle);
                   if (value == 'delete') _deleteWorkout();
                 },
                 itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Text('Rename workout'),
+                  ),
                   const PopupMenuItem(
                     value: 'delete',
                     child: Text('Delete workout'),

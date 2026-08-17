@@ -44,12 +44,19 @@ class RestTimerState {
     this.remainingSeconds = 0,
     this.running = false,
     this.endTime,
+    this.totalSeconds = 0,
   });
 
   final int? sessionId;
   final int remainingSeconds;
   final bool running;
   final DateTime? endTime;
+
+  /// The rest duration this countdown started with, adjusted alongside
+  /// [endTime] by [RestTimerController.adjust]. Kept separate from
+  /// [remainingSeconds] so the UI can show progress as a fraction of the
+  /// whole rest rather than just a countdown — see [RestTimerState].
+  final int totalSeconds;
 
   static const idle = RestTimerState();
 
@@ -70,11 +77,13 @@ class RestTimerState {
     bool? running,
     DateTime? endTime,
     bool clearEndTime = false,
+    int? totalSeconds,
   }) => RestTimerState(
     sessionId: sessionId ?? this.sessionId,
     remainingSeconds: remainingSeconds ?? this.remainingSeconds,
     running: running ?? this.running,
     endTime: clearEndTime ? null : endTime ?? this.endTime,
+    totalSeconds: totalSeconds ?? this.totalSeconds,
   );
 }
 
@@ -136,6 +145,7 @@ class RestTimerController extends Notifier<RestTimerState>
       remainingSeconds: seconds,
       running: true,
       endTime: now.add(Duration(seconds: seconds)),
+      totalSeconds: seconds,
     );
     _ticker = ref.read(restTimerTickerFactoryProvider)(tick);
 
@@ -191,7 +201,14 @@ class RestTimerController extends Notifier<RestTimerState>
       await _finish();
       return;
     }
-    state = state.copyWith(endTime: next, remainingSeconds: remaining);
+    // The ring represents the whole rest, not just what's left, so growing or
+    // shrinking the countdown must move the total by the same amount —
+    // otherwise +15s would make the ring look like less time remains.
+    state = state.copyWith(
+      endTime: next,
+      remainingSeconds: remaining,
+      totalSeconds: state.totalSeconds + seconds,
+    );
     await _postCountdownNotification();
   }
 
