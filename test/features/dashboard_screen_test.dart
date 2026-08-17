@@ -7,6 +7,7 @@ import 'package:logged/core/domain/muscle_progress.dart';
 import 'package:logged/core/domain/training_goal.dart';
 import 'package:logged/core/domain/workout_settings.dart';
 import 'package:logged/core/theme/app_theme.dart';
+import 'package:logged/core/widgets/app_widgets.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/providers.dart';
 import 'package:logged/data/repositories/settings_repository.dart';
@@ -14,6 +15,7 @@ import 'package:logged/features/dashboard/dashboard_screen.dart';
 
 void main() {
   const narrowPhone = Size(360, 800);
+  const normalPhone = Size(393, 852);
   final today = DateTime(2026, 8, 15);
 
   List<DateTime> buildTrainingDays(int streakLength) => List.generate(
@@ -29,8 +31,10 @@ void main() {
     WidgetTester tester, {
     required AppDatabase database,
     required List<DateTime> trainingDays,
+    Size size = narrowPhone,
+    double textScale = 2,
   }) async {
-    tester.view.physicalSize = narrowPhone * tester.view.devicePixelRatio;
+    tester.view.physicalSize = size * tester.view.devicePixelRatio;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
@@ -66,9 +70,9 @@ void main() {
         child: MaterialApp(
           theme: AppTheme.light(),
           home: MediaQuery(
-            data: const MediaQueryData(
-              size: narrowPhone,
-              textScaler: TextScaler.linear(2),
+            data: MediaQueryData(
+              size: size,
+              textScaler: TextScaler.linear(textScale),
             ),
             child: const DashboardScreen(),
           ),
@@ -99,6 +103,36 @@ void main() {
       } finally {
         semantics.dispose();
       }
+    },
+  );
+
+  testWidgets(
+    'normal text size renders the week strip and recent sessions below the '
+    'streak row',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      await pumpDashboard(
+        tester,
+        database: database,
+        trainingDays: buildTrainingDays(10),
+        size: normalPhone,
+        textScale: 1,
+      );
+
+      // Regression: the streak/stat row uses CrossAxisAlignment.stretch,
+      // which needs IntrinsicHeight when its parent (a ListView) gives it
+      // unbounded height, or it renders this whole row and everything below
+      // it (week strip, recent sessions) as blank space with no thrown
+      // exception in release mode. See tasks/lessons.md 2026-08-09/08-17.
+      expect(find.byType(IntrinsicHeight), findsOneWidget);
+      expect(find.byType(WeeklyProgressStrip), findsOneWidget);
+      expect(find.text('Next best focus'), findsOneWidget);
+
+      await tester.drag(find.byType(Scrollable), const Offset(0, -600));
+      await tester.pumpAndSettle();
+      expect(find.text('RECENT SESSIONS'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 }

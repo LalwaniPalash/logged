@@ -203,26 +203,28 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ],
                     )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: StreakCard(
-                            streak: streak,
-                            trainedToday: trainedToday(days, today: now),
-                            isRestToday: restToday,
+                  : IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: StreakCard(
+                              streak: streak,
+                              trainedToday: trainedToday(days, today: now),
+                              isRestToday: restToday,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: StatTile(
-                            label: 'This week',
-                            value: '$daysThisWeek',
-                            unit: '/ ${settings.weeklyGoal}',
-                            icon: AppIcons.target,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: StatTile(
+                              label: 'This week',
+                              value: '$daysThisWeek',
+                              unit: '/ ${settings.weeklyGoal}',
+                              icon: AppIcons.target,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
               const SizedBox(height: 14),
               _NextFocusCard(summary: bodySummary.asData?.value),
