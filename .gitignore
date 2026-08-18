@@ -50,3 +50,9 @@ app.*.map.json
 
 # Local database snapshots pulled off a device/simulator (personal workout data)
 *.sqlite
+
+# Agent tooling
+.claude/
+.codex/
+.cursor/
+.impeccable/
