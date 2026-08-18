@@ -56,3 +56,8 @@ app.*.map.json
 .codex/
 .cursor/
 .impeccable/
+
+# Release signing (local only, never commit)
+android/key.properties
+*.jks
+*.keystore
