@@ -7,6 +7,19 @@ analytics, and no network calls — the only way data leaves the device is a bac
 file you export yourself, or the opt-in Health export below, which writes to the
 phone's own health store.
 
+## Install
+
+APKs are on the [releases page](https://github.com/LalwaniPalash/logged/releases/latest).
+Take `arm64-v8a` unless you know your phone is older 32-bit hardware; `universal` is the
+fallback. Android 8.0 (API 26) or newer.
+
+Sideload only, so Android warns about the unknown source and there is no auto-update.
+Each release ships `SHA256SUMS.txt` if you want to check the file:
+
+```bash
+shasum -a 256 -c SHA256SUMS.txt
+```
+
 ## What it does
 
 **Logging** — templates or ad-hoc workouts; per-set reps, load, RPE, duration and
