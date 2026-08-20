@@ -326,7 +326,7 @@ void main() {
     final exercise = await database.select(database.exercises).getSingle();
     expect(exercise.name, 'Legacy Row');
     expect(exercise.videoUrl, isNull);
-    expect(database.schemaVersion, 14);
+    expect(database.schemaVersion, 15);
   });
 
   test(
@@ -448,7 +448,7 @@ void main() {
       expect(set.reps, 12);
       expect(set.weightValue, 180);
       expect(set.muscleBiasWeights, isNull);
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
     },
   );
 
@@ -597,7 +597,7 @@ void main() {
         'quads': 0.75,
         'glute_max': 1.25,
       });
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
     },
   );
 
@@ -727,7 +727,7 @@ void main() {
       expect(weights['quads']!.toDouble(), closeTo(1.5, 1e-9));
       expect(weights['glute_max']!.toDouble(), closeTo(0.9, 1e-9));
       expect(weights['hamstrings']!.toDouble(), closeTo(0.6, 1e-9));
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
     },
   );
 
@@ -866,7 +866,7 @@ void main() {
         columns.map((row) => row.read<String>('name')),
         containsAll(['is_timed', 'tracks_distance']),
       );
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
     },
   );
 
@@ -943,7 +943,7 @@ void main() {
         contains('anatomy_edited_by_user'),
       );
       expect(row.read<int>('edited'), 0);
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
     },
   );
 
@@ -1001,7 +1001,72 @@ void main() {
       );
       expect(row.read<String>('notes'), 'Legacy session');
       expect(row.readNullable<String>('title'), isNull);
-      expect(database.schemaVersion, 14);
+      expect(database.schemaVersion, 15);
     },
   );
+
+  test('v14 sets are ticked off so history does not read as unfinished', () async {
+    final executor = NativeDatabase.memory(
+      setup: (database) {
+        // beforeOpen indexes these regardless of which migration is under
+        // test, so they must exist even though this test doesn't use them.
+        database.execute('''
+          CREATE TABLE sessions (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            started_at INTEGER NOT NULL,
+            ended_at INTEGER,
+            template_id INTEGER,
+            notes TEXT,
+            title TEXT
+          )
+        ''');
+        database.execute('''
+          CREATE TABLE session_exercises (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            exercise_id INTEGER NOT NULL,
+            position INTEGER NOT NULL
+          )
+        ''');
+        database.execute('''
+          CREATE TABLE set_entries (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            session_exercise_id INTEGER NOT NULL,
+            set_number INTEGER NOT NULL,
+            reps INTEGER,
+            weight_value REAL,
+            unit TEXT,
+            weight_entry TEXT NOT NULL DEFAULT 'total',
+            side_count INTEGER NOT NULL DEFAULT 1,
+            loading_mode TEXT NOT NULL DEFAULT 'external',
+            distance_meters REAL,
+            duration_sec INTEGER,
+            is_warmup INTEGER NOT NULL DEFAULT 0,
+            rpe REAL,
+            muscle_bias_weights TEXT,
+            notes TEXT
+          )
+        ''');
+        database.execute('''
+          INSERT INTO set_entries (session_exercise_id, set_number, reps, weight_value, unit)
+          VALUES (1, 1, 8, 60.0, 'kg')
+        ''');
+        database.userVersion = 14;
+      },
+    );
+    final database = AppDatabase(executor);
+    addTearDown(database.close);
+
+    final row = await database
+        .customSelect('SELECT reps, is_done FROM set_entries')
+        .getSingle();
+
+    expect(row.read<int>('reps'), 8);
+    expect(
+      row.read<bool>('is_done'),
+      isTrue,
+      reason: 'every set that predates the tick was logged by hand',
+    );
+    expect(database.schemaVersion, 15);
+  });
 }

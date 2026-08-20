@@ -3890,6 +3890,19 @@ class $SetEntriesTable extends SetEntries
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isDoneMeta = const VerificationMeta('isDone');
+  @override
+  late final GeneratedColumn<bool> isDone = GeneratedColumn<bool>(
+    'is_done',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_done" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _rpeMeta = const VerificationMeta('rpe');
   @override
   late final GeneratedColumn<double> rpe = GeneratedColumn<double>(
@@ -3934,6 +3947,7 @@ class $SetEntriesTable extends SetEntries
     distanceMeters,
     durationSec,
     isWarmup,
+    isDone,
     rpe,
     muscleBiasWeights,
     notes,
@@ -4015,6 +4029,12 @@ class $SetEntriesTable extends SetEntries
       context.handle(
         _isWarmupMeta,
         isWarmup.isAcceptableOrUnknown(data['is_warmup']!, _isWarmupMeta),
+      );
+    }
+    if (data.containsKey('is_done')) {
+      context.handle(
+        _isDoneMeta,
+        isDone.isAcceptableOrUnknown(data['is_done']!, _isDoneMeta),
       );
     }
     if (data.containsKey('rpe')) {
@@ -4101,6 +4121,10 @@ class $SetEntriesTable extends SetEntries
         DriftSqlType.bool,
         data['${effectivePrefix}is_warmup'],
       )!,
+      isDone: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_done'],
+      )!,
       rpe: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}rpe'],
@@ -4144,6 +4168,13 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
   final double? distanceMeters;
   final int? durationSec;
   final bool isWarmup;
+
+  /// The lifter ticked this set off. Deliberately stored rather than derived
+  /// from which fields are filled in: a seeded set lands looking finished
+  /// before it has been performed, and a bodyweight-only set on an
+  /// externally-loaded exercise (0 kg Dead Bug) never looks finished at all.
+  /// Both cases fired — or failed to fire — the rest timer at the wrong moment.
+  final bool isDone;
   final double? rpe;
   final String? muscleBiasWeights;
   final String? notes;
@@ -4160,6 +4191,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     this.distanceMeters,
     this.durationSec,
     required this.isWarmup,
+    required this.isDone,
     this.rpe,
     this.muscleBiasWeights,
     this.notes,
@@ -4199,6 +4231,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       map['duration_sec'] = Variable<int>(durationSec);
     }
     map['is_warmup'] = Variable<bool>(isWarmup);
+    map['is_done'] = Variable<bool>(isDone);
     if (!nullToAbsent || rpe != null) {
       map['rpe'] = Variable<double>(rpe);
     }
@@ -4231,6 +4264,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           ? const Value.absent()
           : Value(durationSec),
       isWarmup: Value(isWarmup),
+      isDone: Value(isDone),
       rpe: rpe == null && nullToAbsent ? const Value.absent() : Value(rpe),
       muscleBiasWeights: muscleBiasWeights == null && nullToAbsent
           ? const Value.absent()
@@ -4265,6 +4299,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       distanceMeters: serializer.fromJson<double?>(json['distanceMeters']),
       durationSec: serializer.fromJson<int?>(json['durationSec']),
       isWarmup: serializer.fromJson<bool>(json['isWarmup']),
+      isDone: serializer.fromJson<bool>(json['isDone']),
       rpe: serializer.fromJson<double?>(json['rpe']),
       muscleBiasWeights: serializer.fromJson<String?>(
         json['muscleBiasWeights'],
@@ -4294,6 +4329,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
       'distanceMeters': serializer.toJson<double?>(distanceMeters),
       'durationSec': serializer.toJson<int?>(durationSec),
       'isWarmup': serializer.toJson<bool>(isWarmup),
+      'isDone': serializer.toJson<bool>(isDone),
       'rpe': serializer.toJson<double?>(rpe),
       'muscleBiasWeights': serializer.toJson<String?>(muscleBiasWeights),
       'notes': serializer.toJson<String?>(notes),
@@ -4313,6 +4349,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     Value<double?> distanceMeters = const Value.absent(),
     Value<int?> durationSec = const Value.absent(),
     bool? isWarmup,
+    bool? isDone,
     Value<double?> rpe = const Value.absent(),
     Value<String?> muscleBiasWeights = const Value.absent(),
     Value<String?> notes = const Value.absent(),
@@ -4331,6 +4368,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
         : this.distanceMeters,
     durationSec: durationSec.present ? durationSec.value : this.durationSec,
     isWarmup: isWarmup ?? this.isWarmup,
+    isDone: isDone ?? this.isDone,
     rpe: rpe.present ? rpe.value : this.rpe,
     muscleBiasWeights: muscleBiasWeights.present
         ? muscleBiasWeights.value
@@ -4363,6 +4401,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           ? data.durationSec.value
           : this.durationSec,
       isWarmup: data.isWarmup.present ? data.isWarmup.value : this.isWarmup,
+      isDone: data.isDone.present ? data.isDone.value : this.isDone,
       rpe: data.rpe.present ? data.rpe.value : this.rpe,
       muscleBiasWeights: data.muscleBiasWeights.present
           ? data.muscleBiasWeights.value
@@ -4386,6 +4425,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           ..write('distanceMeters: $distanceMeters, ')
           ..write('durationSec: $durationSec, ')
           ..write('isWarmup: $isWarmup, ')
+          ..write('isDone: $isDone, ')
           ..write('rpe: $rpe, ')
           ..write('muscleBiasWeights: $muscleBiasWeights, ')
           ..write('notes: $notes')
@@ -4407,6 +4447,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
     distanceMeters,
     durationSec,
     isWarmup,
+    isDone,
     rpe,
     muscleBiasWeights,
     notes,
@@ -4427,6 +4468,7 @@ class SetEntry extends DataClass implements Insertable<SetEntry> {
           other.distanceMeters == this.distanceMeters &&
           other.durationSec == this.durationSec &&
           other.isWarmup == this.isWarmup &&
+          other.isDone == this.isDone &&
           other.rpe == this.rpe &&
           other.muscleBiasWeights == this.muscleBiasWeights &&
           other.notes == this.notes);
@@ -4445,6 +4487,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
   final Value<double?> distanceMeters;
   final Value<int?> durationSec;
   final Value<bool> isWarmup;
+  final Value<bool> isDone;
   final Value<double?> rpe;
   final Value<String?> muscleBiasWeights;
   final Value<String?> notes;
@@ -4461,6 +4504,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     this.distanceMeters = const Value.absent(),
     this.durationSec = const Value.absent(),
     this.isWarmup = const Value.absent(),
+    this.isDone = const Value.absent(),
     this.rpe = const Value.absent(),
     this.muscleBiasWeights = const Value.absent(),
     this.notes = const Value.absent(),
@@ -4478,6 +4522,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     this.distanceMeters = const Value.absent(),
     this.durationSec = const Value.absent(),
     this.isWarmup = const Value.absent(),
+    this.isDone = const Value.absent(),
     this.rpe = const Value.absent(),
     this.muscleBiasWeights = const Value.absent(),
     this.notes = const Value.absent(),
@@ -4496,6 +4541,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     Expression<double>? distanceMeters,
     Expression<int>? durationSec,
     Expression<bool>? isWarmup,
+    Expression<bool>? isDone,
     Expression<double>? rpe,
     Expression<String>? muscleBiasWeights,
     Expression<String>? notes,
@@ -4513,6 +4559,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
       if (distanceMeters != null) 'distance_meters': distanceMeters,
       if (durationSec != null) 'duration_sec': durationSec,
       if (isWarmup != null) 'is_warmup': isWarmup,
+      if (isDone != null) 'is_done': isDone,
       if (rpe != null) 'rpe': rpe,
       if (muscleBiasWeights != null) 'muscle_bias_weights': muscleBiasWeights,
       if (notes != null) 'notes': notes,
@@ -4532,6 +4579,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     Value<double?>? distanceMeters,
     Value<int?>? durationSec,
     Value<bool>? isWarmup,
+    Value<bool>? isDone,
     Value<double?>? rpe,
     Value<String?>? muscleBiasWeights,
     Value<String?>? notes,
@@ -4549,6 +4597,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
       distanceMeters: distanceMeters ?? this.distanceMeters,
       durationSec: durationSec ?? this.durationSec,
       isWarmup: isWarmup ?? this.isWarmup,
+      isDone: isDone ?? this.isDone,
       rpe: rpe ?? this.rpe,
       muscleBiasWeights: muscleBiasWeights ?? this.muscleBiasWeights,
       notes: notes ?? this.notes,
@@ -4600,6 +4649,9 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
     if (isWarmup.present) {
       map['is_warmup'] = Variable<bool>(isWarmup.value);
     }
+    if (isDone.present) {
+      map['is_done'] = Variable<bool>(isDone.value);
+    }
     if (rpe.present) {
       map['rpe'] = Variable<double>(rpe.value);
     }
@@ -4627,6 +4679,7 @@ class SetEntriesCompanion extends UpdateCompanion<SetEntry> {
           ..write('distanceMeters: $distanceMeters, ')
           ..write('durationSec: $durationSec, ')
           ..write('isWarmup: $isWarmup, ')
+          ..write('isDone: $isDone, ')
           ..write('rpe: $rpe, ')
           ..write('muscleBiasWeights: $muscleBiasWeights, ')
           ..write('notes: $notes')
@@ -8364,6 +8417,7 @@ typedef $$SetEntriesTableCreateCompanionBuilder =
       Value<double?> distanceMeters,
       Value<int?> durationSec,
       Value<bool> isWarmup,
+      Value<bool> isDone,
       Value<double?> rpe,
       Value<String?> muscleBiasWeights,
       Value<String?> notes,
@@ -8382,6 +8436,7 @@ typedef $$SetEntriesTableUpdateCompanionBuilder =
       Value<double?> distanceMeters,
       Value<int?> durationSec,
       Value<bool> isWarmup,
+      Value<bool> isDone,
       Value<double?> rpe,
       Value<String?> muscleBiasWeights,
       Value<String?> notes,
@@ -8474,6 +8529,11 @@ class $$SetEntriesTableFilterComposer
 
   ColumnFilters<bool> get isWarmup => $composableBuilder(
     column: $table.isWarmup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8580,6 +8640,11 @@ class $$SetEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get rpe => $composableBuilder(
     column: $table.rpe,
     builder: (column) => ColumnOrderings(column),
@@ -8673,6 +8738,9 @@ class $$SetEntriesTableAnnotationComposer
   GeneratedColumn<bool> get isWarmup =>
       $composableBuilder(column: $table.isWarmup, builder: (column) => column);
 
+  GeneratedColumn<bool> get isDone =>
+      $composableBuilder(column: $table.isDone, builder: (column) => column);
+
   GeneratedColumn<double> get rpe =>
       $composableBuilder(column: $table.rpe, builder: (column) => column);
 
@@ -8748,6 +8816,7 @@ class $$SetEntriesTableTableManager
                 Value<double?> distanceMeters = const Value.absent(),
                 Value<int?> durationSec = const Value.absent(),
                 Value<bool> isWarmup = const Value.absent(),
+                Value<bool> isDone = const Value.absent(),
                 Value<double?> rpe = const Value.absent(),
                 Value<String?> muscleBiasWeights = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -8764,6 +8833,7 @@ class $$SetEntriesTableTableManager
                 distanceMeters: distanceMeters,
                 durationSec: durationSec,
                 isWarmup: isWarmup,
+                isDone: isDone,
                 rpe: rpe,
                 muscleBiasWeights: muscleBiasWeights,
                 notes: notes,
@@ -8782,6 +8852,7 @@ class $$SetEntriesTableTableManager
                 Value<double?> distanceMeters = const Value.absent(),
                 Value<int?> durationSec = const Value.absent(),
                 Value<bool> isWarmup = const Value.absent(),
+                Value<bool> isDone = const Value.absent(),
                 Value<double?> rpe = const Value.absent(),
                 Value<String?> muscleBiasWeights = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -8798,6 +8869,7 @@ class $$SetEntriesTableTableManager
                 distanceMeters: distanceMeters,
                 durationSec: durationSec,
                 isWarmup: isWarmup,
+                isDone: isDone,
                 rpe: rpe,
                 muscleBiasWeights: muscleBiasWeights,
                 notes: notes,

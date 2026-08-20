@@ -600,4 +600,69 @@ Format: [date] | what went wrong | rule to prevent it
   quick CLI fix — chasing it further than 1-2 attempts is a dead end when the user is holding the
   actual device and can just look at it. Rule: for real-device iOS visual verification, ask the user
   directly rather than building a screenshot pipeline; reserve that effort for cases with no human
-  looking at the screen already.
+  looking at the screen already. **Correction/addition, same investigation:** `idevicesyslog` (the
+  syslog_relay lockdown service) works WITHOUT the DDI and was the actually-useful tool here — it
+  didn't solve this bug (see next entry) but is the right first move for live iOS diagnostics when
+  a screenshot isn't the real blocker.
+- 2026-08-17 | The Dashboard's entire lower half (week-view strip, recent-sessions list) rendered as
+  true blank space on a real iPhone, in BOTH light and dark theme — which is what finally disproved
+  my own first two wrong hypotheses (a hidden-conditional and a dark-theme contrast bug; light mode
+  ruled the second one out immediately, since light/dark use unrelated color tokens). Root cause,
+  found only by reading `git show` on the last commit that touched the file: the Aug 15 accessibility
+  commit (`6e3ef05`, large-text support) split the streak/stat row into a
+  `stackSummaryTiles ? Column(...) : Row(crossAxisAlignment: stretch, ...)` ternary and **dropped the
+  `IntrinsicHeight` wrapper** the pre-refactor code had around the stretch `Row` — reintroducing,
+  verbatim, the exact "`CrossAxisAlignment.stretch` inside a `ListView` needs `IntrinsicHeight`" crash
+  already fixed and documented on 2026-08-09. In a release build (asserts stripped) this fails
+  silently instead of throwing, so `idevicesyslog` showed nothing — no Dart exception, no crash log,
+  just absence. It shipped unnoticed through Phase 7's own device verification because testing
+  "large text mode" exercises the *stacked* branch, never the buggy default-text-size `Row` branch —
+  the safe path got verified, the everyday path didn't. Rule: (1) when a fix for bug X is refactored
+  later for an unrelated reason (here: large-text support), re-derive whether the ORIGINAL fix for X
+  is still present — a ternary/branch split is exactly the kind of edit that silently drops a wrapper
+  applied to only one arm; (2) when verifying an accessibility variant of a screen, that is not
+  verification of the DEFAULT variant — they can be genuinely different code paths, not just different
+  text sizes on the same one; (3) a widget test that only ever pumps one MediaQuery configuration
+  (this file's sole test hardcoded `TextScaler.linear(2)` + a narrow 360px width, which ALWAYS took the
+  safe stacked branch) can stay green for years while the default branch is broken — a screen with a
+  device-width/text-scale branch needs a test for EACH branch, not one "representative" one.
+- 2026-08-20 | Deriving "this set is finished" from which fields happened to be filled in
+  (`isSetComplete`) was wrong in BOTH directions on a real phone: add-set/repeat-set seeds a row
+  from the last set, so it landed already "complete" and fired the rest timer before the load could
+  be corrected; and a bodyweight-only set on an externally-loaded exercise (0 kg Dead Bug) never
+  looked complete, so it never fired at all. Rule: when a rule's output is a USER INTENTION
+  ("I'm done, start resting"), do not infer it from data shape — give it an explicit control and
+  persist it. A green suite proved nothing here; the derivation was internally consistent and
+  unit-tested, it was just modelling the wrong thing.
+- 2026-08-20 | Drift's `migrator.alterTable(TableMigration(table))` copies the CURRENT Dart schema
+  out of the old table, so any column added in a LATER migration breaks that older branch with
+  `no such column` — the rebuild selects a column the historical table never had. Rule: every new
+  SetEntries column needs BOTH `newColumns: [...]` on the v10 rebuild AND a
+  `(from < 8 || from >= 10)`-guarded addColumn. The migration tests catch it; run them on every
+  schema bump, not just the newest-version test.
+- 2026-08-20 | A JSON backup restore parses rows with `SetEntry.fromJson`, so a new non-nullable
+  column makes every OLD backup unrestorable. Rule: a schema bump is not done until
+  `_setEntryFromBackup` (and its siblings) default the new field — and the default must match what
+  the migration backfills, or restoring a backup silently disagrees with upgrading in place.
+- 2026-08-20 | `void f() => _field = expr;` is a landmine when f is passed to `setState`. An arrow body
+  RETURNS the assignment's value regardless of the declared `void`, so setState received a Future and
+  threw "callback argument returned a Future" — blocking every add-exercise. It had been in the tree
+  for weeks: setState's check lives inside an `assert`, which release builds strip, and only release
+  APKs had ever run on the phone. Rule: a `void` method passed as a callback gets a BLOCK body, never
+  an arrow over an assignment. Corollary: the first debug run on a device is a distinct test surface
+  from any number of release installs — asserts are a whole class of checks release mode never runs.
+- 2026-08-20 | A test that pins a version to a LITERAL keeps passing on a stale value. The backup
+  writer's `expect(payload['schemaVersion'], 14)` passed happily while the database moved to v15, so
+  the writer silently stamped v14 backups from a v15 schema. The test guarded against changing the
+  number, which is not the failure mode — forgetting to change it is. Rule: assert a derived constant
+  against its SOURCE (`expect(payload['schemaVersion'], source.schemaVersion)`), never against a
+  hand-copied literal. Same shape as the `_schemaVersion`/`_supportedSchemaVersions` double-bump trap
+  already recorded on 2026-08-17 — the earlier lesson said "remember to bump two spots", but the real
+  fix is making one of them unable to disagree.
+- 2026-08-20 | A toggle needs its undo path to unwind every side effect, not just skip the forward
+  one. Un-ticking a set returned early before starting a new rest timer but never cancelled the
+  running one, leaving a countdown attached to a set that was no longer done — visible only because a
+  device screenshot showed a rest bar over an unticked row while the DB read `is_done = 0`. Rule: when
+  an action has a side effect beyond its own row, the undo must name and reverse that effect, and it
+  must be SCOPED (cancel only the rest *this* set started, tracked by id) — a blanket cancel would
+  have killed a legitimate rest from a later set.

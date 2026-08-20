@@ -38,12 +38,14 @@ void main() {
     distanceMeters: distanceMeters,
     durationSec: durationSec,
     isWarmup: isWarmup,
+    isDone: false,
     muscleBiasWeights: null,
   );
 
   Widget harness({
     required List<SetEntry> sets,
     required ExerciseCategory category,
+    List<int>? tickedSetIds,
     WeightEntry headerWeightEntry = WeightEntry.total,
     int headerSideCount = 1,
     WeightUnit unit = WeightUnit.kg,
@@ -81,6 +83,7 @@ void main() {
                     headerSideCount: headerSideCount,
                     timed: timed,
                     onCommit: (_) async {},
+                    onToggleDone: () async => tickedSetIds?.add(set.id),
                     onOpenDetails: () {},
                   ),
               ],
@@ -195,6 +198,58 @@ void main() {
 
     expect(find.text('Last time: 8× 40 lb/hand each side'), findsOneWidget);
     expect(find.textContaining('kg'), findsNothing);
+  });
+
+  testWidgets('a stationary bike logged by time alone is still tickable', (
+    tester,
+  ) async {
+    // The rest timer used to be derived, and cardio's rule demanded BOTH a
+    // duration and a distance — so a bike ride logged by minutes with the
+    // metres left blank never started a rest. Finishing a set is now the
+    // lifter's call, and any logged value is enough to make it.
+    final ticked = <int>[];
+    await pumpAt(
+      tester,
+      harness(
+        sets: [
+          buildSet(
+            setNumber: 1,
+            reps: null,
+            weightValue: null,
+            unit: null,
+            durationSec: 600,
+          ),
+        ],
+        category: ExerciseCategory.cardio,
+        tickedSetIds: ticked,
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.byTooltip('Finish set and start rest'));
+    await tester.pumpAndSettle();
+
+    expect(ticked, [1]);
+  });
+
+  testWidgets('an empty set has nothing to tick off', (tester) async {
+    final ticked = <int>[];
+    await pumpAt(
+      tester,
+      harness(
+        sets: [
+          buildSet(setNumber: 1, reps: null, weightValue: null, unit: null),
+        ],
+        category: ExerciseCategory.cardio,
+        tickedSetIds: ticked,
+      ),
+      iphoneSize,
+    );
+
+    await tester.tap(find.byTooltip('Finish set and start rest'));
+    await tester.pumpAndSettle();
+
+    expect(ticked, isEmpty);
   });
 
   testWidgets('cardio shows time and distance columns, not weight', (

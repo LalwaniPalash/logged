@@ -2,86 +2,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
 import 'package:logged/features/session/widgets/set_row.dart';
 
+/// Which columns a set shows. This used to have a twin, `isSetComplete`, that
+/// guessed from the same inputs whether a set counted as finished — and the
+/// guess drove the rest timer. It was wrong in both directions on a real
+/// phone (a seeded set fired the countdown before it was performed; a 0 kg
+/// Dead Bug never fired it at all), so finishing a set is now an explicit tick
+/// and only the column layout is still derived.
 void main() {
-  group('bodyweight completion is driven by loading mode, not category', () {
-    test('a strength-category bodyweight lift completes on reps alone', () {
-      // e.g. an Inverted Row filed under `strength` but logged bodyweight-only.
-      expect(
-        isSetComplete(
-          category: ExerciseCategory.strength,
-          loadingMode: LoadingMode.bodyweight,
-          reps: 12,
-        ),
-        isTrue,
-        reason: 'a bodyweight set has no weight to enter',
-      );
-      expect(
-        setFieldsFor(
-          category: ExerciseCategory.strength,
-          loadingMode: LoadingMode.bodyweight,
-        ),
-        [SetField.reps],
-        reason: 'no weight column for a pure bodyweight lift',
-      );
-    });
-
-    test('assisted and added still require the load field', () {
-      for (final mode in [
-        LoadingMode.bodyweightAssisted,
-        LoadingMode.bodyweightAdded,
-      ]) {
-        expect(
-          isSetComplete(
-            category: ExerciseCategory.strength,
-            loadingMode: mode,
-            reps: 12,
-          ),
-          isFalse,
-          reason: '$mode carries a real load that must be logged',
-        );
-        expect(
-          setFieldsFor(category: ExerciseCategory.strength, loadingMode: mode),
-          contains(SetField.weight),
-        );
-      }
-    });
-
-    test('external strength still needs both weight and reps', () {
-      expect(
-        isSetComplete(
-          category: ExerciseCategory.strength,
-          loadingMode: LoadingMode.external,
-          reps: 5,
-        ),
-        isFalse,
-      );
-      expect(
-        isSetComplete(
-          category: ExerciseCategory.strength,
-          loadingMode: LoadingMode.external,
-          reps: 5,
-          weightValue: 60,
-        ),
-        isTrue,
-      );
-    });
+  test('a strength-category bodyweight lift needs no weight column', () {
+    // e.g. an Inverted Row filed under `strength` but logged bodyweight-only.
+    expect(
+      setFieldsFor(
+        category: ExerciseCategory.strength,
+        loadingMode: LoadingMode.bodyweight,
+      ),
+      [SetField.reps],
+    );
   });
 
-  test('a timed strength lift completes on hold time, never on reps', () {
-    // A weighted Side Bridge is `strength` + external loading. The editor hides
-    // and NULLS reps for a timed exercise, so a completion rule demanding reps
-    // strands every set as incomplete and the rest timer never fires.
-    expect(
-      isSetComplete(
-        category: ExerciseCategory.strength,
-        loadingMode: LoadingMode.external,
-        reps: null,
-        weightValue: 10,
-        durationSec: 45,
-        timed: true,
-      ),
-      isTrue,
-    );
+  test('assisted and added still show the load field', () {
+    for (final mode in [
+      LoadingMode.bodyweightAssisted,
+      LoadingMode.bodyweightAdded,
+    ]) {
+      expect(
+        setFieldsFor(category: ExerciseCategory.strength, loadingMode: mode),
+        contains(SetField.weight),
+        reason: '$mode carries a real load that must be logged',
+      );
+    }
+  });
+
+  test('a timed strength lift swaps reps for a hold time', () {
+    // A weighted Side Bridge is `strength` + external loading, prescribed in
+    // seconds. The editor hides and NULLS reps for it.
     expect(
       setFieldsFor(
         category: ExerciseCategory.strength,
@@ -92,31 +46,8 @@ void main() {
     );
   });
 
-  test('a loaded carry completes on distance and shows a metres column', () {
+  test('a loaded carry shows a metres column instead of reps', () {
     // Audit F2: a Farmer's Walk is `strength` category but measured in metres.
-    expect(
-      isSetComplete(
-        category: ExerciseCategory.strength,
-        loadingMode: LoadingMode.external,
-        reps: null,
-        weightValue: 32,
-        distanceMeters: 40,
-        tracksDistance: true,
-      ),
-      isTrue,
-    );
-    // Weight is still required — a carry with no load is not a logged carry.
-    expect(
-      isSetComplete(
-        category: ExerciseCategory.strength,
-        loadingMode: LoadingMode.external,
-        reps: null,
-        weightValue: null,
-        distanceMeters: 40,
-        tracksDistance: true,
-      ),
-      isFalse,
-    );
     expect(
       setFieldsFor(
         category: ExerciseCategory.strength,
@@ -124,6 +55,23 @@ void main() {
         tracksDistance: true,
       ),
       const [SetField.weight, SetField.distance],
+    );
+  });
+
+  test('cardio and stretching keep their own shapes', () {
+    expect(
+      setFieldsFor(
+        category: ExerciseCategory.cardio,
+        loadingMode: LoadingMode.external,
+      ),
+      const [SetField.duration, SetField.distance],
+    );
+    expect(
+      setFieldsFor(
+        category: ExerciseCategory.stretching,
+        loadingMode: LoadingMode.bodyweight,
+      ),
+      const [SetField.duration],
     );
   });
 }

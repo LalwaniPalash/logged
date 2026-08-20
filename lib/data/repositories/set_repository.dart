@@ -39,6 +39,7 @@ class SetRepository {
     double? distanceMeters,
     int? durationSec,
     bool isWarmup = false,
+    bool isDone = false,
     double? rpe,
     Map<MuscleId, double>? muscleBiasWeights,
     String? notes,
@@ -57,6 +58,7 @@ class SetRepository {
           distanceMeters: Value(distanceMeters),
           durationSec: Value(durationSec),
           isWarmup: Value(isWarmup),
+          isDone: Value(isDone),
           rpe: Value(rpe),
           muscleBiasWeights: Value(encodeMuscleBiasWeights(muscleBiasWeights)),
           notes: Value(notes),
@@ -77,6 +79,7 @@ class SetRepository {
     Value<double?> rpe = const Value.absent(),
     Value<Map<MuscleId, double>?> muscleBiasWeights = const Value.absent(),
     bool? isWarmup,
+    bool? isDone,
     Value<String?> notes = const Value.absent(),
   }) =>
       (_database.update(
@@ -102,6 +105,7 @@ class SetRepository {
               ? Value(encodeMuscleBiasWeights(muscleBiasWeights.value))
               : const Value.absent(),
           isWarmup: isWarmup == null ? const Value.absent() : Value(isWarmup),
+          isDone: isDone == null ? const Value.absent() : Value(isDone),
           notes: notes,
         ),
       );
@@ -207,6 +211,7 @@ class SetRepository {
     double? distanceMeters,
     int? durationSec,
     bool isWarmup = false,
+    bool isDone = false,
     double? rpe,
     Map<MuscleId, double>? muscleBiasWeights,
     String? notes,
@@ -228,6 +233,7 @@ class SetRepository {
       distanceMeters: distanceMeters,
       durationSec: durationSec,
       isWarmup: isWarmup,
+      isDone: isDone,
       rpe: rpe,
       muscleBiasWeights: muscleBiasWeights,
       notes: notes,
@@ -246,6 +252,7 @@ class SetRepository {
     double? distanceMeters,
     int? durationSec,
     bool isWarmup = false,
+    bool isDone = false,
     double? rpe,
     Map<MuscleId, double>? muscleBiasWeights,
     String? notes,
@@ -261,6 +268,7 @@ class SetRepository {
     distanceMeters: distanceMeters,
     durationSec: durationSec,
     isWarmup: isWarmup,
+    isDone: isDone,
     rpe: rpe,
     muscleBiasWeights: muscleBiasWeights,
     notes: notes,

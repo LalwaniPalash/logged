@@ -64,41 +64,6 @@ bool isTimedExercise({
   return targetDurationSec != null && minReps == null && maxReps == null;
 }
 
-/// Completion is derived from the fields that make this kind of set useful.
-/// Kept pure so session orchestration can detect the incomplete → complete
-/// transition without introducing another persisted source of truth.
-/// [timed] and [tracksDistance] must match what [setFieldsFor] renders. The
-/// editor nulls any field it hides, so demanding reps from an exercise whose
-/// only volume column is a hold time or a distance strands every set as
-/// incomplete and the rest timer never fires — the same trap `cardio` had.
-bool isSetComplete({
-  required ExerciseCategory category,
-  required LoadingMode loadingMode,
-  int? reps,
-  double? weightValue,
-  int? durationSec,
-  double? distanceMeters,
-  bool timed = false,
-  bool tracksDistance = false,
-}) => switch (category) {
-  ExerciseCategory.cardio =>
-    (durationSec ?? 0) > 0 && (distanceMeters ?? 0) > 0,
-  ExerciseCategory.stretching => (durationSec ?? 0) > 0,
-  // Pure bodyweight completes on its volume column alone — a bodyweight set has
-  // no weight to enter, so requiring weight > 0 would strand it as incomplete
-  // (and never fire the rest timer). Gate on loading mode, not category.
-  ExerciseCategory.bodyweight || ExerciseCategory.strength
-      when loadingMode == LoadingMode.bodyweight =>
-    (reps ?? 0) > 0 || (durationSec ?? 0) > 0 || (distanceMeters ?? 0) > 0,
-  ExerciseCategory.bodyweight || ExerciseCategory.strength =>
-    (weightValue ?? 0) > 0 &&
-        (timed
-            ? (durationSec ?? 0) > 0
-            : tracksDistance
-            ? (distanceMeters ?? 0) > 0
-            : (reps ?? 0) > 0),
-};
-
 /// Columns for a whole exercise: the union of what each of its sets needs, so
 /// every logged value stays editable inline even when sets mix loading modes
 /// (deriving columns from the first set alone would strand the others' fields).
@@ -137,7 +102,11 @@ int _flexFor(SetField field) => switch (field) {
 const double _indexWidth = 32;
 const double _indexGap = 8;
 const double _columnGap = 8;
-const double _trailingWidth = 36;
+const double _doneWidth = 40;
+const double _menuWidth = 32;
+// The tick is a control like the steppers, so it takes the same gap they take
+// from each other. Without it the tick sits flush against the last column.
+const double _trailingWidth = _columnGap + _doneWidth + _menuWidth;
 
 class SetRowDraft {
   const SetRowDraft({
@@ -289,6 +258,7 @@ class SetRow extends StatefulWidget {
     required this.timed,
     this.tracksDistance = false,
     required this.onCommit,
+    required this.onToggleDone,
     required this.onOpenDetails,
     this.onMoveUp,
     this.onMoveDown,
@@ -314,6 +284,11 @@ class SetRow extends StatefulWidget {
   final bool tracksDistance;
 
   final Future<void> Function(SetRowDraft draft) onCommit;
+
+  /// Ticks the set off (or un-ticks it). The only thing that starts a rest
+  /// timer — resting is a decision the lifter makes, not something the app can
+  /// read off which fields happen to be filled in.
+  final Future<void> Function() onToggleDone;
   final VoidCallback onOpenDetails;
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
@@ -459,16 +434,22 @@ class _SetRowState extends State<SetRow> {
     _scheduleCommit();
   }
 
-  bool get _isComplete => isSetComplete(
-    category: widget.category,
-    loadingMode: widget.set.loadingMode,
-    reps: int.tryParse(_reps.text.trim()),
-    weightValue: _doubleOrNull(_weight.text),
-    durationSec: int.tryParse(_duration.text.trim()),
-    distanceMeters: _doubleOrNull(_distance.text),
-    timed: widget.timed,
-    tracksDistance: widget.tracksDistance,
-  );
+  /// A set with nothing in it has nothing to tick off. Deliberately looser
+  /// than "has every field the exercise usually wants": a 0 kg Dead Bug logged
+  /// by reps alone is a real set and must still be tickable.
+  bool get _hasAnyValue =>
+      _reps.text.trim().isNotEmpty ||
+      _weight.text.trim().isNotEmpty ||
+      _duration.text.trim().isNotEmpty ||
+      _distance.text.trim().isNotEmpty;
+
+  /// Flushes whatever is in the fields before flipping the flag, so ticking
+  /// straight after typing can never rest on a stale weight or rep count.
+  Future<void> _toggleDone() async {
+    await _commitNow();
+    if (!mounted) return;
+    await widget.onToggleDone();
+  }
 
   void _applySuggestion() {
     final suggestion = widget.suggestion;
@@ -520,7 +501,7 @@ class _SetRowState extends State<SetRow> {
                 _SetIndexChip(
                   label: widget.set.isWarmup ? 'W' : '${widget.set.setNumber}',
                   isWarmup: widget.set.isWarmup,
-                  isComplete: _isComplete,
+                  isComplete: widget.set.isDone,
                 ),
                 const SizedBox(width: _indexGap),
                 for (final field in widget.columns) ...[
@@ -528,8 +509,16 @@ class _SetRowState extends State<SetRow> {
                     const SizedBox(width: _columnGap),
                   Expanded(flex: _flexFor(field), child: _buildColumn(field)),
                 ],
+                const SizedBox(width: _columnGap),
                 SizedBox(
-                  width: _trailingWidth,
+                  width: _doneWidth,
+                  child: _SetDoneButton(
+                    isDone: widget.set.isDone,
+                    onPressed: _hasAnyValue ? _toggleDone : null,
+                  ),
+                ),
+                SizedBox(
+                  width: _menuWidth,
                   child: hasOverflowActions
                       ? PopupMenuButton<_SetRowAction>(
                           tooltip: 'Set actions',
@@ -577,7 +566,7 @@ class _SetRowState extends State<SetRow> {
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints.tightFor(
-                            width: _trailingWidth,
+                            width: _menuWidth,
                             height: 36,
                           ),
                           onPressed: widget.onOpenDetails,
@@ -701,6 +690,62 @@ class _SetRowState extends State<SetRow> {
 }
 
 enum _SetRowAction { details, moveUp, moveDown, insertAbove }
+
+/// Tick-off control. This is the single gesture that ends a set and starts the
+/// rest timer, which is why it sits on the row itself rather than behind the
+/// overflow menu — everything else about a set is an edit, this is a decision.
+class _SetDoneButton extends StatelessWidget {
+  const _SetDoneButton({required this.isDone, required this.onPressed});
+
+  final bool isDone;
+
+  /// Null while the row is still empty — there is no set to finish yet.
+  final Future<void> Function()? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final enabled = onPressed != null;
+    final Color background;
+    final Color foreground;
+    if (isDone) {
+      background = theme.colorScheme.primary;
+      foreground = theme.colorScheme.onPrimary;
+    } else {
+      background = theme.colorScheme.surfaceContainerHigh;
+      foreground = enabled
+          ? theme.colorScheme.onSurfaceVariant
+          : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.35);
+    }
+    return Tooltip(
+      message: isDone ? 'Set done — tap to undo' : 'Finish set and start rest',
+      child: Semantics(
+        button: true,
+        checked: isDone,
+        label: isDone ? 'Set done' : 'Finish set and start rest',
+        child: InkWell(
+          onTap: enabled ? () => unawaited(onPressed!()) : null,
+          borderRadius: BorderRadius.circular(AppRadius.control),
+          child: Container(
+            // Matches _MicroStepper exactly — a control that is 4pt shorter
+            // and squarer than the fields beside it reads as a mistake.
+            height: 40,
+            width: _doneWidth,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(AppRadius.control),
+              border: isDone
+                  ? null
+                  : Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Icon(AppIcons.check, size: 18, color: foreground),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// Set number badge. Fills with the accent once the set holds real data — it is
 /// a status indicator derived from the row, never a tappable "done" control.

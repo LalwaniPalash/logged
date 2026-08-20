@@ -23,6 +23,7 @@ void main() {
     sideCount: 1,
     loadingMode: mode,
     isWarmup: warmup,
+    isDone: false,
     rpe: rpe,
     muscleBiasWeights: null,
   );

@@ -109,6 +109,12 @@ class SetEntries extends Table {
   RealColumn get distanceMeters => real().nullable()();
   IntColumn get durationSec => integer().nullable()();
   BoolColumn get isWarmup => boolean().withDefault(const Constant(false))();
+  /// The lifter ticked this set off. Deliberately stored rather than derived
+  /// from which fields are filled in: a seeded set lands looking finished
+  /// before it has been performed, and a bodyweight-only set on an
+  /// externally-loaded exercise (0 kg Dead Bug) never looks finished at all.
+  /// Both cases fired — or failed to fire — the rest timer at the wrong moment.
+  BoolColumn get isDone => boolean().withDefault(const Constant(false))();
   RealColumn get rpe => real().nullable()();
   TextColumn get muscleBiasWeights => text().nullable()();
   TextColumn get notes => text().nullable()();
@@ -158,7 +164,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'logged'));
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -324,7 +330,13 @@ class AppDatabase extends _$AppDatabase {
           );
         }
 
-        await migrator.alterTable(TableMigration(setEntries));
+        // Every column added to SetEntries *after* v10 must be listed here:
+        // this rebuild copies the current Dart schema out of the old table, so
+        // a later column it doesn't know is new is selected from a table that
+        // has never had it. Pair each entry with a guarded addColumn below.
+        await migrator.alterTable(
+          TableMigration(setEntries, newColumns: [setEntries.isDone]),
+        );
         await migrator.alterTable(
           TableMigration(
             exercises,
@@ -356,6 +368,20 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 14) {
         await migrator.addColumn(sessions, sessions.title);
+      }
+      if (from < 15) {
+        // The v10 path rebuilds set_entries and already creates the column —
+        // same guard as v12/v13.
+        if (from < 8 || from >= 10) {
+          await migrator.addColumn(setEntries, setEntries.isDone);
+        }
+        // Every set that already exists was logged by hand before the tick
+        // existed. Leaving them unticked would grey out the whole history.
+        await customUpdate(
+          'UPDATE set_entries SET is_done = 1',
+          updates: {setEntries},
+          updateKind: UpdateKind.update,
+        );
       }
     },
     beforeOpen: (details) async {

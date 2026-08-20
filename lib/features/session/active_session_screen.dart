@@ -40,18 +40,6 @@ class ActiveSessionScreen extends ConsumerStatefulWidget {
       _ActiveSessionScreenState();
 }
 
-/// Timed-ness and distance-tracking decide which columns a set shows AND what
-/// makes it complete, so every consumer must agree. Resolving it in one place
-/// stops a set from rendering a hold-time column while completion still demands
-/// reps the editor already nulled.
-bool _timedForDetail(SessionExerciseDetails detail) => isTimedExercise(
-  exerciseIsTimed: detail.exercise.isTimed,
-  sets: detail.sets,
-  targetDurationSec: detail.sessionExercise.targetDurationSec,
-  minReps: detail.sessionExercise.minReps,
-  maxReps: detail.sessionExercise.maxReps,
-);
-
 class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   late Future<_SessionView> _future;
   _RestTimerContext? _restContext;
@@ -62,7 +50,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     _refresh();
   }
 
-  void _refresh() => _future = _loadView();
+  // Block body, not `=> _future = _loadView()`: an arrow body returns the
+  // assignment's value, so a `void`-declared arrow still hands setState a
+  // Future and trips its "callback returned a Future" assert. Release builds
+  // strip that assert, which is why this only ever bit in debug.
+  void _refresh() {
+    _future = _loadView();
+  }
 
   @override
   void dispose() {
@@ -307,6 +301,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                     distanceMeters: set.distanceMeters,
                     durationSec: set.durationSec,
                     isWarmup: set.isWarmup,
+                    isDone: set.isDone,
                     rpe: set.rpe,
                     muscleBiasWeights: set.muscleBiasWeights == null
                         ? null
@@ -441,31 +436,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     );
     if (result == null) return;
 
-    final wasComplete =
-        existing != null &&
-        isSetComplete(
-          category: detail.exercise.category,
-          loadingMode: existing.loadingMode,
-          reps: existing.reps,
-          weightValue: existing.weightValue,
-          durationSec: existing.durationSec,
-          distanceMeters: existing.distanceMeters,
-          timed: _timedForDetail(detail),
-          tracksDistance: detail.exercise.tracksDistance,
-        );
-    final becomesComplete =
-        !result.delete &&
-        isSetComplete(
-          category: detail.exercise.category,
-          loadingMode: result.loadingMode,
-          reps: result.reps,
-          weightValue: result.weight,
-          durationSec: result.durationSec,
-          distanceMeters: result.distanceMeters,
-          timed: _timedForDetail(detail),
-          tracksDistance: detail.exercise.tracksDistance,
-        );
-
     if (result.delete && existing != null) {
       await ref.read(setRepositoryProvider).delete(existing.id);
     } else if (existing != null) {
@@ -519,9 +489,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             loadingMode: result.loadingMode,
           );
     }
-    if (!wasComplete && becomesComplete) {
-      await _startRestTimer(detail, suggestion: suggestion);
-    }
     if (!mounted) return;
     setState(_refresh);
     if (result.delete && existing != null) {
@@ -550,14 +517,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           durationSec: seed.durationSec,
           muscleBiasWeights: seed.muscleBiasWeights,
         );
-    await _startRestTimerIfComplete(
-      detail,
-      loadingMode: seed.loadingMode,
-      reps: seed.reps,
-      weightValue: seed.weightValue,
-      durationSec: seed.durationSec,
-      distanceMeters: seed.distanceMeters,
-    );
     if (!mounted) return;
     setState(_refresh);
   }
@@ -583,14 +542,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           muscleBiasWeights: decodeMuscleBiasWeights(last.muscleBiasWeights),
           notes: last.notes,
         );
-    await _startRestTimerIfComplete(
-      detail,
-      loadingMode: last.loadingMode,
-      reps: last.reps,
-      weightValue: last.weightValue,
-      durationSec: last.durationSec,
-      distanceMeters: last.distanceMeters,
-    );
     if (!mounted) return;
     setState(_refresh);
   }
@@ -634,14 +585,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           durationSec: seed.durationSec,
           muscleBiasWeights: seed.muscleBiasWeights,
         );
-    await _startRestTimerIfComplete(
-      detail,
-      loadingMode: seed.loadingMode,
-      reps: seed.reps,
-      weightValue: seed.weightValue,
-      durationSec: seed.durationSec,
-      distanceMeters: seed.distanceMeters,
-    );
     if (!mounted) return;
     setState(_refresh);
   }
@@ -652,28 +595,6 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     SetRowDraft draft,
     ProgressionSuggestion? suggestion,
   ) async {
-    final timed = _timedForDetail(detail);
-    final tracksDistance = detail.exercise.tracksDistance;
-    final wasComplete = isSetComplete(
-      category: detail.exercise.category,
-      loadingMode: set.loadingMode,
-      reps: set.reps,
-      weightValue: set.weightValue,
-      durationSec: set.durationSec,
-      distanceMeters: set.distanceMeters,
-      timed: timed,
-      tracksDistance: tracksDistance,
-    );
-    final becomesComplete = isSetComplete(
-      category: detail.exercise.category,
-      loadingMode: set.loadingMode,
-      reps: draft.reps,
-      weightValue: draft.weightValue,
-      durationSec: draft.durationSec,
-      distanceMeters: draft.distanceMeters,
-      timed: timed,
-      tracksDistance: tracksDistance,
-    );
     await ref
         .read(setRepositoryProvider)
         .edit(
@@ -704,41 +625,60 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
           isWarmup: set.isWarmup,
           notes: Value(set.notes),
         );
-    if (!wasComplete && becomesComplete) {
-      await _startRestTimer(detail, suggestion: suggestion);
-    }
     if (!mounted) return;
     setState(_refresh);
   }
 
-  /// Add-set, repeat-set and insert-above all create a set that is complete
-  /// the moment it lands — seeded or copied from real prior values, with no
-  /// incomplete draft in between. `_openSet`/`_updateInlineSet` start the rest
-  /// timer on the incomplete → complete *transition*, which never happens
-  /// here, so those three call this directly instead.
-  Future<void> _startRestTimerIfComplete(
-    SessionExerciseDetails detail, {
-    required LoadingMode loadingMode,
-    int? reps,
-    double? weightValue,
-    int? durationSec,
-    double? distanceMeters,
-  }) async {
-    final complete = isSetComplete(
-      category: detail.exercise.category,
-      loadingMode: loadingMode,
-      reps: reps,
-      weightValue: weightValue,
-      durationSec: durationSec,
-      distanceMeters: distanceMeters,
-      timed: _timedForDetail(detail),
-      tracksDistance: detail.exercise.tracksDistance,
+  /// Ticks a set off, or un-ticks it. Marking one done is the ONLY thing that
+  /// starts a rest timer: inferring it from which fields were filled in fired
+  /// the countdown the instant a set was added (before the load was even
+  /// corrected) and never fired at all for a bodyweight set on an exercise the
+  /// app expects to be loaded.
+  Future<void> _toggleSetDone(
+    SessionExerciseDetails detail,
+    SetEntry set,
+    ProgressionSuggestion? suggestion,
+  ) async {
+    final nowDone = !set.isDone;
+    await ref.read(setRepositoryProvider).edit(set.id, isDone: nowDone);
+    if (!mounted) return;
+    if (!nowDone) {
+      // Undoing the tick must take back the rest it started, but ONLY that one:
+      // un-ticking set 1 while resting after set 3 has to leave set 3's
+      // countdown alone, so match on the set that actually started it.
+      if (_restContext?.fromSetId == set.id) {
+        await ref
+            .read(restTimerControllerProvider.notifier)
+            .cancel(sessionId: widget.sessionId);
+        _restContext = null;
+      }
+      return;
+    }
+    // Reread after the write: what comes next depends on this very tick, and
+    // the `detail` captured by the row is one edit stale.
+    final view = await _future;
+    if (!mounted) return;
+    final target = nextUpAfter(
+      details: view.details,
+      sessionExerciseId: detail.sessionExercise.id,
+      completedSetNumber: set.setNumber,
     );
-    if (complete) await _startRestTimer(detail);
+    await _startRestTimer(
+      detail,
+      fromSetId: set.id,
+      target: target,
+      // The suggestion describes the exercise just finished, so it only still
+      // applies while the lifter is staying on it.
+      suggestion: target?.sessionExerciseId == detail.sessionExercise.id
+          ? suggestion
+          : null,
+    );
   }
 
   Future<void> _startRestTimer(
     SessionExerciseDetails detail, {
+    required int fromSetId,
+    required RestTimerTarget? target,
     ProgressionSuggestion? suggestion,
   }) async {
     // This screen also opens finished sessions — logging a set you missed
@@ -772,8 +712,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     // timer state carries only a sessionId, not which exercise it was started
     // for, and recomputing that after a minimise would guess.
     _restContext = _RestTimerContext(
-      exerciseName: detail.exercise.name,
-      nextSetNumber: _nextSetNumber(detail),
+      fromSetId: fromSetId,
+      exerciseName: target?.exerciseName,
+      nextSetNumber: target?.setNumber,
       suggestion: suggestion,
     );
     // Not awaited: the caller refreshes the set list right after this returns,
@@ -983,7 +924,9 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     );
     controller.dispose();
     if (result == null) return;
-    await ref.read(sessionRepositoryProvider).updateTitle(widget.sessionId, result);
+    await ref
+        .read(sessionRepositoryProvider)
+        .updateTitle(widget.sessionId, result);
     if (!mounted) return;
     setState(_refresh);
   }
@@ -1160,6 +1103,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                         draft,
                                         suggestion,
                                       ),
+                                  onToggleSetDone: (set, suggestion) =>
+                                      _toggleSetDone(detail, set, suggestion),
                                   onEditSet: (set, suggestion) => _openSet(
                                     detail,
                                     existing: set,
@@ -1214,15 +1159,88 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
 /// a minimised timer can be reopened showing the same next-set context.
 class _RestTimerContext {
   const _RestTimerContext({
+    required this.fromSetId,
     required this.exerciseName,
     required this.nextSetNumber,
     required this.suggestion,
   });
 
-  final String exerciseName;
-  final int nextSetNumber;
+  /// The set whose tick started this rest, so undoing that tick can take the
+  /// countdown back without touching a rest some other set started.
+  final int fromSetId;
+
+  /// Null once there is nothing left to log — the timer then says so instead
+  /// of naming the exercise that was just finished.
+  final String? exerciseName;
+  final int? nextSetNumber;
   final ProgressionSuggestion? suggestion;
 }
+
+/// Where the lifter goes once a set is ticked off, used to label the rest
+/// timer. Null means the session has nothing left to log.
+typedef RestTimerTarget = ({
+  int sessionExerciseId,
+  String exerciseName,
+  int setNumber,
+});
+
+/// Resolves the exercise and set the lifter faces after finishing
+/// [completedSetNumber] of [sessionExerciseId].
+///
+/// Stays on the same exercise while it still owes work — an unticked set, or a
+/// prescribed set that has not been created yet — and otherwise moves on to the
+/// next exercise in the session. Naming the exercise just finished (which is
+/// what a fresh `_nextSetNumber` did) is wrong precisely when it matters most:
+/// on the last set, when what the lifter needs to know is what comes next.
+RestTimerTarget? nextUpAfter({
+  required List<SessionExerciseDetails> details,
+  required int sessionExerciseId,
+  required int completedSetNumber,
+}) {
+  final index = details.indexWhere(
+    (detail) => detail.sessionExercise.id == sessionExerciseId,
+  );
+  if (index < 0) return null;
+  final detail = details[index];
+
+  // Only sets *after* the one just finished: an earlier row left unticked
+  // (a warm-up the lifter never ticked off) is behind them, not next.
+  final pending = _lowestPendingSetNumber(detail, after: completedSetNumber);
+  if (pending != null) {
+    return (
+      sessionExerciseId: sessionExerciseId,
+      exerciseName: detail.exercise.name,
+      setNumber: pending,
+    );
+  }
+  // Every logged set is ticked, but the prescription may still owe rows that
+  // have not been created yet. Warm-ups do not count against the target.
+  final workingSets = detail.sets.where((set) => !set.isWarmup).length;
+  if (workingSets < (detail.sessionExercise.targetSets ?? 0)) {
+    return (
+      sessionExerciseId: sessionExerciseId,
+      exerciseName: detail.exercise.name,
+      setNumber: completedSetNumber + 1,
+    );
+  }
+  for (final next in details.skip(index + 1)) {
+    return (
+      sessionExerciseId: next.sessionExercise.id,
+      exerciseName: next.exercise.name,
+      setNumber: _lowestPendingSetNumber(next) ?? 1,
+    );
+  }
+  return null;
+}
+
+int? _lowestPendingSetNumber(SessionExerciseDetails detail, {int after = 0}) =>
+    detail.sets
+        .where((set) => !set.isDone && set.setNumber > after)
+        .fold<int?>(
+          null,
+          (lowest, set) =>
+              lowest == null || set.setNumber < lowest ? set.setNumber : lowest,
+        );
 
 /// Next set number for an exercise. Derived from the highest existing number
 /// rather than the row count, so deleting a middle set can't make the next add
@@ -1291,6 +1309,7 @@ class _ExerciseCard extends StatelessWidget {
     required this.onAddSet,
     required this.onRepeatSet,
     required this.onInlineCommit,
+    required this.onToggleSetDone,
     required this.onEditSet,
     required this.onMoveSet,
     required this.onInsertSetAbove,
@@ -1318,6 +1337,8 @@ class _ExerciseCard extends StatelessWidget {
     ProgressionSuggestion? suggestion,
   )
   onInlineCommit;
+  final Future<void> Function(SetEntry set, ProgressionSuggestion? suggestion)
+  onToggleSetDone;
   final void Function(SetEntry set, ProgressionSuggestion? suggestion)
   onEditSet;
   final Future<void> Function(
@@ -1629,6 +1650,10 @@ class _ExerciseCard extends StatelessWidget {
                     onCommit: (draft) => onInlineCommit(
                       set,
                       draft,
+                      set == detail.sets.last ? suggestion : null,
+                    ),
+                    onToggleDone: () => onToggleSetDone(
+                      set,
                       set == detail.sets.last ? suggestion : null,
                     ),
                     onOpenDetails: () => onEditSet(

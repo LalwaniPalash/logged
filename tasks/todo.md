@@ -2319,4 +2319,78 @@ iOS-specific like the Simulator-vs-device gap has been stress-tested).
 
 `flutter analyze` clean, `flutter test` green at **327 tests** (added: total-tracking assertion in
 `rest_timer_controller_test.dart`, a v13→v14 migration test, schemaVersion bumps in existing
-migration/backup tests). **Not yet committed** — 11 modified files sitting on `feat/set-editor-backup-ux`.
+migration/backup tests). Committed as `d9a5c78`.
+
+### Dashboard blank-screen bug + Lying Leg Raise — 2026-08-18 (iPhone 14 Pro, new IPA)
+
+Found on the freshly-built IPA from the commit above: Dashboard rendered Body Rank + streak/week
+numbers fine, but everything below (week-view strip, recent sessions) was **true blank space** in
+both light and dark theme — not just low data, an actual missing render. Root-caused via `git show`
+on the file's last touching commit (not live device tooling — `idevicescreenshot` needs a DDI this
+machine can't mount for iOS 26, but `idevicesyslog` works without one and confirmed no Dart exception
+was thrown). Cause: the Aug 15 accessibility commit (`6e3ef05`) split the streak/stat row into a
+stacked-vs-row ternary for large-text support and dropped the `IntrinsicHeight` wrapper on the row
+branch — reintroducing the exact `CrossAxisAlignment.stretch`-inside-`ListView` crash already fixed
+2026-08-09. Silent in release (asserts stripped), invisible to Phase 7's own large-text device
+check (which only exercises the *stacked*, unaffected branch). Fixed by restoring `IntrinsicHeight`;
+added a widget test at normal text scale/width — the one path the file's sole prior test structurally
+could never reach — and confirmed by reverting the fix that the test fails with 14 layout exceptions.
+Full writeup in `tasks/lessons.md` 2026-08-17.
+
+Also added **Lying Leg Raise** (floor bodyweight variant) to `exercise_library.json` on request —
+library now 1279 entries, count assertion in `exercise_library_asset_test.dart` bumped to match.
+
+Committed as `950f5f5` (dashboard fix) and `7f61f64` (exercise). `flutter analyze` clean,
+`flutter test` green at **328 tests**. New IPA + APK built and sideloaded to the iPhone —
+**device-confirmed fixed** by Palash 2026-08-18.
+
+Still open from the broader deferred-verification list: ring resync specifically after OS
+backgrounding, `timeoutAfter` reaping an orphaned `ongoing` notification after force-kill (Vivo),
+≤v11 backup restore across devices, and broader iOS-specific stress testing.
+
+## 2026-08-20 — Rest timer fires on an explicit tick, not on derived completeness
+
+Bugs reported from device use:
+1. Add-set / repeat-set fires the full-screen rest timer instantly — no chance to fix weight/reps.
+2. A set the user does bodyweight-only on an externally-loaded exercise (Dead Bug, 0 kg) never
+   counts as complete, so it never fires the timer at all.
+3. Full-screen timer shows the exercise just finished and the wrong set number when the exercise
+   is already done — it should name the NEXT exercise / next set.
+
+Root cause for 1+2: "set is done" is *derived* from which fields are filled (`isSetComplete`).
+That guess is wrong in both directions. Make it explicit and persisted.
+
+- [x] 1. Schema v15: `SetEntries.isDone` bool, migration + backfill every existing row to done.
+- [x] 2. `SetRepository`: carry `isDone` through add/edit/insertSetAt/restoreDeletedSet.
+- [x] 3. `SetRow`: tick button beside the three dots; set-number chip driven by `set.isDone`;
+       delete `isSetComplete` (no consumers left).
+- [x] 4. `ActiveSessionScreen`: remove every automatic rest-timer start; tick is the only trigger.
+- [x] 5. `nextUpAfter(...)` pure helper — same exercise while sets remain, else the next exercise.
+- [x] 6. `RestTimerScreen`: nullable exercise/set, "Workout complete" when nothing is left.
+- [x] 7. Tests: `nextUpAfter`, migration backfill; update broken existing tests.
+- [x] 8. `flutter analyze` clean, **339 tests green**. Codex Mode B review was rate-limited
+       (usage cap) — self-review instead, which caught the warm-up "next set" bug fixed below.
+       Re-run codex on this diff when credits reset.
+
+### Device pass on the Vivo V2143, 2026-08-20 — VERIFIED WORKING
+
+Confirmed on hardware by Palash: the tick gates the rest timer, a 0 kg / blank-metres set rests,
+and undoing a tick takes its rest back. v14 → v15 migrated a live populated install cleanly
+(101 sets, all backfilled to done, nothing lost).
+
+Five bugs the 339-test suite could not see, all found on-device and fixed:
+1. **`setState(_refresh)` threw on every call** — `void _refresh() => _future = _loadView();` returns
+   the assignment's value, so setState got a Future. PRE-EXISTING, identical to HEAD; only visible in
+   debug because setState's check lives in an `assert` that release APKs strip. Blocked add-exercise.
+   Fixed with a block body.
+2. **Tick sat flush against the METRES column** — no gap, 36pt tall against 40pt steppers, radius 11
+   among pills. Now `_columnGap` + 40pt + `AppRadius.control`.
+3. **Undoing a tick left its rest timer running** — the undo path returned before cancelling.
+   Now cancels, but only the rest that *this* set started (`_RestTimerContext.fromSetId`).
+4. **An unticked warm-up above the finished set was announced as "next"** — `nextUpAfter` now only
+   considers sets *after* the one just ticked.
+5. **`backup_service.dart` still stamped v14** while the DB was v15 — and its test pinned the literal
+   `14`, so it passed on the stale value. Both `_schemaVersion` and `_supportedSchemaVersions` bumped;
+   the test now asserts against `source.schemaVersion` so it can never drift silently again.
+
+Not yet done: commit (13 files + 1 new test still uncommitted), and the codex Mode B review.

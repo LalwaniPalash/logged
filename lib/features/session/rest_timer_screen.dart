@@ -15,8 +15,12 @@ class RestTimerScreen extends ConsumerStatefulWidget {
   });
 
   final int sessionId;
-  final String exerciseName;
-  final int nextSetNumber;
+
+  /// What the lifter does after this rest. Both null once the session has
+  /// nothing left to log — resting after the final set is normal, and the
+  /// screen must not keep naming the exercise that is already finished.
+  final String? exerciseName;
+  final int? nextSetNumber;
   final ProgressionSuggestion? suggestion;
 
   @override
@@ -196,13 +200,15 @@ class _RestTimerScreenState extends ConsumerState<RestTimerScreen>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    widget.exerciseName,
+                    widget.exerciseName ?? 'Last set done',
                     textAlign: TextAlign.center,
                     style: textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Set ${widget.nextSetNumber} is next',
+                    widget.nextSetNumber == null
+                        ? 'Nothing left to log'
+                        : 'Set ${widget.nextSetNumber} is next',
                     textAlign: TextAlign.center,
                     style: textTheme.titleMedium?.copyWith(
                       color: colors.onSurfaceVariant,

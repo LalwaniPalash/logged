@@ -85,7 +85,10 @@ void main() {
           ),
         );
     final payload = await BackupService(source).exportPayload();
-    expect(payload['schemaVersion'], 14);
+    // Tied to the database, not a literal: pinning the number meant this test
+    // kept passing on a STALE value after the schema moved on, which is exactly
+    // how the writer came to stamp v14 backups from a v15 database.
+    expect(payload['schemaVersion'], source.schemaVersion);
     await BackupService(target).replaceFromPayload(payload);
     final exercises = await target.select(target.exercises).get();
     expect(exercises, hasLength(1));

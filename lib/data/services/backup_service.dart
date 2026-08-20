@@ -39,8 +39,9 @@ class BackupService {
     12,
     13,
     14,
+    15,
   };
-  static const int _schemaVersion = 14;
+  static const int _schemaVersion = 15;
 
   /// Name of the JSON document stored inside the exported `.zip`.
   static const String _entryName = 'logged-backup.json';
@@ -317,6 +318,9 @@ class BackupService {
     'weightEntry': source['weightEntry'] ?? 'total',
     'sideCount': source['sideCount'] ?? 1,
     'loadingMode': source['loadingMode'] ?? 'external',
+    // Matches the v15 migration: a backup taken before sets could be ticked
+    // off holds only sets that were actually performed.
+    'isDone': source['isDone'] ?? true,
     'muscleBiasWeights': source['muscleBiasWeights'] ?? legacyMuscleBiasWeights,
   });
 

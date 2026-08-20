@@ -34,6 +34,7 @@ void main() {
     sideCount: sideCount,
     loadingMode: loadingMode,
     isWarmup: false,
+    isDone: false,
     muscleBiasWeights: muscleBiasWeights,
   );
 
