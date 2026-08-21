@@ -39,16 +39,34 @@ List<WarmupSet> generateWarmup({
   }
 
   final barWeight = inventory.barWeightFor(unit);
-  if (workingWeight <= barWeight + _epsilon) return const [];
+  // A load at or under the bar is only meaningless for an actual BARBELL.
+  // Machines, dumbbells and cable stacks are logged the same way and a 10 kg
+  // working set on one of them deserves the same 40/60/80% ramp — gating the
+  // whole ramp on the bar weight left "Warm-up" permanently disabled for every
+  // light or non-barbell exercise, with nothing on screen saying why. The bar
+  // rung itself is still barbell-only; below the bar we just skip that rung.
+  final usesBar = workingWeight > barWeight + _epsilon;
+  // Below roughly one plate-step there is no ramp worth logging.
+  final minimumRampable = unit == WeightUnit.kg ? 5.0 : 10.0;
+  if (!usesBar && workingWeight <= minimumRampable + _epsilon) return const [];
+
+  // Below the bar, `roundToLoadable` is the wrong tool: it solves BARBELL
+  // plate math and cannot express a load lighter than the bar, so every rung
+  // came back at the bar weight and was then dropped for being >= working.
+  // A machine or dumbbell ramp rounds to a plain increment instead.
+  final simpleStep = unit == WeightUnit.kg ? 2.5 : 5.0;
+  double roundRung(double target) => usesBar
+      ? roundToLoadable(
+          target,
+          unit: unit,
+          inventory: inventory,
+          perImplement: perImplement,
+        )
+      : (target / simpleStep).round() * simpleStep;
 
   final barRungReps = (workingReps ?? 8).clamp(5, 8);
-  final firstRung = roundToLoadable(
-    workingWeight * 0.4,
-    unit: unit,
-    inventory: inventory,
-    perImplement: perImplement,
-  );
-  final includeBarRung = firstRung > barWeight + _epsilon;
+  final firstRung = roundRung(workingWeight * 0.4);
+  final includeBarRung = usesBar && firstRung > barWeight + _epsilon;
   final candidates = <({double target, int reps, String label})>[
     if (includeBarRung)
       (target: barWeight, reps: barRungReps, label: 'Bar × $barRungReps'),
@@ -59,13 +77,11 @@ List<WarmupSet> generateWarmup({
 
   final warmups = <WarmupSet>[];
   for (final candidate in candidates) {
-    final loadable = roundToLoadable(
-      candidate.target,
-      unit: unit,
-      inventory: inventory,
-      perImplement: perImplement,
-    );
-    if (loadable <= barWeight + _epsilon && !includeBarRung) continue;
+    final loadable = roundRung(candidate.target);
+    if (loadable <= _epsilon) continue;
+    if (usesBar && loadable <= barWeight + _epsilon && !includeBarRung) {
+      continue;
+    }
     if (loadable >= workingWeight - _epsilon) continue;
     if (warmups.isNotEmpty &&
         (warmups.last.weight - loadable).abs() <= _epsilon) {

@@ -50,6 +50,13 @@ final healthExportServiceProvider = Provider<HealthExportClient>(
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => ExerciseRepository(ref.watch(databaseProvider)),
 );
+
+/// The full exercise library, cached — callers that need to resolve a name
+/// or id without their own picker flow (strength standards' region icons and
+/// detail screen) watch this instead of each re-querying `.all()`.
+final allExercisesProvider = FutureProvider<List<Exercise>>(
+  (ref) => ref.watch(exerciseRepositoryProvider).all(),
+);
 final muscleExerciseIndexProvider = Provider<MuscleExerciseIndex>(
   (ref) => MuscleExerciseIndex(ref.watch(databaseProvider)),
 );

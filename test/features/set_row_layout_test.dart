@@ -196,9 +196,55 @@ void main() {
       iphoneSize,
     );
 
-    expect(find.text('Last time: 8× 40 lb/hand each side'), findsOneWidget);
+    // The entered unit, the per-hand qualifier and the each-side note must all
+    // survive the summary — a lb set must never be relabelled kg.
+    expect(find.textContaining('8 @ 40 lb/hand each side'), findsOneWidget);
     expect(find.textContaining('kg'), findsNothing);
   });
+
+  testWidgets('identical sets collapse into one counted group', (tester) async {
+    // Three identical sets used to print three times and fill three lines.
+    final set = buildSet(
+      setNumber: 1,
+      reps: 8,
+      weightValue: 100,
+      unit: WeightUnit.kg,
+    );
+
+    await pumpAt(
+      tester,
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(body: LastPerformanceHint(sets: [set, set, set])),
+      ),
+      iphoneSize,
+    );
+
+    expect(find.textContaining('3 x 8 @ 100 kg'), findsOneWidget);
+  });
+
+  test(
+    'a set that differs starts its own group rather than being averaged',
+    () {
+      final heavy = buildSet(
+        setNumber: 1,
+        reps: 8,
+        weightValue: 100,
+        unit: WeightUnit.kg,
+      );
+      final dropOff = buildSet(
+        setNumber: 3,
+        reps: 5,
+        weightValue: 90,
+        unit: WeightUnit.kg,
+      );
+
+      final summary = summariseLastPerformance([heavy, heavy, dropOff]);
+
+      expect(summary, contains('2 x 8 @ 100 kg'));
+      expect(summary, contains('5 @ 90 kg'));
+    },
+  );
 
   testWidgets('a stationary bike logged by time alone is still tickable', (
     tester,
@@ -442,5 +488,10 @@ void main() {
       ),
       [SetField.duration],
     );
+  });
+
+  test('formatSetRowDouble caps float noise at two decimals', () {
+    expect(formatSetRowDouble(20.4116568), '20.41');
+    expect(formatSetRowDouble(20.0), '20');
   });
 }

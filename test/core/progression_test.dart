@@ -97,6 +97,24 @@ void main() {
       expect(result.rationale, 'Match last time; add a rep range to progress.');
     });
 
+    test('converted history rounds to the nearest loadable step', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [set(reps: 7, weight: 45, unit: WeightUnit.lb)],
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+      )!;
+      expect(result.weightValue, 20.5);
+    });
+
+    test('unconverted history keeps its exact entered increment', () {
+      final result = suggestNextSet(
+        lastExerciseSets: [set(reps: 7, weight: 62.5, unit: WeightUnit.kg)],
+        weightEntry: WeightEntry.total,
+        unit: WeightUnit.kg,
+      )!;
+      expect(result.weightValue, 62.5);
+    });
+
     test('warmups are ignored and mixed units are converted', () {
       final result = suggestNextSet(
         lastExerciseSets: [

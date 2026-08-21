@@ -50,4 +50,22 @@ void main() {
 
     expect(regionIntensitiesFromLiveState(state)[BodyRegion.arms], 8 / 12);
   });
+
+  test('regionForMuscle exposes the detailed fallback mapping', () {
+    expect(regionForMuscle(MuscleId.quads), BodyRegion.quads);
+    expect(regionForMuscle(MuscleId.hamstrings), BodyRegion.hamstrings);
+  });
+
+  test(
+    'exercise intensities prefer primary over secondary in the same region',
+    () {
+      final intensities = regionIntensitiesForExercise(
+        primary: const [MuscleId.quads],
+        secondary: const [MuscleId.adductors, MuscleId.hamstrings],
+      );
+
+      expect(intensities[BodyRegion.quads], 1);
+      expect(intensities[BodyRegion.hamstrings], 0.45);
+    },
+  );
 }

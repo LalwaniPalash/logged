@@ -96,6 +96,28 @@ const Map<MuscleId, BodyRegion> _detailedMuscleToRegion = {
   MuscleId.neck: BodyRegion.back,
 };
 
+BodyRegion? regionForMuscle(MuscleId muscle) => _detailedMuscleToRegion[muscle];
+
+Map<BodyRegion, double> regionIntensitiesForExercise({
+  required Iterable<MuscleId> primary,
+  required Iterable<MuscleId> secondary,
+}) {
+  final intensities = <BodyRegion, double>{};
+  for (final muscle in secondary) {
+    final region = regionForMuscle(muscle);
+    if (region == null) continue;
+    intensities[region] = (intensities[region] ?? 0) < 0.45
+        ? 0.45
+        : intensities[region]!;
+  }
+  for (final muscle in primary) {
+    final region = regionForMuscle(muscle);
+    if (region == null) continue;
+    intensities[region] = 1.0;
+  }
+  return intensities;
+}
+
 /// Collapses the detailed per-set state for the accessible 2D fallback. The
 /// strongest detailed muscle wins within a broad region so splitting an area
 /// into several anatomical IDs does not artificially inflate its color.

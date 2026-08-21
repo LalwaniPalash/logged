@@ -144,6 +144,11 @@ class AnalyticsRepository {
       'JOIN session_exercises sx ON sx.id = se.session_exercise_id '
       'JOIN sessions s ON s.id = sx.session_id '
       'JOIN exercises e ON e.id = sx.exercise_id '
+      // Ranks are earned by workouts, not by keystrokes. Without this filter
+      // every set typed into the live session recomputed rank immediately, so
+      // a rank-up snackbar fired mid-workout on a set that could still be
+      // edited or deleted. Finished sessions only, same as PR analytics.
+      'WHERE s.ended_at IS NOT NULL '
       'ORDER BY s.started_at, se.id';
 
   static const _deloadQuery =

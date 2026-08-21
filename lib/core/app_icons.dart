@@ -25,7 +25,7 @@ class AppIcons {
   static const close = PhosphorIconsRegular.x;
   static const chevronRight = PhosphorIconsRegular.caretRight;
   static const chevronDown = PhosphorIconsRegular.caretDown;
-  static const more = PhosphorIconsRegular.dotsThreeOutline;
+  static const more = PhosphorIconsRegular.dotsThreeOutlineVertical;
   static const search = PhosphorIconsRegular.magnifyingGlass;
   static const edit = PhosphorIconsRegular.pencilSimple;
   static const info = PhosphorIconsRegular.info;
@@ -35,11 +35,26 @@ class AppIcons {
   static const cube = PhosphorIconsRegular.cube;
   static const body = PhosphorIconsRegular.personArmsSpread;
   static const plates = PhosphorIconsRegular.barbell;
+  static const footprints = PhosphorIconsRegular.footprints;
+  // Bolder variants for places where a hairline outline reads as weedy against
+  // large numbers — the session stats row and the per-exercise action row.
+  static const clockBold = PhosphorIconsBold.clock;
+  static const dumbbellBold = PhosphorIconsBold.barbell;
+  static const volumeBold = PhosphorIconsBold.stack;
+  static const platesBold = PhosphorIconsBold.barbell;
+  static const refreshBold = PhosphorIconsBold.arrowClockwise;
+  static const swapBold = PhosphorIconsBold.arrowsLeftRight;
+  static const addBold = PhosphorIconsBold.plus;
+  static const checkBold = PhosphorIconsBold.check;
+  // Accumulated load: deliberately NOT `barbell`, which `plates`/`dumbbell`
+  // already use — three identical icons in one stats row read as a mistake.
+  static const volume = PhosphorIconsRegular.stack;
   static const warmup = PhosphorIconsFill.fire;
 
   // Concepts
   static const fire = PhosphorIconsFill.fire;
   static const bolt = PhosphorIconsRegular.lightning;
+  static const lightbulb = PhosphorIconsRegular.lightbulb;
   static const target = PhosphorIconsRegular.target;
   static const clock = PhosphorIconsRegular.clock;
   static const rest = PhosphorIconsRegular.bed;

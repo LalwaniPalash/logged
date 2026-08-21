@@ -29,24 +29,20 @@ void main() {
   });
 
   test(
-    'generateWarmup is empty when the working load is at or below the bar',
+    'at or below the bar there is no BAR rung, but there is still a ramp',
     () {
-      expect(
-        generateWarmup(
-          workingWeight: 20,
-          unit: WeightUnit.kg,
-          inventory: PlateInventory(),
-        ),
-        isEmpty,
+      // This used to assert `isEmpty`. That was wrong: it left "Warm-up"
+      // permanently disabled for every machine, dumbbell and light exercise,
+      // because the bar weight is a barbell concept the rest of them never meet.
+      final warmups = generateWarmup(
+        workingWeight: 20,
+        unit: WeightUnit.kg,
+        inventory: PlateInventory(),
       );
-      expect(
-        generateWarmup(
-          workingWeight: 15,
-          unit: WeightUnit.kg,
-          inventory: PlateInventory(),
-        ),
-        isEmpty,
-      );
+
+      expect(warmups, isNotEmpty);
+      expect(warmups.any((warmup) => warmup.label.startsWith('Bar')), isFalse);
+      expect(warmups.every((warmup) => warmup.weight < 20), isTrue);
     },
   );
 
@@ -86,5 +82,52 @@ void main() {
     );
 
     expect(warmups, const [WarmupSet(weight: 30, reps: 2, label: '80% × 2')]);
+  });
+
+  test('a sub-bar machine load still gets a warm-up ramp', () {
+    // Regression: gating the whole ramp on the 20 kg bar weight left "Warm-up"
+    // permanently disabled for every light or non-barbell exercise. A 10 kg
+    // machine set is a real working set and deserves 40/60/80% rungs.
+    final warmups = generateWarmup(
+      workingWeight: 10,
+      unit: WeightUnit.kg,
+      inventory: PlateInventory(),
+      workingReps: 10,
+    );
+
+    expect(warmups, isNotEmpty);
+    expect(
+      warmups.every((warmup) => warmup.weight < 10),
+      isTrue,
+      reason: 'a warm-up rung is never at or above the working weight',
+    );
+    expect(
+      warmups.any((warmup) => warmup.label.startsWith('Bar')),
+      isFalse,
+      reason: 'there is no bar rung below the bar',
+    );
+  });
+
+  test('a load below one plate step has no ramp worth logging', () {
+    expect(
+      generateWarmup(
+        workingWeight: 4,
+        unit: WeightUnit.kg,
+        inventory: PlateInventory(),
+      ),
+      isEmpty,
+    );
+  });
+
+  test('a real barbell load keeps its bar rung', () {
+    final warmups = generateWarmup(
+      workingWeight: 100,
+      unit: WeightUnit.kg,
+      inventory: PlateInventory(),
+      workingReps: 5,
+    );
+
+    expect(warmups.first.label, startsWith('Bar'));
+    expect(warmups.first.weight, PlateInventory().barWeightFor(WeightUnit.kg));
   });
 }

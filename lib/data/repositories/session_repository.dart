@@ -228,6 +228,30 @@ class SessionRepository {
         );
   }
 
+  Future<int> addExerciseAt({
+    required int sessionId,
+    required int exerciseId,
+    required int position,
+  }) => _database.transaction(() async {
+    await _database.customUpdate(
+      'UPDATE session_exercises '
+      'SET position = position + 1 '
+      'WHERE session_id = ? AND position >= ?',
+      variables: [Variable<int>(sessionId), Variable<int>(position)],
+      updates: {_database.sessionExercises},
+      updateKind: UpdateKind.update,
+    );
+    return _database
+        .into(_database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: position,
+          ),
+        );
+  });
+
   Future<void> updatePrescription(
     int sessionExerciseId, {
     Value<int?> targetSets = const Value.absent(),

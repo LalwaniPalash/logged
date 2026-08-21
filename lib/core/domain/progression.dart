@@ -63,7 +63,11 @@ ProgressionSuggestion? suggestNextSet({
   // choice, but it must not be required because many users never log it.
   if (minReps == null || maxReps == null) {
     return ProgressionSuggestion(
-      weightValue: weight,
+      weightValue: _roundConvertedLoad(
+        value: weight,
+        source: topSet.unit,
+        target: unit,
+      ),
       unit: weight == null ? null : unit,
       reps: reps,
       rationale: 'Match last time; add a rep range to progress.',
@@ -110,7 +114,11 @@ ProgressionSuggestion? suggestNextSet({
           topSet.rpe != null &&
           topSet.rpe! > targetRpe + effortAllowance)) {
     return ProgressionSuggestion(
-      weightValue: weight,
+      weightValue: _roundConvertedLoad(
+        value: weight,
+        source: topSet.unit,
+        target: unit,
+      ),
       unit: weight == null ? null : unit,
       reps: (reps ?? minReps).clamp(minReps, maxReps),
       rationale: 'Hold the load and own the rep target before increasing.',
@@ -121,7 +129,11 @@ ProgressionSuggestion? suggestNextSet({
   final repeatsLastTime = nextReps == reps;
 
   return ProgressionSuggestion(
-    weightValue: weight,
+    weightValue: _roundConvertedLoad(
+      value: weight,
+      source: topSet.unit,
+      target: unit,
+    ),
     unit: weight == null ? null : unit,
     reps: nextReps,
     rationale: repeatsLastTime
@@ -137,3 +149,14 @@ double? _inUnit(double? value, WeightUnit? source, WeightUnit target) {
 }
 
 double _roundLoad(double value) => (value * 100).roundToDouble() / 100;
+
+double? _roundConvertedLoad({
+  required double? value,
+  required WeightUnit? source,
+  required WeightUnit target,
+}) {
+  if (value == null) return null;
+  if (source == null || source == target) return value;
+  final step = target == WeightUnit.kg ? 0.5 : 1.0;
+  return (value / step).round() * step;
+}

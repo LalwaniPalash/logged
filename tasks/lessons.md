@@ -666,3 +666,73 @@ Format: [date] | what went wrong | rule to prevent it
   an action has a side effect beyond its own row, the undo must name and reverse that effect, and it
   must be SCOPED (cancel only the rest *this* set started, tracked by id) — a blanket cancel would
   have killed a legitimate rest from a later set.
+- 2026-08-20 | The rank-up snackbar fired mid-workout because `_muscleProgressQuery` was the ONE
+  analytics query missing `WHERE s.ended_at IS NOT NULL`. Its four siblings (`_query`, `_deloadQuery`,
+  `_benchmarkQuery`, the per-exercise history query) all had it; only this one did not, and
+  `_liveMuscleQuery` omits it deliberately. Rule: when a file holds a family of near-identical SQL
+  constants, the filters that make them correct are a CHECKLIST, not something to eyeball per query —
+  grep the shared predicate across all of them and justify every omission. A missing WHERE clause is
+  invisible in review because the query still reads perfectly sensibly on its own.
+- 2026-08-20 | A ROM lookup keyed on `'quads'`/`'legs'` silently missed 202 of 1279 exercises,
+  because the seed library's real vocabulary includes compound groups (`'quads/hamstrings/glutes'`,
+  `'full body/olympic'`) that fell through to the default. Rule: any table keyed on strings that
+  come from a DATA ASSET gets a test that enumerates the asset and asserts every key is covered —
+  never a hand-written list of the values you assume are in there. Same failure family as the
+  hand-copied `schemaVersion` literal: assert against the source, not against your memory of it.
+- 2026-08-20 | `RichText` defaults to `TextScaler.noScaling`; `Text.rich` reads MediaQuery. Using
+  RichText for the stat values would have frozen every number at one size while its label grew with
+  the system text setting — an accessibility regression that `flutter analyze` and every
+  default-scale test pass straight through. Rule: `Text.rich`, never bare `RichText`, unless the
+  scaler is passed explicitly.
+- 2026-08-20 | A live duration that ACCUMULATES `+1s` per timer tick drifts low forever after the
+  app is backgrounded, because periodic callbacks stop firing while suspended. Derive elapsed time
+  from `now() - startedAt` on every tick instead. Corollary that mattered more than the fix: doing so
+  made the widget untestable with `tester.pump`, which advances only the fake clock — so the clock
+  had to become an injected parameter. Rule: when correctness depends on wall-clock time, inject the
+  clock at the same commit, or the right behaviour ships with no test that can prove it.
+- 2026-08-20 | A generated test asserted `closeTo(19.95)` under the name "warmups add no work but
+  their minutes still count as rest" — 19.95 is precisely the value where they DON'T. The test was
+  written to match the code rather than the spec, so it locked the bug in and turned green.
+  Rule: when reviewing generated tests, read the test NAME against the ASSERTION and recompute the
+  expected number by hand. A passing suite tells you code and test agree, never that either is right.
+- 2026-08-20 | The redesign's new thumbnail called `decodeMuscleIds` unguarded on the RENDER path,
+  where its `FormatException`/`ArgumentError` would blank the whole Active Workout screen. The
+  codebase already knew that data is untrustworthy — `muscle_exercise_index.dart` catches both and
+  skips the row. Rule: when moving a parse from a background/index path onto a build() path, the
+  blast radius changes from "one row missing" to "one screen gone" — re-derive the error handling for
+  the new context instead of copying the call.
+- 2026-08-20 | A widget test does NOT fail when text wraps — only when it overflows. The redesigned
+  stats card passed every layout test while the device rendered "01:27:4 / 2", the exercise name broke
+  mid-word across three lines, and "Add prescription" split into "Add pres / cription". Rule: for a
+  fixed-width tile holding a value of known length, assert the RENDERED LINE COUNT (compare the render
+  box height against the same span laid out unconstrained), not merely the absence of an overflow.
+  Corollary: `flutter analyze` + a green suite says nothing about whether a screen looks right — the
+  screenshot is the test, and every one of this redesign's visual defects needed a device to see.
+- 2026-08-20 | `CustomPaint` with no `child` AND no `size` lays out as `Size.zero` under the loose
+  constraints a `Padding`/`Container` hands down, so the painter silently draws nothing. The muscle
+  thumbnails shipped as empty squares and FOUR tests still passed, because every one of them asserted
+  a Semantics label or a fallback icon rather than any painted geometry. Rule: a test for a painted
+  widget must assert geometry (`tester.getSize(...)` non-zero, or a golden), never just that the right
+  widget/label is in the tree — presence in the tree is not evidence of pixels.
+- 2026-08-20 | `generateWarmup` bailed on `workingWeight <= barWeight`, which disabled "Warm-up" for
+  every machine, dumbbell and light exercise — the bar weight is a BARBELL concept the rest never meet
+  — and `roundToLoadable` made it worse by solving barbell plate math that cannot express a sub-bar
+  load, so every rung came back at the bar and was then dropped for being >= working weight. An
+  existing test asserted `isEmpty` for a 20 kg load, locking the bug in as intended behaviour. Rule:
+  when a domain constant is specific to ONE equipment type, gate only the part that needs it (here the
+  bar rung), and treat a test that asserts a feature is unavailable as a claim to re-verify against
+  the user's intent, not as a spec to preserve.
+- 2026-08-21 | In a render script, the CAMERA adapted to the model's bounds but the LIGHTS were left
+  at hardcoded world positions and fixed wattage — so at the model's actual scale they sat nowhere
+  near the mesh and every muscle rendered black on transparent. The script "worked": it ran clean,
+  wrote correctly-sized RGBA PNGs, and printed success. Rule: when one part of a scene is derived
+  from content bounds, EVERY part positioned in the same world space must be derived from them too —
+  a half-adaptive scene fails silently, because the output is well-formed and only wrong when looked
+  at. Corollary: a render pipeline's success criterion is the IMAGE, so open the file before
+  generating the other 93.
+- 2026-08-21 | Rendering one mesh at a time against a single camera that never moves makes N assets
+  composite into any combination for free — the shared canvas space carries the relative positions,
+  so no per-combination render and no layout maths is needed. Worth reaching for whenever the
+  alternative looks like a combinatorial asset explosion (47 muscles would otherwise be thousands of
+  per-exercise images). The constraint that makes it work is an ORTHOGRAPHIC camera; a perspective
+  one sizes each part by its depth and the layers stop lining up.

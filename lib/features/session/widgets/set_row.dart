@@ -136,39 +136,89 @@ class LastPerformanceHint extends StatelessWidget {
   Widget build(BuildContext context) {
     if (sets.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    return Text(
-      'Last time: ${sets.map(_formatLastSet).join('  ·  ')}',
-      maxLines: 3,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-        fontFeatures: const [FontFeature.tabularFigures()],
-        height: 1.35,
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1.5),
+          child: Icon(
+            AppIcons.history,
+            size: 13,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            summariseLastPerformance(sets),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              height: 1.3,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
+/// Collapses last session's sets into something readable at a glance.
+///
+/// Repeating "8x 100 kg" once per set filled three lines and still made you
+/// count entries to answer the only question being asked — "what did I do, and
+/// for how many sets?". Consecutive sets with the same load and reps fold into
+/// one "3 x 8 @ 100 kg" group; a set that differs starts a new group, so a
+/// drop-off still shows rather than being averaged away.
+String summariseLastPerformance(List<SetEntry> sets) {
+  final working = sets.where((set) => !set.isWarmup).toList();
+  final counted = working.isEmpty ? sets : working;
+  if (counted.isEmpty) return '';
+
+  final groups = <({String label, int count})>[];
+  for (final set in counted) {
+    final label = _formatLastSet(set);
+    if (groups.isNotEmpty && groups.last.label == label) {
+      final last = groups.removeLast();
+      groups.add((label: last.label, count: last.count + 1));
+    } else {
+      groups.add((label: label, count: 1));
+    }
+  }
+
+  final parts = [
+    for (final group in groups)
+      group.count > 1 ? '${group.count} x ${group.label}' : group.label,
+  ];
+  return 'Last time  ${parts.join('  .  ')}';
+}
+
 String _formatLastSet(SetEntry set) {
-  final parts = <String>[];
-  if (set.reps != null && set.reps! > 0) {
-    parts.add('${set.reps}×');
-  }
-  if (set.weightValue != null && set.weightValue! > 0 && set.unit != null) {
-    final perHand = set.weightEntry == WeightEntry.perSide ? '/hand' : '';
-    parts.add(
-      '${_formatEnteredNumber(set.weightValue!)} ${set.unit!.label}$perHand',
-    );
+  final reps = set.reps;
+  final weight = set.weightValue;
+  final hasWeight = weight != null && weight > 0 && set.unit != null;
+  final perHand = set.weightEntry == WeightEntry.perSide ? '/hand' : '';
+
+  final String core;
+  if (reps != null && reps > 0 && hasWeight) {
+    core = '$reps @ ${_formatEnteredNumber(weight)} ${set.unit!.label}$perHand';
+  } else if (reps != null && reps > 0) {
+    core = '$reps reps';
   } else if (set.durationSec != null && set.durationSec! > 0) {
-    parts.add(_formatLastDuration(set.durationSec!));
+    core = _formatLastDuration(set.durationSec!);
+  } else if (hasWeight) {
+    core = '${_formatEnteredNumber(weight)} ${set.unit!.label}$perHand';
+  } else {
+    core = 'set ${set.setNumber}';
   }
-  if (set.distanceMeters != null && set.distanceMeters! > 0) {
-    parts.add('${_formatEnteredNumber(set.distanceMeters!)} m');
-  }
-  if (set.sideCount > 1) {
-    parts.add('each side');
-  }
-  return parts.isEmpty ? 'set ${set.setNumber}' : parts.join(' ');
+
+  final distance = set.distanceMeters;
+  final withDistance = distance != null && distance > 0
+      ? '$core, ${_formatEnteredNumber(distance)} m'
+      : core;
+  return set.sideCount > 1 ? '$withDistance each side' : withDistance;
 }
 
 String _formatLastDuration(int seconds) {
@@ -666,8 +716,7 @@ class _SetRowState extends State<SetRow> {
   }
 
   static String _formatDouble(double? value) {
-    if (value == null) return '';
-    return value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';
+    return formatSetRowDouble(value);
   }
 
   static double _weightStepFor(WeightUnit unit) =>
@@ -689,6 +738,19 @@ class _SetRowState extends State<SetRow> {
   }
 }
 
+@visibleForTesting
+String formatSetRowDouble(double? value) {
+  if (value == null) return '';
+  final rounded = (value * 100).roundToDouble() / 100;
+  if (rounded == rounded.roundToDouble()) {
+    return rounded.toStringAsFixed(0);
+  }
+  var text = rounded.toStringAsFixed(2);
+  text = text.replaceFirst(RegExp(r'0+$'), '');
+  text = text.replaceFirst(RegExp(r'\.$'), '');
+  return text;
+}
+
 enum _SetRowAction { details, moveUp, moveDown, insertAbove }
 
 /// Tick-off control. This is the single gesture that ends a set and starts the
@@ -708,14 +770,20 @@ class _SetDoneButton extends StatelessWidget {
     final enabled = onPressed != null;
     final Color background;
     final Color foreground;
+    final Color border;
     if (isDone) {
-      background = theme.colorScheme.primary;
-      foreground = theme.colorScheme.onPrimary;
+      // Green, like the mock and like Finish workout — done is done.
+      background = theme.colorScheme.secondary.withValues(alpha: 0.20);
+      foreground = theme.colorScheme.secondary;
+      border = theme.colorScheme.secondary;
     } else {
-      background = theme.colorScheme.surfaceContainerHigh;
+      background = Colors.transparent;
       foreground = enabled
           ? theme.colorScheme.onSurfaceVariant
-          : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.35);
+          : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.30);
+      border = enabled
+          ? theme.colorScheme.outlineVariant
+          : theme.colorScheme.outlineVariant.withValues(alpha: 0.45);
     }
     return Tooltip(
       message: isDone ? 'Set done — tap to undo' : 'Finish set and start rest',
@@ -726,20 +794,26 @@ class _SetDoneButton extends StatelessWidget {
         child: InkWell(
           onTap: enabled ? () => unawaited(onPressed!()) : null,
           borderRadius: BorderRadius.circular(AppRadius.control),
-          child: Container(
-            // Matches _MicroStepper exactly — a control that is 4pt shorter
-            // and squarer than the fields beside it reads as a mistake.
+          child: SizedBox(
+            // Still occupies the same 40pt slot the steppers align to, but the
+            // control itself is a ring rather than a rounded box — a circular
+            // check reads as "tick this off" where a square reads as another
+            // input field beside the two real ones.
             height: 40,
             width: _doneWidth,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(AppRadius.control),
-              border: isDone
-                  ? null
-                  : Border.all(color: theme.colorScheme.outlineVariant),
+            child: Center(
+              child: Container(
+                height: 30,
+                width: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: background,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: border, width: 1.8),
+                ),
+                child: Icon(AppIcons.checkBold, size: 16, color: foreground),
+              ),
             ),
-            child: Icon(AppIcons.check, size: 18, color: foreground),
           ),
         ),
       ),
@@ -764,31 +838,24 @@ class _SetIndexChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.extension<AppColors>()!;
-    final Color background;
     final Color foreground;
     if (isWarmup) {
-      background = colors.streakContainer;
-      foreground = theme.colorScheme.onSurface;
+      foreground = colors.streak;
     } else if (isComplete) {
-      background = theme.colorScheme.primaryContainer;
-      foreground = theme.colorScheme.onPrimaryContainer;
+      foreground = theme.colorScheme.primary;
     } else {
-      background = theme.colorScheme.surfaceContainerHigh;
       foreground = theme.colorScheme.onSurfaceVariant;
     }
-    return Container(
+    return SizedBox(
       height: 34,
       width: _indexWidth,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: foreground,
+      child: Center(
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: foreground,
+          ),
         ),
       ),
     );
@@ -843,7 +910,6 @@ class _MicroStepper extends StatelessWidget {
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppRadius.control),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),

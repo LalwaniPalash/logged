@@ -7,12 +7,11 @@ import '../../core/domain/muscle_progress.dart';
 import '../../core/domain/muscle.dart';
 import '../../core/domain/strength_standards.dart';
 import '../../core/domain/training_goal.dart';
-import '../../core/domain/workout_metrics.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../data/providers.dart';
-import '../../data/repositories/analytics_repository.dart';
 import '../../data/repositories/settings_repository.dart';
+import 'widgets/strength_standards_section.dart';
 
 enum _RanksSection { muscles, standards }
 
@@ -33,7 +32,16 @@ class _RanksScreenState extends ConsumerState<RanksScreen> {
         ref.watch(coachingPreferencesProvider).asData?.value ??
         const CoachingPreferences();
     return Scaffold(
-      appBar: AppBar(title: const Text('Ranks')),
+      appBar: AppBar(
+        title: const Text('Ranks'),
+        actions: [
+          IconButton(
+            tooltip: 'How ranks work',
+            icon: const Icon(AppIcons.info),
+            onPressed: _showInfoDialog,
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 40),
         children: [
@@ -55,12 +63,8 @@ class _RanksScreenState extends ConsumerState<RanksScreen> {
                 setState(() => _section = value.single),
           ),
           const SizedBox(height: 20),
-          SectionHeader(
-            _section == _RanksSection.muscles
-                ? 'Your muscles'
-                : 'Strength standards',
-          ),
-          if (_section == _RanksSection.muscles)
+          if (_section == _RanksSection.muscles) ...[
+            const SectionHeader('Your muscles'),
             progress.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => const Text(
@@ -68,12 +72,33 @@ class _RanksScreenState extends ConsumerState<RanksScreen> {
               ),
               data: (values) =>
                   _MuscleRanks(values: values, goal: coaching.trainingGoal),
-            )
-          else
-            _StrengthStandards(
+            ),
+          ] else
+            StrengthStandardsSection(
               sex: coaching.userSex,
               onEnable: () => _enableStandards(coaching.userSex),
             ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('How ranks work'),
+        content: const Text(
+          'Muscle ranks track your training volume against evidence-based '
+          'landmarks for each muscle. Strength standards compare your '
+          'benchmark lifts to population data at your bodyweight and sex — '
+          'both are broad reference points, not a target you must hit.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
         ],
       ),
     );
@@ -233,102 +258,6 @@ class _MuscleRanks extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-      ],
-    );
-  }
-}
-
-class _StrengthStandards extends ConsumerWidget {
-  const _StrengthStandards({required this.sex, required this.onEnable});
-
-  final UserSex sex;
-  final VoidCallback onEnable;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bodyweights =
-        ref.watch(bodyweightEntriesProvider).asData?.value ?? const [];
-    if (sex == UserSex.unset || bodyweights.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            children: [
-              const Text(
-                'Add optional sex and bodyweight data to compare benchmark lifts with population standards.',
-              ),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: onEnable,
-                child: const Text('Enable strength standards'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    final latestWeight = bodyweights.first;
-    final bodyweightKg = weightKg(latestWeight.value, latestWeight.unit);
-    final sets =
-        ref.watch(benchmarkSetsProvider).asData?.value ??
-        const <BenchmarkSetRecord>[];
-    final best = <String, double>{};
-    for (final set in sets) {
-      // Only sets logged the canonical way for the lift count — excludes
-      // assisted pull-ups, mis-tagged barbell lifts, and weighted-mode sets
-      // saved without a load (which would otherwise score as a strict PR).
-      if (!countsForStandard(
-        lift: set.exerciseName,
-        mode: set.loadingMode,
-        hasEnteredWeight: set.enteredWeightKg != null,
-      )) {
-        continue;
-      }
-      // Loading-mode aware: folds bodyweight in for pull-ups (strict or
-      // weighted), leaves barbell lifts on their entered load.
-      final estimate = set.resistedOneRepMaxKg(bodyweightKg);
-      if (estimate > (best[set.exerciseName] ?? 0)) {
-        best[set.exerciseName] = estimate;
-      }
-    }
-    if (best.isEmpty) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(18),
-          child: Text(
-            'Log one of the six benchmark lifts to see a population standard.',
-          ),
-        ),
-      );
-    }
-    return Column(
-      children: [
-        for (final entry in best.entries)
-          Builder(
-            builder: (context) {
-              final result = standardFor(
-                lift: entry.key,
-                sex: sex,
-                bodyweightKg: bodyweightKg,
-                estOneRepMaxKg: entry.value,
-              )!;
-              return Card(
-                child: ListTile(
-                  title: Text(entry.key),
-                  subtitle: Text(
-                    result.nextThreshold == null
-                        ? '${result.ratio.toStringAsFixed(2)}× bodyweight'
-                        : '${result.ratio.toStringAsFixed(2)}× bodyweight · '
-                              'next at ${result.nextThreshold!.round()} kg',
-                  ),
-                  trailing: Text(
-                    result.level.label,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                ),
-              );
-            },
           ),
       ],
     );

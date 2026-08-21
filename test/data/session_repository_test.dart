@@ -574,6 +574,157 @@ void main() {
     },
   );
 
+  test('addExerciseAt inserts at 0 and shifts later exercises', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SessionRepository(database);
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 9)));
+    final exerciseIds = [
+      for (final name in ['A', 'B', 'C'])
+        await database
+            .into(database.exercises)
+            .insert(
+              ExercisesCompanion.insert(
+                name: 'Exercise $name',
+                category: ExerciseCategory.strength,
+                muscleGroup: 'test',
+              ),
+            ),
+    ];
+    for (var position = 0; position < 2; position++) {
+      await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: exerciseIds[position],
+              position: position,
+            ),
+          );
+    }
+
+    final insertedId = await repository.addExerciseAt(
+      sessionId: sessionId,
+      exerciseId: exerciseIds[2],
+      position: 0,
+    );
+
+    final rows =
+        await (database.select(database.sessionExercises)
+              ..where((row) => row.sessionId.equals(sessionId))
+              ..orderBy([(row) => OrderingTerm.asc(row.position)]))
+            .get();
+    expect(rows.map((row) => row.position), [0, 1, 2]);
+    expect(rows.first.id, insertedId);
+  });
+
+  test(
+    'addExerciseAt inserts in the middle and keeps positions contiguous',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = SessionRepository(database);
+      final sessionId = await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 9)),
+          );
+      final exerciseIds = [
+        for (final name in ['A', 'B', 'C', 'D'])
+          await database
+              .into(database.exercises)
+              .insert(
+                ExercisesCompanion.insert(
+                  name: 'Exercise $name',
+                  category: ExerciseCategory.strength,
+                  muscleGroup: 'test',
+                ),
+              ),
+      ];
+      final existingIds = <int>[];
+      for (var position = 0; position < 3; position++) {
+        existingIds.add(
+          await database
+              .into(database.sessionExercises)
+              .insert(
+                SessionExercisesCompanion.insert(
+                  sessionId: sessionId,
+                  exerciseId: exerciseIds[position],
+                  position: position,
+                ),
+              ),
+        );
+      }
+
+      final insertedId = await repository.addExerciseAt(
+        sessionId: sessionId,
+        exerciseId: exerciseIds[3],
+        position: 1,
+      );
+
+      final rows =
+          await (database.select(database.sessionExercises)
+                ..where((row) => row.sessionId.equals(sessionId))
+                ..orderBy([(row) => OrderingTerm.asc(row.position)]))
+              .get();
+      expect(rows.map((row) => row.position), [0, 1, 2, 3]);
+      expect(rows.map((row) => row.id), [
+        existingIds[0],
+        insertedId,
+        existingIds[1],
+        existingIds[2],
+      ]);
+    },
+  );
+
+  test('addExerciseAt at length behaves like append', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = SessionRepository(database);
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 8, 14, 9)));
+    final exerciseIds = [
+      for (final name in ['A', 'B', 'C'])
+        await database
+            .into(database.exercises)
+            .insert(
+              ExercisesCompanion.insert(
+                name: 'Exercise $name',
+                category: ExerciseCategory.strength,
+                muscleGroup: 'test',
+              ),
+            ),
+    ];
+    for (var position = 0; position < 2; position++) {
+      await database
+          .into(database.sessionExercises)
+          .insert(
+            SessionExercisesCompanion.insert(
+              sessionId: sessionId,
+              exerciseId: exerciseIds[position],
+              position: position,
+            ),
+          );
+    }
+
+    final insertedId = await repository.addExerciseAt(
+      sessionId: sessionId,
+      exerciseId: exerciseIds[2],
+      position: 2,
+    );
+
+    final rows =
+        await (database.select(database.sessionExercises)
+              ..where((row) => row.sessionId.equals(sessionId))
+              ..orderBy([(row) => OrderingTerm.asc(row.position)]))
+            .get();
+    expect(rows.map((row) => row.position), [0, 1, 2]);
+    expect(rows.last.id, insertedId);
+  });
+
   test('updatePrescription writes only the fields passed', () async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);

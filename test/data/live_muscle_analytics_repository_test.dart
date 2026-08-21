@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logged/core/domain/enums.dart';
 import 'package:logged/core/domain/muscle.dart';
+import 'package:logged/core/domain/muscle_progress.dart';
 import 'package:logged/core/domain/workout_metrics.dart';
 import 'package:logged/data/database/app_database.dart';
 import 'package:logged/data/repositories/analytics_repository.dart';
@@ -76,6 +77,64 @@ void main() {
     )..where((set) => set.id.equals(setId))).go();
     expect(await iterator.moveNext(), isTrue);
     expect(iterator.current, isEmpty);
+  });
+
+  test('muscle progress ignores an unfinished workout until it ends', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final exerciseId = await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            name: 'Back Squat',
+            category: ExerciseCategory.strength,
+            muscleGroup: 'legs',
+            primaryMuscles: Value(jsonEncode(['quads'])),
+          ),
+        );
+    final sessionId = await database
+        .into(database.sessions)
+        .insert(SessionsCompanion.insert(startedAt: DateTime(2026, 7, 20, 12)));
+    final linkId = await database
+        .into(database.sessionExercises)
+        .insert(
+          SessionExercisesCompanion.insert(
+            sessionId: sessionId,
+            exerciseId: exerciseId,
+            position: 0,
+          ),
+        );
+    await database
+        .into(database.setEntries)
+        .insert(
+          SetEntriesCompanion.insert(
+            sessionExerciseId: linkId,
+            setNumber: 1,
+            reps: const Value(5),
+            weightValue: const Value(100),
+            unit: const Value(WeightUnit.kg),
+          ),
+        );
+    final repository = AnalyticsRepository(database);
+
+    double scoreFor(Map<MuscleId, MuscleProgress> progress) =>
+        progress[MuscleId.quads]?.rankScore ?? 0;
+
+    expect(
+      scoreFor(await repository.watchMuscleProgress().first),
+      0,
+      reason: 'rank must not move while the workout is still live',
+    );
+
+    await (database.update(database.sessions)
+          ..where((row) => row.id.equals(sessionId)))
+        .write(SessionsCompanion(endedAt: Value(DateTime(2026, 7, 20, 13))));
+
+    expect(
+      scoreFor(await repository.watchMuscleProgress().first),
+      greaterThan(0),
+      reason: 'finishing the workout is what banks the volume',
+    );
   });
 
   test(

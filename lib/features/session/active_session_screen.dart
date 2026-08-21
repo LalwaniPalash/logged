@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/app_icons.dart';
 import '../../core/domain/enums.dart';
@@ -18,17 +18,19 @@ import '../../core/domain/warmup.dart';
 import '../../core/domain/workout_metrics.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/exercise_editor_sheet.dart';
-import '../../core/widgets/prescription_editor_sheet.dart';
 import '../../core/widgets/exercise_picker.dart';
+import '../../core/widgets/prescription_editor_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../data/providers.dart';
 import '../settings/reminder_scheduler.dart';
 import 'rest_timer_screen.dart';
+import 'widgets/active_session_stats_card.dart';
 import 'widgets/plate_calculator_sheet.dart';
-import 'widgets/set_editor_sheet.dart';
 import 'rest_timer_controller.dart';
 import 'widgets/rest_timer_bar.dart';
+import 'widgets/session_exercise_card.dart';
+import 'widgets/set_editor_sheet.dart';
 import 'widgets/set_row.dart';
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
@@ -72,6 +74,17 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     final repo = ref.read(sessionRepositoryProvider);
     final session = await repo.getSession(widget.sessionId);
     final details = await repo.details(widget.sessionId);
+    // No bodyweight history is common on a fresh install; use the spec's
+    // fallback baseline rather than hiding calories outright.
+    final bodyweightKg = session == null
+        ? 75.0
+        : await ref
+              .read(bodyweightRepositoryProvider)
+              .latestOnOrBefore(session.startedAt)
+              .then(
+                (entry) =>
+                    entry == null ? 75.0 : weightKg(entry.value, entry.unit),
+              );
     final previousSets = <int, List<SetEntry>>{};
     await Future.wait([
       for (final detail in details)
@@ -85,22 +98,49 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     return _SessionView(
       session: session,
       details: details,
+      bodyweightKg: bodyweightKg,
       previousSets: previousSets,
     );
   }
 
-  Future<void> _addExercise() async {
-    final exercises = await ref.read(exerciseRepositoryProvider).all();
-    if (!mounted) return;
-    final exercise = await showExercisePicker(
+  Future<Exercise?> _pickExercise({
+    required String title,
+    List<Exercise>? exercises,
+    bool preserveOrder = false,
+  }) async {
+    final available =
+        exercises ?? await ref.read(exerciseRepositoryProvider).all();
+    if (!mounted) return null;
+    return showExercisePicker(
       context,
-      exercises,
-      title: 'Add an exercise',
+      available,
+      title: title,
+      preserveOrder: preserveOrder,
+    );
+  }
+
+  Future<void> _addExercise() async {
+    await _addExerciseAt();
+  }
+
+  Future<void> _addExerciseAt([int? position]) async {
+    final exercise = await _pickExercise(
+      title: position == null ? 'Add an exercise' : 'Insert an exercise',
     );
     if (exercise == null) return;
-    await ref
-        .read(sessionRepositoryProvider)
-        .addExercise(sessionId: widget.sessionId, exerciseId: exercise.id);
+    if (position == null) {
+      await ref
+          .read(sessionRepositoryProvider)
+          .addExercise(sessionId: widget.sessionId, exerciseId: exercise.id);
+    } else {
+      await ref
+          .read(sessionRepositoryProvider)
+          .addExerciseAt(
+            sessionId: widget.sessionId,
+            exerciseId: exercise.id,
+            position: position,
+          );
+    }
     setState(_refresh);
   }
 
@@ -130,11 +170,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     final muscle = await _pickMuscle();
     if (muscle == null) return;
     final index = await ref.read(muscleExerciseIndexProvider).build();
-    if (!mounted) return;
-    final exercise = await showExercisePicker(
-      context,
-      (index[muscle] ?? const []).map((match) => match.exercise).toList(),
+    final exercise = await _pickExercise(
       title: 'Exercises for ${muscle.label}',
+      exercises: (index[muscle] ?? const [])
+          .map((match) => match.exercise)
+          .toList(),
       preserveOrder: true,
     );
     if (exercise == null) return;
@@ -821,6 +861,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  /// Opens the per-template `formUrl` when the template overrides it, else the
+  /// exercise's own saved video. Moved off the card when the inline play button
+  /// went into the overflow menu.
+  Future<void> _playExerciseVideo(SessionExerciseDetails detail) async {
+    final link = (detail.sessionExercise.formUrl?.isNotEmpty ?? false)
+        ? detail.sessionExercise.formUrl!
+        : (detail.exercise.videoUrl ?? '');
+    final uri = Uri.tryParse(link);
+    if (uri == null || link.isEmpty) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   Future<void> _openPlateCalculator(_PlateCalculatorRequest request) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -1006,20 +1058,48 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: _addExercise,
-            icon: const Icon(AppIcons.add),
-            label: const Text('Add exercise'),
-          ),
-          // The rest bar is the Scaffold's bottom bar rather than the last child
-          // of the body, so the FAB is laid out above it instead of on top of
-          // it. As a body child the FAB covered −15s / +15s / Skip outright,
-          // leaving the minimised timer with no working controls at all.
-          bottomNavigationBar: RestTimerBar(
-            sessionId: widget.sessionId,
-            onTap: _restContext == null
-                ? null
-                : () => unawaited(_openRestTimerScreen()),
+          bottomNavigationBar: SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RestTimerBar(
+                  sessionId: widget.sessionId,
+                  onTap: _restContext == null
+                      ? null
+                      : () => unawaited(_openRestTimerScreen()),
+                ),
+                if (!completed) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: _finish,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.secondary,
+                      foregroundColor: theme.colorScheme.onSecondary,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    icon: const Icon(AppIcons.check),
+                    label: const Text('Finish workout'),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton.icon(
+                    onPressed: _addExercise,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    icon: const Icon(AppIcons.add),
+                    label: const Text('Add exercise'),
+                  ),
+                ],
+              ],
+            ),
           ),
           body: Column(
             children: [
@@ -1038,6 +1118,16 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                       )
                     : CustomScrollView(
                         slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            sliver: SliverToBoxAdapter(
+                              child: ActiveSessionStatsCard(
+                                session: view?.session,
+                                details: details,
+                                bodyweightKg: view?.bodyweightKg ?? 75,
+                              ),
+                            ),
+                          ),
                           if (completed &&
                               sessionNote != null &&
                               sessionNote.isNotEmpty)
@@ -1081,7 +1171,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                     ),
                               itemBuilder: (context, index) {
                                 final detail = details[index];
-                                return _ExerciseCard(
+                                return SessionExerciseCard(
                                   key: ValueKey(detail.sessionExercise.id),
                                   index: index,
                                   reorderable: !completed,
@@ -1112,8 +1202,41 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                   ),
                                   onMoveSet: _reorderSets,
                                   onInsertSetAbove: _insertSetAbove,
-                                  onOpenPlates: _openPlateCalculator,
-                                  onOpenWarmup: _previewWarmup,
+                                  onOpenPlates:
+                                      ({
+                                        required exerciseName,
+                                        required targetWeight,
+                                        required unit,
+                                        required perImplement,
+                                      }) => _openPlateCalculator(
+                                        _PlateCalculatorRequest(
+                                          exerciseName: exerciseName,
+                                          targetWeight: targetWeight,
+                                          unit: unit,
+                                          inventory: plateInventory,
+                                          perImplement: perImplement,
+                                        ),
+                                      ),
+                                  onOpenWarmup:
+                                      ({
+                                        required sessionExerciseId,
+                                        required exerciseName,
+                                        required warmups,
+                                        required unit,
+                                        required weightEntry,
+                                        required sideCount,
+                                        required loadingMode,
+                                      }) => _previewWarmup(
+                                        _WarmupRequest(
+                                          sessionExerciseId: sessionExerciseId,
+                                          exerciseName: exerciseName,
+                                          warmups: warmups,
+                                          unit: unit,
+                                          weightEntry: weightEntry,
+                                          sideCount: sideCount,
+                                          loadingMode: loadingMode,
+                                        ),
+                                      ),
                                   onSwap: () => _swapExercise(detail),
                                   onRemove: () => _removeExercise(detail),
                                   onOpenInfo: () =>
@@ -1121,28 +1244,94 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                                   onEditVideoUrl: () => _editVideoUrl(detail),
                                   onEditPrescription: () =>
                                       _editPrescription(detail),
+                                  onOverflowAction: (action) {
+                                    switch (action) {
+                                      case SessionExerciseOverflowAction.info:
+                                        _openExerciseInfo(detail.exercise);
+                                        return;
+                                      case SessionExerciseOverflowAction.video:
+                                        unawaited(_playExerciseVideo(detail));
+                                        return;
+                                      case SessionExerciseOverflowAction
+                                          .editVideo:
+                                        _editVideoUrl(detail);
+                                        return;
+                                      case SessionExerciseOverflowAction
+                                          .addAbove:
+                                        unawaited(_addExerciseAt(index));
+                                        return;
+                                      case SessionExerciseOverflowAction
+                                          .addBelow:
+                                        unawaited(_addExerciseAt(index + 1));
+                                        return;
+                                      case SessionExerciseOverflowAction.warmup:
+                                        final firstSet = detail.sets.isEmpty
+                                            ? null
+                                            : detail.sets.first;
+                                        final headerUnit =
+                                            firstSet?.unit ??
+                                            detail.exercise.defaultUnit;
+                                        final headerWeightEntry =
+                                            firstSet?.weightEntry ??
+                                            detail.exercise.weightEntry;
+                                        final headerSideCount =
+                                            firstSet?.sideCount ??
+                                            detail
+                                                .sessionExercise
+                                                .sidesPerSet ??
+                                            1;
+                                        final loadingMode =
+                                            firstSet?.loadingMode ??
+                                            detail
+                                                .exercise
+                                                .preferredLoadingMode;
+                                        final workingWeight =
+                                            _latestWorkingWeight(
+                                              detail.sets,
+                                              loadingMode: loadingMode,
+                                            );
+                                        if (workingWeight == null) return;
+                                        final warmups = generateWarmup(
+                                          workingWeight: workingWeight,
+                                          unit: headerUnit,
+                                          inventory: plateInventory,
+                                          workingReps:
+                                              detail.sessionExercise.maxReps ??
+                                              detail.sessionExercise.minReps,
+                                          loadingMode: loadingMode,
+                                          perImplement:
+                                              headerWeightEntry ==
+                                              WeightEntry.perSide,
+                                        );
+                                        if (warmups.isEmpty) return;
+                                        unawaited(
+                                          _previewWarmup(
+                                            _WarmupRequest(
+                                              sessionExerciseId:
+                                                  detail.sessionExercise.id,
+                                              exerciseName:
+                                                  detail.exercise.name,
+                                              warmups: warmups,
+                                              unit: headerUnit,
+                                              weightEntry: headerWeightEntry,
+                                              sideCount: headerSideCount,
+                                              loadingMode: loadingMode,
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      case SessionExerciseOverflowAction.remove:
+                                        unawaited(_removeExercise(detail));
+                                        return;
+                                    }
+                                  },
                                   prescriptionEditable: !completed,
                                 );
                               },
                             ),
                           ),
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                            sliver: SliverToBoxAdapter(
-                              child: !completed
-                                  ? FilledButton.icon(
-                                      onPressed: _finish,
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor:
-                                            theme.colorScheme.secondary,
-                                        foregroundColor:
-                                            theme.colorScheme.onSecondary,
-                                      ),
-                                      icon: const Icon(AppIcons.check),
-                                      label: const Text('Finish workout'),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 180),
                           ),
                         ],
                       ),
@@ -1256,10 +1445,12 @@ class _SessionView {
   const _SessionView({
     required this.session,
     required this.details,
+    required this.bodyweightKg,
     required this.previousSets,
   });
   final Session? session;
   final List<SessionExerciseDetails> details;
+  final double bodyweightKg;
   final Map<int, List<SetEntry>> previousSets;
 }
 
@@ -1297,461 +1488,6 @@ class _WarmupRequest {
   final WeightEntry weightEntry;
   final int sideCount;
   final LoadingMode loadingMode;
-}
-
-class _ExerciseCard extends StatelessWidget {
-  const _ExerciseCard({
-    super.key,
-    required this.index,
-    required this.reorderable,
-    required this.detail,
-    required this.previousSets,
-    required this.onAddSet,
-    required this.onRepeatSet,
-    required this.onInlineCommit,
-    required this.onToggleSetDone,
-    required this.onEditSet,
-    required this.onMoveSet,
-    required this.onInsertSetAbove,
-    required this.onOpenPlates,
-    required this.onOpenWarmup,
-    required this.onRemove,
-    required this.onSwap,
-    required this.onEditVideoUrl,
-    required this.onEditPrescription,
-    required this.onOpenInfo,
-    required this.prescriptionEditable,
-    required this.progressionAggressiveness,
-    required this.inventory,
-  });
-
-  final int index;
-  final bool reorderable;
-  final SessionExerciseDetails detail;
-  final List<SetEntry> previousSets;
-  final VoidCallback onAddSet;
-  final VoidCallback onRepeatSet;
-  final Future<void> Function(
-    SetEntry set,
-    SetRowDraft draft,
-    ProgressionSuggestion? suggestion,
-  )
-  onInlineCommit;
-  final Future<void> Function(SetEntry set, ProgressionSuggestion? suggestion)
-  onToggleSetDone;
-  final void Function(SetEntry set, ProgressionSuggestion? suggestion)
-  onEditSet;
-  final Future<void> Function(
-    SessionExerciseDetails detail,
-    int oldIndex,
-    int newIndex,
-  )
-  onMoveSet;
-  final Future<void> Function(SessionExerciseDetails detail, SetEntry set)
-  onInsertSetAbove;
-  final ValueChanged<_PlateCalculatorRequest> onOpenPlates;
-  final ValueChanged<_WarmupRequest> onOpenWarmup;
-  final VoidCallback onRemove;
-  final VoidCallback onSwap;
-  final VoidCallback onOpenInfo;
-  final VoidCallback onEditVideoUrl;
-  final VoidCallback onEditPrescription;
-  final bool prescriptionEditable;
-  final double progressionAggressiveness;
-  final PlateInventory inventory;
-
-  Future<void> _openForm(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final targetText = formatPrescription(
-      targetSets: detail.sessionExercise.targetSets,
-      sidesPerSet: detail.sessionExercise.sidesPerSet,
-      minReps: detail.sessionExercise.minReps,
-      maxReps: detail.sessionExercise.maxReps,
-      targetDurationSec: detail.sessionExercise.targetDurationSec,
-      targetDistanceMeters: detail.sessionExercise.targetDistanceMeters,
-      restSeconds: detail.sessionExercise.restSeconds,
-      eccentricSec: detail.sessionExercise.eccentricSec,
-      bottomPauseSec: detail.sessionExercise.bottomPauseSec,
-      concentricSec: detail.sessionExercise.concentricSec,
-      topPauseSec: detail.sessionExercise.topPauseSec,
-    );
-
-    // Column headings describe the exercise's prevailing shape, taken from the
-    // first set (the sets of one exercise almost always agree). Any set that
-    // differs still renders in the same columns and labels its own deviation.
-    final firstSet = detail.sets.isEmpty ? null : detail.sets.first;
-    final headerUnit = firstSet?.unit ?? detail.exercise.defaultUnit;
-    final headerWeightEntry =
-        firstSet?.weightEntry ?? detail.exercise.weightEntry;
-    final headerSideCount =
-        firstSet?.sideCount ?? detail.sessionExercise.sidesPerSet ?? 1;
-    // A Plank is `bodyweight` category but prescribed in seconds; without this
-    // it would render a reps column and its hold time would be unloggable.
-    final timed = isTimedExercise(
-      exerciseIsTimed: detail.exercise.isTimed,
-      sets: detail.sets,
-      targetDurationSec: detail.sessionExercise.targetDurationSec,
-      minReps: detail.sessionExercise.minReps,
-      maxReps: detail.sessionExercise.maxReps,
-    );
-    final columns = setColumnsFor(
-      category: detail.exercise.category,
-      loadingModes: detail.sets.isEmpty
-          ? [detail.exercise.preferredLoadingMode]
-          : detail.sets.map((set) => set.loadingMode),
-      timed: timed,
-      tracksDistance: detail.exercise.tracksDistance,
-    );
-    final suggestion = timed
-        ? null
-        : suggestNextSet(
-            lastExerciseSets: previousSets,
-            minReps: detail.sessionExercise.minReps,
-            maxReps: detail.sessionExercise.maxReps,
-            targetRpe: _targetRpe(detail.sessionExercise.prescriptionNotes),
-            weightEntry: headerWeightEntry,
-            unit: headerUnit,
-            loadingMode:
-                firstSet?.loadingMode ?? detail.exercise.preferredLoadingMode,
-            progressionAggressiveness: progressionAggressiveness,
-          );
-    final loadingMode =
-        firstSet?.loadingMode ?? detail.exercise.preferredLoadingMode;
-    final plateSupported =
-        loadingMode == LoadingMode.external ||
-        loadingMode == LoadingMode.bodyweightAdded;
-    final perImplement = headerWeightEntry == WeightEntry.perSide;
-    final workingWeight =
-        _latestWorkingWeight(detail.sets, loadingMode: loadingMode) ??
-        suggestion?.weightValue;
-    final plateTarget = workingWeight ?? inventory.barWeightFor(headerUnit);
-    // Once this exercise has warm-ups the offer is done: the generator works off
-    // the working set, so it would happily produce the same rungs a second time
-    // and a stray tap would double-log the whole ramp.
-    final alreadyWarmedUp = detail.sets.any((set) => set.isWarmup);
-    final warmups = workingWeight == null || alreadyWarmedUp
-        ? const <WarmupSet>[]
-        : generateWarmup(
-            workingWeight: workingWeight,
-            unit: headerUnit,
-            inventory: inventory,
-            workingReps:
-                detail.sessionExercise.maxReps ??
-                detail.sessionExercise.minReps,
-            loadingMode: loadingMode,
-            perImplement: perImplement,
-          );
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    AppIcons.forCategoryName(detail.exercise.category.name),
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          detail.exercise.name,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        if (prescriptionEditable || targetText.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: prescriptionEditable
-                                  ? onEditPrescription
-                                  : null,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 2,
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        targetText.isEmpty
-                                            ? 'Add prescription'
-                                            : targetText,
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color:
-                                                  targetText.isEmpty &&
-                                                      prescriptionEditable
-                                                  ? theme.colorScheme.primary
-                                                  : theme
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
-                                              height: 1.4,
-                                            ),
-                                      ),
-                                    ),
-                                    if (prescriptionEditable) ...[
-                                      const SizedBox(width: 6),
-                                      Icon(
-                                        AppIcons.edit,
-                                        size: 14,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (previousSets.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          LastPerformanceHint(sets: previousSets),
-                        ],
-                        if ((detail.sessionExercise.prescriptionNotes ?? '')
-                            .isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            detail.sessionExercise.prescriptionNotes!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: onOpenInfo,
-                    icon: Icon(
-                      AppIcons.info,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    tooltip: 'Exercise info',
-                  ),
-                  // A per-template link (formUrl) overrides the exercise's own
-                  // saved video; either one shows a one-tap play button that
-                  // opens in the YouTube app / browser. With no link, an add
-                  // button lets you attach one to the exercise on the spot.
-                  Builder(
-                    builder: (context) {
-                      final link =
-                          (detail.sessionExercise.formUrl?.isNotEmpty ?? false)
-                          ? detail.sessionExercise.formUrl!
-                          : (detail.exercise.videoUrl ?? '');
-                      if (link.isEmpty) {
-                        return IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: onEditVideoUrl,
-                          icon: Icon(
-                            AppIcons.videoAdd,
-                            size: 18,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          tooltip: 'Add a video link',
-                        );
-                      }
-                      // Long-press edits the exercise's own saved link; a
-                      // template override can only be changed in the template.
-                      return GestureDetector(
-                        onLongPress: (detail.exercise.videoUrl ?? '').isNotEmpty
-                            ? onEditVideoUrl
-                            : null,
-                        child: IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => _openForm(link),
-                          icon: Icon(
-                            AppIcons.play,
-                            size: 18,
-                            color: theme.colorScheme.primary,
-                          ),
-                          tooltip: 'Play video',
-                        ),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: onRemove,
-                    icon: Icon(
-                      AppIcons.close,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    tooltip: 'Remove exercise',
-                  ),
-                  if (reorderable)
-                    ReorderableDragStartListener(
-                      index: index,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Icon(
-                          AppIcons.drag,
-                          size: 18,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (detail.sets.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 4,
-                  ),
-                  child: Text(
-                    'No sets yet',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              else ...[
-                SetTableHeader(
-                  columns: columns,
-                  unit: headerUnit,
-                  weightEntry: headerWeightEntry,
-                  sideCount: headerSideCount,
-                ),
-                for (final set in detail.sets)
-                  SetRow(
-                    key: ValueKey(set.id),
-                    set: set,
-                    category: detail.exercise.category,
-                    headerUnit: headerUnit,
-                    columns: columns,
-                    headerWeightEntry: headerWeightEntry,
-                    headerSideCount: headerSideCount,
-                    timed: timed,
-                    tracksDistance: detail.exercise.tracksDistance,
-                    suggestion: set == detail.sets.last ? suggestion : null,
-                    onCommit: (draft) => onInlineCommit(
-                      set,
-                      draft,
-                      set == detail.sets.last ? suggestion : null,
-                    ),
-                    onToggleDone: () => onToggleSetDone(
-                      set,
-                      set == detail.sets.last ? suggestion : null,
-                    ),
-                    onOpenDetails: () => onEditSet(
-                      set,
-                      set == detail.sets.last ? suggestion : null,
-                    ),
-                    onMoveUp: reorderable && set != detail.sets.first
-                        ? () => unawaited(
-                            onMoveSet(
-                              detail,
-                              detail.sets.indexOf(set),
-                              detail.sets.indexOf(set) - 1,
-                            ),
-                          )
-                        : null,
-                    onMoveDown: reorderable && set != detail.sets.last
-                        ? () => unawaited(
-                            onMoveSet(
-                              detail,
-                              detail.sets.indexOf(set),
-                              detail.sets.indexOf(set) + 1,
-                            ),
-                          )
-                        : null,
-                    onInsertAbove: reorderable
-                        ? () => unawaited(onInsertSetAbove(detail, set))
-                        : null,
-                  ),
-              ],
-              const SizedBox(height: 6),
-              // Wrap, not Row: these must fall onto a second line at large text
-              // scales rather than overflow.
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  if (plateSupported)
-                    TextButton.icon(
-                      onPressed: () => onOpenPlates(
-                        _PlateCalculatorRequest(
-                          exerciseName: detail.exercise.name,
-                          targetWeight: plateTarget,
-                          unit: headerUnit,
-                          inventory: inventory,
-                          perImplement: perImplement,
-                        ),
-                      ),
-                      icon: const Icon(AppIcons.plates, size: 18),
-                      label: const Text('Plates'),
-                    ),
-                  if (warmups.isNotEmpty)
-                    TextButton.icon(
-                      onPressed: () => onOpenWarmup(
-                        _WarmupRequest(
-                          sessionExerciseId: detail.sessionExercise.id,
-                          exerciseName: detail.exercise.name,
-                          warmups: warmups,
-                          unit: headerUnit,
-                          weightEntry: headerWeightEntry,
-                          sideCount: headerSideCount,
-                          loadingMode: loadingMode,
-                        ),
-                      ),
-                      icon: const Icon(AppIcons.warmup, size: 18),
-                      label: const Text('Warm-up'),
-                    ),
-                  TextButton.icon(
-                    onPressed: detail.sets.isEmpty ? null : onRepeatSet,
-                    icon: const Icon(AppIcons.refresh, size: 18),
-                    label: const Text('Repeat'),
-                  ),
-                  TextButton.icon(
-                    onPressed: onSwap,
-                    icon: const Icon(AppIcons.swap, size: 18),
-                    label: const Text('Swap'),
-                  ),
-                  TextButton.icon(
-                    onPressed: onAddSet,
-                    icon: const Icon(AppIcons.add, size: 18),
-                    label: const Text('Add set'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-double? _targetRpe(String? notes) {
-  if (notes == null) return null;
-  final match = RegExp(
-    r'\bRPE\s*([1-9](?:\.\d+)?|10(?:\.0+)?)\b',
-    caseSensitive: false,
-  ).firstMatch(notes);
-  return double.tryParse(match?.group(1) ?? '');
 }
 
 double? _latestWorkingWeight(

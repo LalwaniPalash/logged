@@ -64,6 +64,22 @@ List<MuscleId> decodeMuscleIds(String encoded) {
   }.toList(growable: false);
 }
 
+/// [decodeMuscleIds] for display code. Bad anatomy JSON is a real possibility —
+/// a restored backup or a hand-edited row can carry a muscle id this build does
+/// not know — and on a render path an exception takes the whole screen down
+/// instead of one thumbnail. Callers that must distinguish "empty" from
+/// "corrupt" still use [decodeMuscleIds].
+List<MuscleId> decodeMuscleIdsOrEmpty(String? encoded) {
+  if (encoded == null || encoded.isEmpty) return const [];
+  try {
+    return decodeMuscleIds(encoded);
+  } on FormatException {
+    return const [];
+  } on ArgumentError {
+    return const [];
+  }
+}
+
 void validateMuscleSelection({
   required Iterable<MuscleId> primary,
   required Iterable<MuscleId> secondary,

@@ -1,10 +1,71 @@
 # tasks/todo.md — current state
 
-> **Status as of 2026-08-14.** The T1→T3 spec below (2026-07-23) is **shipped and historical** —
-> keep it for context on why the architecture looks the way it does, but it is not the active
-> work item.
+> **Status as of 2026-08-20.** The active item is the Active Workout screen redesign, below.
+> Everything under "Earlier state" is shipped and historical — keep it for context on why the
+> architecture looks the way it does, but it is not the active work item.
 
 ## ACTIVE WORK
+
+### Active Workout screen redesign — 2026-08-20 (UNCOMMITTED)
+
+Spec: `tasks/spec-active-workout-redesign.md`. Codex Mode-A implemented Phase A+B, reviewed by hand
+plus a Codex Mode-B pass. **`flutter analyze` clean, `flutter test` 378/378.** Release APK is
+sideloaded on the Vivo (`dist/logged-1.0.0-active-workout-redesign.apk`).
+
+Shipped: 4-tile stats card (Duration ticking live / Exercises / Total Volume / Calories est.),
+`MuscleFigure` thumbnails, redesigned exercise card, `⋮` = info · video · warm-up · add above ·
+add below · remove, sticky bottom stack (rest timer → Finish → Add exercise, FAB deleted),
+`session_energy.dart` hybrid calorie estimate, `addExerciseAt`, grouped last-time summary.
+
+Bugs fixed along the way, all of which a green suite had missed:
+1. `_muscleProgressQuery` missing `WHERE s.ended_at IS NOT NULL` → rank-up fired mid-workout.
+2. ROM table missed 202 exercises (library uses `quads/hamstrings/glutes`, `full body/olympic`).
+3. `elapsed.inMinutes` truncated the rest component.
+4. `RichText` ignores `textScaler` → stat numbers frozen at large text.
+5. `decodeMuscleIds` unguarded on the render path → one bad anatomy row blanks the screen.
+6. Warm-up minutes charged to work AND deducted from rest → warm-ups cost 0 kcal.
+7. Duration accumulated +1s/tick → drifts low after backgrounding.
+8. Dead grey "Add prescription" on completed workouts.
+9. Stats/name/prescription wrapped mid-value and mid-word on a real 393dp phone.
+10. `CustomPaint` with no child/size → thumbnails rendered as empty squares.
+11. `generateWarmup` disabled for every non-barbell/light exercise.
+
+### NEXT UP — muscle thumbnail render pipeline (mid-spike, 2026-08-21)
+
+The shipped `MuscleFigure` thumbnails are a hand-drawn 2D approximation and Palash said they are not
+good enough next to his mockup. Replacement in progress: render real anatomy from `muscular.glb`.
+
+**Decisions (Palash, 2026-08-20/21):** Blender route (installed, 5.2.0 LTS at
+`/Applications/Blender.app/Contents/MacOS/Blender`, not on PATH) · **spotlight the worked muscles
+ONLY**, no full figure with parts lit · **binary lit / not lit**, no intensity gradation.
+
+**Done:**
+- `tools/render_muscle_masks.py` written and RUNS. Renders each muscle alone against one fixed
+  orthographic camera, so every PNG shares a canvas space and stacking any subset gives correct
+  anatomy for free. 47 meshes x 2 views = the whole asset cost.
+- Verified `muscular.glb` holds **47 named muscle meshes and no body mesh** (a pure ecorche), and
+  that **all 47 map cleanly to `MuscleId`** via `lib/core/domain/muscle_model.dart` — zero unmapped,
+  zero stale. The runtime compositor can key off that existing map.
+- First output exists: `assets/muscles/{front,back}/glute_max.png`, 256x512 RGBA, ~23KB each.
+
+**THE BUG TO FIX FIRST — it renders BLACK, not matte white.** `setup_lighting()` uses hardcoded
+world positions and energies while `setup_camera()` adapts to model bounds, so the lights miss the
+mesh entirely at this model's scale, and `read_factory_settings(use_empty=True)` leaves no world
+ambient to save it. Fix: derive light positions AND energy from the same `lo`/`hi` bounds the camera
+uses (energy scales with distance squared) plus a low world ambient. Re-run the single-muscle spike
+and LOOK at the PNG before rendering all 47.
+
+**Then:** build the Flutter compositor widget (not written yet — deliberately, so it is built
+against real assets), check legibility at 44px on the Vivo. Known risk: floating muscles with no
+body may read as ambiguous blobs; agreed fallback is a very faint body ghost behind them.
+
+**Unsettled:** `muscular.glb` is CC BY-SA 4.0 (Adamas Designs), so rendered PNGs inherit
+share-alike and are not MIT like the rest of the repo. Attribution in Settings needs to name the
+generated images. Flagged, not decided.
+
+### Earlier state
+
+
 
 **ALL SEVEN PHASES ARE SHIPPED.** The audit remediation is complete: `flutter analyze` clean,
 `flutter test` **327/327**, schema **v14**. The suite was 230 tests when the audit was written.

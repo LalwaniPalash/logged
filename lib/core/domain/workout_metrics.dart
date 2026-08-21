@@ -1,3 +1,4 @@
+import '../../data/database/app_database.dart';
 import 'enums.dart';
 
 const double poundsToKilograms = 0.45359237;
@@ -32,4 +33,50 @@ double setVolumeKg({
     return 0;
   }
   return totalLoadKg(weightValue, unit, entry) * reps * sideCount;
+}
+
+class SessionTotals {
+  const SessionTotals({
+    required this.exerciseCount,
+    required this.setCount,
+    required this.totalVolumeKg,
+  });
+
+  final int exerciseCount;
+  final int setCount;
+  final double totalVolumeKg;
+}
+
+typedef SessionDetailMetrics = ({Iterable<SetEntry> sets});
+
+SessionTotals computeSessionTotals(Iterable<SessionDetailMetrics> details) {
+  var exerciseCount = 0;
+  var setCount = 0;
+  var totalVolumeKg = 0.0;
+  for (final detail in details) {
+    exerciseCount += 1;
+    for (final set in detail.sets) {
+      if (set.isWarmup) continue;
+      final hasLoggedValue =
+          (set.reps ?? 0) > 0 ||
+          (set.durationSec ?? 0) > 0 ||
+          (set.distanceMeters ?? 0) > 0 ||
+          set.weightValue != null;
+      if (hasLoggedValue) {
+        setCount += 1;
+      }
+      totalVolumeKg += setVolumeKg(
+        weightValue: set.weightValue,
+        unit: set.unit,
+        reps: set.reps,
+        entry: set.weightEntry,
+        sideCount: set.sideCount,
+      );
+    }
+  }
+  return SessionTotals(
+    exerciseCount: exerciseCount,
+    setCount: setCount,
+    totalVolumeKg: totalVolumeKg,
+  );
 }

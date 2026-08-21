@@ -70,6 +70,44 @@ void main() {
       );
     });
 
+    test('chin-up follows the same rules as pull-up', () {
+      expect(
+        countsForStandard(
+          lift: 'Chin-Up',
+          mode: LoadingMode.bodyweight,
+          hasEnteredWeight: false,
+        ),
+        isTrue,
+      );
+      expect(
+        countsForStandard(
+          lift: 'Chin-Up',
+          mode: LoadingMode.bodyweightAssisted,
+          hasEnteredWeight: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('a new barbell lift is gated by hasEnteredWeight like the others', () {
+      expect(
+        countsForStandard(
+          lift: 'Barbell Front Squat',
+          mode: LoadingMode.external,
+          hasEnteredWeight: true,
+        ),
+        isTrue,
+      );
+      expect(
+        countsForStandard(
+          lift: 'Barbell Front Squat',
+          mode: LoadingMode.external,
+          hasEnteredWeight: false,
+        ),
+        isFalse,
+      );
+    });
+
     test('non-benchmark lifts never count', () {
       expect(
         countsForStandard(
@@ -109,6 +147,19 @@ void main() {
     )!;
     expect(result.ratio, 1.3);
     expect(result.level, StrengthLevel.advanced);
+  });
+
+  test('a new barbell lift crosses every level boundary', () {
+    final results = [
+      for (final load in [55.0, 70.0, 95.0, 125.0, 170.0])
+        standardFor(
+          lift: 'Barbell Front Squat',
+          sex: UserSex.male,
+          bodyweightKg: 70,
+          estOneRepMaxKg: load,
+        )!.level,
+    ];
+    expect(results, StrengthLevel.values);
   });
 
   test('unset sex and unknown lifts do not produce a standard', () {

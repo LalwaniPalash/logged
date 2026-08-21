@@ -496,3 +496,65 @@ class AppListCard extends StatelessWidget {
 /// A category chip with a consistent icon, used across exercise lists.
 IconData iconForCategoryName(String category) =>
     AppIcons.forCategoryName(category);
+
+/// Paints a dashed rounded-rect outline behind [child] — the "not a solid
+/// action, an affordance/callout" look used for the add-set button and
+/// standards-tip callouts.
+class DashedBorder extends StatelessWidget {
+  const DashedBorder({
+    super.key,
+    required this.child,
+    this.color,
+    this.radius = AppRadius.control,
+  });
+
+  final Widget child;
+  final Color? color;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomPaint(
+      painter: _DashedBorderPainter(
+        color: color ?? theme.colorScheme.outlineVariant,
+        radius: radius,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final path = Path()..addRRect(rrect);
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      const dash = 8.0;
+      const gap = 6.0;
+      while (distance < metric.length) {
+        final next = (distance + dash).clamp(0, metric.length).toDouble();
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
+}
